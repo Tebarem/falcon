@@ -1,7 +1,7 @@
 #pragma once
 
 // Audio: the mixer, its device, Steam Audio (HRTF, distance, air absorption; occlusion,
-// reflections and the rest arrive in later milestones, see README "Audio") and the sounds.
+// reflections and the rest: docs/audio.md) and the sounds.
 //
 // Sounds are .fsound assets (assets/sound_asset.h: clips with variation, distance, bus) or clips
 // (.wav / .ogg), by project path or sound id. The scene's AudioSource entities play while the game

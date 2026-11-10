@@ -1,6 +1,6 @@
 #pragma once
 
-// A project's C# game (see README, "Project scripts"):
+// A project's C# game (see docs/scripting.md, "Project scripts"):
 //   Scripts/                   the sources: Game.csproj, Game.cs and whatever else the game adds
 //     Directory.Build.props    where the build goes, and the engine's Falcon.Engine.dll by default
 //   Cache/Scripts/bin/Game.dll the build the editor loads (JIT, hot-reloadable), with

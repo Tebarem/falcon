@@ -42,7 +42,7 @@ int main(int argc, char** argv)
         std::printf("usage:\n"
                     "  falcon                                         the launcher: open or create a project\n"
                     "  falcon --editor --project <dir> [--scene s]    the editor on a project (s: relative to it)\n"
-                    "  falcon [--scene x.fpak] [--editor] [options]   run the game or the editor (README: Runtime flags)\n"
+                    "  falcon [--scene x.fpak] [--editor] [options]   run the game or the editor (docs/runtime-flags.md)\n"
                     "  falcon --preview jobs.json                     render asset previews to PNGs (engine/app/preview.h)\n"
                     "  falcon cook <in.gltf|.glb> <out.fpak> [--force] [--verify] [--threads N] [--vt-max-size N] [--graph g.json]\n"
                     "              [--library assets.gltf] [--material m.fmat] [--source-root dir] [--rocks]\n"
