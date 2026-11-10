@@ -1,0 +1,21 @@
+// Reopened: the saved graph compiles at load (its new parameter on the bar's Animator), and the
+// editor's data came back with it (the new state where it was put, the ids kept). A new graph made
+// for the model: a state machine playing its first clip, opened in the tab.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "anim": {"entity": "skinned", "graph": "Assets/skinned.fgraph", "state": "Bent", "params": {"Jump": false}}},
+  {"type": "editor.anim.open", "path": "Assets/skinned.fgraph"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "editor.anim.do", "op": "view", "machine": "machine"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorNodes": 5, "animatorParams": 3, "animatorErrors": 0, "animatorDirty": false, "animatorView": "machine:machine"}},
+  {"type": "editor.anim.graph.create", "folder": "Assets", "model": "Assets/skinned.gltf"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "fileExists": "Assets/skinned 1.fgraph",
+   "probe": {"animatorGraph": "Assets/skinned 1.fgraph", "animatorNodes": 2, "animatorErrors": 0, "animatorState": "Idle"}},
+  {"type": "test.exit"}
+]

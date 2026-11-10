@@ -1,0 +1,7 @@
+// The placed model and rock, saved by editor_assets_model, are there when the scene opens again.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "entity": {"name": "DamagedHelmet", "children": 1}},
+  {"type": "test.expect", "entity": {"name": "Rock_boulder_a 1", "bottom": 7.5}},
+  {"type": "test.exit"}
+]

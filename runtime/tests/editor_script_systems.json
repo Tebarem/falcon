@@ -1,0 +1,153 @@
+// Systems and phases (X1, API v32): a GameSystem's phases in their order within a frame; a ball
+// falling through a trigger zone onto a floor, its component hearing the zone (in, out) and the
+// floor, and its after-physics and late updates.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Floor",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   -0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   20,
+   1,
+   20
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Floor",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Ball",
+  "primitive": "sphere"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Ball",
+  "position": [
+   0,
+   5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "SphereCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Zone",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Zone",
+  "position": [
+   0,
+   2.75,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Zone",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.collider.set",
+  "id": "Zone",
+  "trigger": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_systems (API v32): a system recording the order its phases run in during a frame;\n// a component on a falling ball hearing the zone it falls through (enter, exit) and the floor it\n// lands on (a collision), and its own after-physics and late updates.\npublic sealed class PhaseRecorder : GameSystem\n{\n    public static string Order = \"\";\n    private static string s_frame = \"\";\n\n    public override void OnEarlyUpdate(float dt) => s_frame = \"E\";\n    public override void OnUpdate(float dt) => s_frame += \"U\";\n    public override void OnAfterPhysics(float dt) => s_frame += \"A\";\n    public override void OnLateUpdate(float dt) => s_frame += \"L\";\n    public override void OnPreRender(float dt)\n    {\n        s_frame += \"P\";\n        Order = s_frame;  // (one whole frame's)\n    }\n}\n\npublic sealed class Watcher : Component\n{\n    public int Hits, Entered, Exited, After, Late;\n\n    public override void OnCollisionEnter(Collision c) => ++Hits;\n    public override void OnTriggerEnter(Entity other) => ++Entered;\n    public override void OnTriggerExit(Entity other) => ++Exited;\n    public override void OnAfterPhysics(float dt) => ++After;\n    public override void OnLateUpdate(float dt) => ++Late;\n}\n\npublic sealed class SystemsGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<SystemsGame>();\n\n    private Watcher? _watcher;\n\n    public override void OnStart() => _watcher = Entity.Find(\"Ball\").AddComponent<Watcher>();\n\n    public override void OnUpdate(float dt)\n    {\n        Watcher w = _watcher!;\n        Hud.Show($\"phases {PhaseRecorder.Order} system {Systems.Get<PhaseRecorder>() != null} entered {w.Entered} exited {w.Exited} \" +\n                 $\"hit {(w.Hits > 0 ? \"yes\" : \"no\")} after {(w.After > 0 ? \"yes\" : \"no\")} late {(w.Late > 0 ? \"yes\" : \"no\")}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 240,
+  "ms": 2500
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "phases EUALP system True entered 1 exited 1 hit yes after yes late yes"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.exit"
+ }
+]

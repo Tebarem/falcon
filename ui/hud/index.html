@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- Sandbox HUD: an in-game UI driven by the C# game (managed/Sandbox/SandboxGame.cs). -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Sandbox HUD</title>
+  <link rel="stylesheet" href="hud.css">
+</head>
+
+<body>
+  <section class="card stats" aria-label="Sandbox">
+    <h1>Sandbox</h1>
+    <dl>
+      <dt>FPS</dt><dd id="fps">–</dd>
+      <dt>Bodies</dt><dd id="bodies">–</dd>
+      <dt>Levitating</dt><dd id="levitating">–</dd>
+      <dt>Fountain</dt><dd id="fountain">–</dd>
+    </dl>
+  </section>
+  <nav class="card menu" id="menu" aria-label="Controls">
+    <button id="toggle-fountain" type="button">Fountain <kbd>Space</kbd></button>
+    <button id="kick" type="button">Kick bodies <kbd>X</kbd></button>
+  </nav>
+  <p class="hint" id="hint"><kbd>Tab</kbd> menu · right-drag to look · WASD to move</p>
+  <script src="hud.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,8 @@
+// The particle and decal tests' project (editor_particles*, editor_decals*): a new empty one.
+[
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "launcher.create", "name": "VFX Test", "location": "projects"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.expect", "projectExists": "projects/VFX Test", "error": false},
+  {"type": "test.exit"}
+]

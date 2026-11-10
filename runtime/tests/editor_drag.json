@@ -1,0 +1,21 @@
+// Editor test: an entity moved by a drag (previews, no commit yet) lights the scene exactly as
+// once the move is committed: the GI probes round what moved update through the drag, and both
+// captures wait until they sleep. Captures drag_live.png and drag_committed.png (the scene view) in the working directory.
+// At a fixed exposure: auto exposure still settling between the two captures moved every pixel.
+[
+  {"type": "editor.settings.set", "key": "manualExposure", "value": 48.0},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Ball"},
+  {"type": "editor.transform.set", "id": "Ball", "position": [-6, 0.5, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 30},
+  {"type": "editor.transform.preview", "id": "Ball", "position": [-6, 0.5, 1.5], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.transform.preview", "id": "Ball", "position": [-6, 0.5, 2.5], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 1500, "gi": true},
+  {"type": "test.capture", "path": "drag_live.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.transform.set", "id": "Ball", "position": [-6, 0.5, 2.5], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 1500, "gi": true},
+  {"type": "test.capture", "path": "drag_committed.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

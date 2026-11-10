@@ -1,0 +1,404 @@
+// Nested prefabs: a wall (a level mesh and a knob) nested twice in a room; another room made from it;
+// Apply adding a lamp, moving a nested knob (an override of the nesting) and deleting a nested
+// wall, the other room following; Unpack one level and undo; saved and opened again; a prefab
+// nesting itself stopped.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Nest"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Nest.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Wall"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Knob",
+  "parent": "Wall"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.prefab.create",
+  "id": "Wall",
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Assets/Wall.fprefab": "levelMesh"
+  },
+  "entity": {
+   "name": "Wall",
+   "prefab": "Assets/Wall.fprefab"
+  }
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Room"
+ },
+ {
+  "type": "editor.asset.place",
+  "prefab": "Assets/Wall.fprefab",
+  "parent": "Room"
+ },
+ {
+  "type": "editor.asset.place",
+  "prefab": "Assets/Wall.fprefab",
+  "parent": "Room"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Room/Wall (2)",
+  "position": [
+   3,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.prefab.create",
+  "id": "Room",
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Assets/Room.fprefab": "Assets/Wall.fprefab"
+  },
+  "entity": {
+   "name": "Room/Wall (1)/Knob",
+   "prefab": "Assets/Room.fprefab"
+  }
+ },
+ {
+  "type": "editor.asset.place",
+  "prefab": "Assets/Room.fprefab"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (2)",
+   "alive": true,
+   "levelTriangles": 12,
+   "prefab": "Assets/Room.fprefab"
+  },
+  "live": {
+   "meshes": 5
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (2)/Knob",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "light",
+  "light": "point",
+  "name": "Lamp",
+  "parent": "Room"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.prefab.apply",
+  "id": "Room"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Assets/Room.fprefab": "Lamp"
+  },
+  "entity": {
+   "name": "Room (1)/Lamp",
+   "alive": true,
+   "prefab": "Assets/Room.fprefab"
+  }
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Room/Wall (1)/Knob",
+  "position": [
+   0.3,
+   0.8,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.prefab.apply",
+  "id": "Room"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Assets/Room.fprefab": "overrides"
+  },
+  "entity": {
+   "name": "Room (1)/Wall (1)/Knob",
+   "local": [
+    1,
+    0,
+    0,
+    0.3,
+    0,
+    1,
+    0,
+    0.8,
+    0,
+    0,
+    1,
+    0
+   ],
+   "within": 0.01
+  }
+ },
+ {
+  "type": "editor.entity.delete",
+  "id": "Room/Wall (2)"
+ },
+ {
+  "type": "editor.prefab.apply",
+  "id": "Room"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (2)",
+   "alive": false
+  }
+ },
+ {
+  "type": "editor.prefab.unpack",
+  "id": "Room (1)"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (1)",
+   "prefab": "Assets/Wall.fprefab"
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)",
+   "prefab": ""
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)",
+   "prefab": "Assets/Room.fprefab"
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (1)",
+   "prefab": "Assets/Room.fprefab"
+  }
+ },
+ {
+  "type": "editor.entity.delete",
+  "id": "Room/Lamp"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Nest.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Lamp",
+   "alive": true,
+   "prefab": "Assets/Room.fprefab"
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room",
+   "children": 1
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)",
+   "children": 2
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (1)",
+   "alive": true,
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Room (1)/Wall (1)/Knob",
+   "local": [
+    1,
+    0,
+    0,
+    0.3,
+    0,
+    1,
+    0,
+    0.8,
+    0,
+    0,
+    1,
+    0
+   ],
+   "within": 0.01
+  }
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Assets/Loop.fprefab",
+  "text": "{\n \"format\": 1,\n \"name\": \"Loop\",\n \"entities\": [\n  {\n   \"id\": \"0\",\n   \"name\": \"Loop\",\n   \"kind\": \"empty\"\n  },\n  {\n   \"id\": \"1\",\n   \"parent\": \"0\",\n   \"name\": \"Again\",\n   \"kind\": \"prefab\",\n   \"prefab\": \"Assets/Loop.fprefab\",\n   \"local\": [\n    1,\n    0,\n    0,\n    2,\n    0,\n    1,\n    0,\n    0,\n    0,\n    0,\n    1,\n    0\n   ]\n  }\n ]\n}"
+ },
+ {
+  "type": "editor.asset.place",
+  "prefab": "Assets/Loop.fprefab"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Loop/Again",
+   "alive": true
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

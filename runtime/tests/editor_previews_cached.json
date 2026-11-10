@@ -1,0 +1,17 @@
+// The project editor_previews left, opened again: every preview comes from the cache, so no
+// preview run starts (rendered once, never again while the assets are unchanged).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.probe", "rects": [".as-search input"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": ".as-search input"},
+  {"type": "test.wait", "frames": 2, "ms": 100},
+  {"type": "test.type", "text": "rock"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.wait", "frames": 600, "previews": true, "ms": 500},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"assetsCount": 10, "assetsPreviews>": 7}, "previewRuns": 0},
+  {"type": "test.exit"}
+]

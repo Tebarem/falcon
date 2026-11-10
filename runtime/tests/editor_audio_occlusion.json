@@ -1,0 +1,68 @@
+// Editor test (after editor_audio: Beep.fsound loops): occlusion and transmission. The scene view
+// looks down -z at "Speaker" 10 m away, previewing. In the open nothing occludes it. A cube "Wall"
+// between them blocks it, letting through what its material passes: generic, then its own values
+// (concrete: almost nothing; foliage: most), then left out of the acoustics (clear again), then a
+// .fmat whose acoustics are foliage's. Moved aside, the wall no longer occludes; moved back (an
+// instanced mesh now, since it has moved), it does again; left out and put back (a static mesh
+// added after an instance was removed), it still does. Saved: the wall's acoustics are in the
+// edits (editor_audio_occlusion_reload).
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.view", "position": [0, 1.5, 0], "target": [0, 1.5, -10]},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Speaker"},
+  {"type": "editor.transform.set", "id": "Speaker", "position": [0, 1.5, -10], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Speaker", "component": "AudioSource"},
+  {"type": "editor.audio.source.set", "id": "Speaker", "sound": "Assets/Beep.fsound"},
+  {"type": "editor.audio.play", "id": "Speaker"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "audio": {"previewing": true, "source": {"name": "Speaker", "occlusionAbove": 0.95}}},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Wall"},
+  {"type": "editor.transform.set", "id": "Wall", "position": [0, 1.5, -5], "rotation": [0, 0, 0], "scale": [8, 6, 0.4]},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionAbove": 0.03, "transmissionBelow": 0.07}}},
+
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "own", "preset": "concrete"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "entity": {"name": "Wall", "has": ["AcousticSurface"]}, "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionBelow": 0.005}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "own", "preset": "foliage"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionAbove": 0.5}}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionBelow": 0.005}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "excluded"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionAbove": 0.95}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "material"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "entity": {"name": "Wall", "lacks": ["AcousticSurface"]}, "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05}}},
+
+  {"type": "editor.assets.newMaterial", "folder": "Assets", "name": "Hedge"},
+  {"type": "test.wait", "frames": 5, "ms": 500},
+  {"type": "editor.material.set", "path": "Assets/Hedge.fmat", "values": {"acoustic": {"preset": "foliage"}}},
+  {"type": "editor.entity.material", "id": "Wall", "material": "Assets/Hedge.fmat"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionAbove": 0.5}}},
+  {"type": "editor.material.set", "path": "Assets/Hedge.fmat", "values": {"acoustic": {"preset": "concrete"}}},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionBelow": 0.005}}},
+
+  {"type": "editor.transform.set", "id": "Wall", "position": [20, 1.5, -5], "rotation": [0, 0, 0], "scale": [8, 6, 0.4]},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionAbove": 0.95}}},
+  {"type": "editor.transform.set", "id": "Wall", "position": [0, 1.5, -5], "rotation": [0, 0, 0], "scale": [8, 6, 0.4]},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionBelow": 0.005}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "excluded"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionAbove": 0.95}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "material"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionBelow": 0.005}}},
+  {"type": "editor.audio.surface.set", "id": "Wall", "mode": "own", "preset": "wood", "moving": false},
+  {"type": "editor.audio.stop"},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 10, "ms": 800},
+  {"type": "test.exit"}
+]

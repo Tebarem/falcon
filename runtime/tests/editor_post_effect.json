@@ -1,0 +1,148 @@
+// Post effects (R3, API v30): a greyscale effect before the tonemap and an inverting one after it,
+// compiled from the project's Shaders/; the frame turns grey while playing, inverted with I held,
+// and back as it was after Stop.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Greyscale.slang",
+  "text": "// A post effect (R3): grey by Amount, times Gain.\nimport falcon_post;\n\nstruct Params  // (rows of 16 bytes)\n{\n    float Amount;\n    float Gain;\n    float2 Unused;\n};\n[[vk::binding(0, 2)]] ConstantBuffer<Params> params : register(b0, space2);\n\n[shader(\"compute\")]\n[numthreads(8, 8, 1)]\nvoid main(uint3 id : SV_DispatchThreadID)\n{\n    if (falconOutside(id.xy))\n        return;\n    const float4 c = falconSource.SampleLevel(falconUv(id.xy), 0.0);\n    const float g = dot(c.rgb, float3(0.2126, 0.7152, 0.0722));\n    falconTarget[id.xy] = float4(lerp(c.rgb, g.xxx, params.Amount) * params.Gain, c.a);\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Invert.slang",
+  "text": "// A post effect after the tonemap (R3): the display frame inverted.\nimport falcon_post;\n\n[shader(\"compute\")]\n[numthreads(8, 8, 1)]\nvoid main(uint3 id : SV_DispatchThreadID)\n{\n    if (falconOutside(id.xy))\n        return;\n    const float4 c = falconSource.SampleLevel(falconUv(id.xy), 0.0);\n    falconTargetLdr[id.xy] = float4(1.0 - c.rgb, 1.0);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Greyscale.slang",
+   "compiled": true,
+   "uniforms": [
+    "Amount",
+    "Gain",
+    "Unused"
+   ],
+   "loads": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Invert.slang",
+   "compiled": true,
+   "loads": true
+  }
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_post_effect (API v30): a greyscale effect before the tonemap; an inverting one after it,\n// off until I is held; values set by name; an unknown shader and an unknown field refused.\npublic sealed class PostGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<PostGame>();\n\n    private PostEffect? _grey, _invert;\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        _grey = new PostEffect(\"Shaders/Greyscale.slang\");\n        bool set = _grey.Set(\"Amount\", 1f) && _grey.Set(\"Gain\", 1f);\n        _invert = new PostEffect(\"Shaders/Invert.slang\", PostStage.AfterTonemap, order: 1) { Enabled = false };\n        bool refused = !new PostEffect(\"Shaders/NoSuch.slang\").IsValid && !_grey.Set(\"NoSuchField\", 1f);\n        _report = $\"post grey {_grey.IsValid} invert {_invert.IsValid} set {set} refused {refused}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        _invert!.Enabled = Input.IsDown(Key.I);\n        Hud.Show(_report + $\" inverted {_invert.Enabled}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "post_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "post grey True invert True set True refused True inverted False"
+ },
+ {
+  "type": "test.capture",
+  "path": "post_grey.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.hold",
+  "key": "I"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "hud": "inverted True"
+ },
+ {
+  "type": "test.capture",
+  "path": "post_inverted.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.hold",
+  "key": "I",
+  "down": false
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.capture",
+  "path": "post_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

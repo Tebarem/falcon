@@ -1,0 +1,38 @@
+// Editor test: empties and parenting. Children follow their parent, undo/redo and delete cover
+// whole subtrees, reparenting keeps world positions, duplicate copies the children, and a click
+// on an empty's icon in the viewport selects it (entities are named: their ids depend on order).
+[
+  {"type": "editor.entity.create", "kind": "empty"},
+  {"type": "test.expect", "selectedName": "Empty 1"},
+  {"type": "editor.transform.set", "id": "Empty 1", "position": [0, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "capsule", "parent": "Empty 1"},
+  {"type": "test.expect", "selectedName": "Capsule 1", "entity": {"name": "Capsule 1", "parent": "Empty 1", "position": [0, 1, 0]}},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cone"},
+  {"type": "editor.transform.set", "id": "Cone 1", "position": [0, 3, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.entity.parent", "id": "Cone 1", "parent": "Capsule 1"},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "parent": "Capsule 1", "position": [0, 3, 0]}},
+  {"type": "editor.transform.set", "id": "Empty 1", "position": [2, 3, 4], "rotation": [0, 90, 0], "scale": [1, 1, 1]},
+  {"type": "test.expect", "entity": {"name": "Capsule 1", "position": [2, 3, 4]}},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "position": [2, 5, 4]}},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "position": [0, 3, 0]}},
+  {"type": "editor.redo"},
+  {"type": "editor.entity.delete", "id": "Empty 1"},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "alive": false}},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "alive": true, "parent": "Capsule 1", "position": [2, 5, 4]}},
+  {"type": "editor.entity.parent", "id": "Cone 1", "parent": 0},
+  {"type": "test.expect", "entity": {"name": "Cone 1", "parent": "", "position": [2, 5, 4]}},
+  {"type": "editor.entity.duplicate", "id": "Empty 1"},
+  {"type": "test.expect", "selectedName": "Empty 1 (1)"},
+  {"type": "editor.entity.delete"},
+  {"type": "editor.frame", "id": "Empty 1"},
+  {"type": "test.wait", "ms": 1500},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.mouse", "at": "#viewport"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "selectedName": "Empty 1"},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,96 @@
+// Editor test (Script Test project): the game's HTML UI in the editor (E3). The project's UI/Game/index.html
+// (with falcon-ui.js) is framed over the game's view while playing: it tells the game it is ready
+// (Ui.TryReceive), the game answers (Ui.Send), and the page tells the game what it got. Live
+// reload: game.js edited while playing, the frame loads the page again (its new script).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_game_ui: the project's HTML UI (UI/Game/index.html) talks to the game while the editor plays.\npublic sealed class GameUiGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<GameUiGame>();\n\n    public override void OnUpdate(float dt)\n    {\n        while (Ui.TryReceive(out string json))\n        {\n            Hud.Show(\"ui said \" + json);\n            if (json.Contains(\"ready\"))\n                Ui.Send(\"{\\\"type\\\":\\\"hi\\\"}\");\n        }\n    }\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "UI/Game/index.html",
+  "text": "<!doctype html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n<body>\n  <p id=\"said\">\u2026</p>\n  <script src=\"falcon-ui.js\"></script>\n  <script src=\"game.js\"></script>\n</body>\n</html>\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "UI/Game/game.js",
+  "text": "// editor_game_ui: tells the game it is ready, and what the game answered.\nFalconUi.onMessage = json => {\n  const m = JSON.parse(json);\n  document.getElementById('said').textContent = m.type;\n  FalconUi.send(JSON.stringify({ type: 'got', what: m.type }));\n};\nFalconUi.send(JSON.stringify({ type: 'ready' }));\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "UI/Game/falcon-ui.js",
+  "text": "// falcon-ui.js: for a game's HTML UI (UI/Game/index.html): the same page works in a game (--ui UI/Game:\n// the engine's bridge) and in the editor while playing (framed over the game's view).\n//\n//   FalconUi.send(json)          a message (JSON text) for the game: Ui.TryReceive\n//   FalconUi.onMessage = json => {}  the game's messages (Ui.Send)\n'use strict';\nconst FalconUi = (() => {\n  const framed = window.parent !== window;\n  const ui = {\n    send(json) {\n      if (framed) parent.postMessage({ falcon: 'ui', data: json }, '*');\n      else if (window.falcon) window.falcon.postMessage(json);\n    },\n    onMessage: null,\n  };\n  if (framed)\n    addEventListener('message', e => { if (e.source === parent && e.data && e.data.falcon === 'ui' && ui.onMessage) ui.onMessage(e.data.data); });\n  else if (window.falcon)\n    window.falcon.onMessage = json => { if (ui.onMessage) ui.onMessage(json); };\n  return ui;\n})();\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 2000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "ui said {\"type\":\"got\",\"what\":\"hi\"}"
+ },
+ {
+  "type": "test.editFile",
+  "path": "UI/Game/game.js",
+  "find": "type: 'got'",
+  "replace": "type: 'again'"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 2000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "pageChanges": 1,
+  "hud": "ui said {\"type\":\"again\",\"what\":\"hi\"}"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.exit"
+ }
+]

@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Roof Slates 03",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    3.0,
+    3.0
+  ],
+  "parallax": 0.03,
+  "textures": {
+    "baseColor": "@falcon/Roofing/Textures/Roof Slates 03/color.jpg",
+    "normal": "@falcon/Roofing/Textures/Roof Slates 03/normal.jpg",
+    "metallicRoughness": "@falcon/Roofing/Textures/Roof Slates 03/arm.jpg",
+    "occlusion": "@falcon/Roofing/Textures/Roof Slates 03/arm.jpg",
+    "height": "@falcon/Roofing/Textures/Roof Slates 03/height.jpg"
+  },
+  "acoustic": {
+    "preset": "rock"
+  },
+  "surface": {
+    "preset": "rock"
+  }
+}

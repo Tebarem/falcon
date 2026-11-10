@@ -1,0 +1,8 @@
+// Editor test (after editor_water): the saved water body back, with its size and its .fwater
+// material; the deleted one gone.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "water": {"name": "Pool", "shape": "rect", "width": 12, "material": "Assets/Water/Teal.fwater",
+   "field": {"clarity": 3, "deepColor": [0.1, 0.3, 0.2]}, "count": 1}},
+  {"type": "test.exit"}
+]

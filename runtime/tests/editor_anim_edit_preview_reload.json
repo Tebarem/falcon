@@ -1,0 +1,7 @@
+// Reopened: the rig's Animator still previews in the editor (its graph playing in edit mode).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.expect", "anim": {"entity": "legs", "editorPreview": true, "played": {"above": 0.5}, "footIk": true, "looking": {"bone": "head", "at": [3.5, 2.2, 2.5], "within": 2}}},
+  {"type": "test.exit"}
+]

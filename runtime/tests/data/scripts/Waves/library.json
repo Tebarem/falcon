@@ -1,0 +1,7 @@
+{
+  "name": "Waves",
+  "version": "1.0.0",
+  "description": "A test library: a component that bobs its entity and says so on the HUD.",
+  "author": "Falcon tests",
+  "dependencies": []
+}

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The C# scripting API. Loaded once per process (CoreCLR default context, or linked into a
+       NativeAOT game); games reference it. -->
+  <PropertyGroup>
+    <RootNamespace>Falcon</RootNamespace>
+    <AssemblyName>Falcon.Engine</AssemblyName>
+  </PropertyGroup>
+</Project>

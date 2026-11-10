@@ -1,0 +1,15 @@
+// The instances editor_prefabs saved, opened again: built from the prefab and their overrides
+// (Crate (1)'s Spike stays moved). Crate (1) unpacked: plain entities from then on.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "entity": {"name": "Crate", "prefab": "Assets/Crate.fprefab"}},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "overridden": false, "position": [-30, 11, 0]}},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Lid", "prefab": "Assets/Crate.fprefab", "position": [-26, 11, 0]}},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Spike", "overridden": true, "position": [-25, 8, 0]}},
+  {"type": "editor.prefab.unpack", "id": "Crate (1)"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate (1)", "prefab": ""}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.exit"}
+]

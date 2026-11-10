@@ -1,0 +1,174 @@
+// The simulation's ticks (N0, API v36): input as each tick sees it (a press counted once per tick
+// stream, a one-frame tap still seen by the next tick), Time inside ticks, a collision heard inside
+// its tick, and DMath's bits in the editor's JIT (the native side's: sim_dmath_native).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Floor",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   -0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   20,
+   1,
+   20
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Floor",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Ball",
+  "primitive": "sphere"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Ball",
+  "position": [
+   0,
+   3,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "SphereCollider"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_ticks (API v36): the simulation's ticks. A key's presses counted in OnFixedUpdate\n// (once each, whatever the frames, a tap shorter than a tick too) and in OnUpdate; an action's in\n// ticks; Time inside a tick; a falling ball's collision heard inside its tick; DMath's bits.\npublic sealed class TickWatcher : Component\n{\n    public static int TickPresses, ActionPresses, HitInTick = -1;\n    public static bool DeltaOk = true, TotalOk = true;\n    private static ulong s_last = ulong.MaxValue;\n    private static InputAction? s_action;\n\n    public override void OnFixedUpdate(float dt)\n    {\n        s_action ??= Input.Action(\"TickAction\").Bind(Key.K);\n        if (Input.Pressed(Key.J))\n            ++TickPresses;\n        if (s_action.Pressed)\n            ++ActionPresses;\n        if (Time.Delta != Time.TickDelta || dt != Time.TickDelta || !Time.InTick)\n            DeltaOk = false;\n        if (Time.Total != Time.Tick * (double)Time.TickDelta || (s_last != ulong.MaxValue && Time.Tick != s_last + 1))\n            TotalOk = false;\n        s_last = Time.Tick;\n    }\n\n    public override void OnCollisionEnter(Collision c)\n    {\n        if (HitInTick < 0)\n            HitInTick = Time.InTick && Time.Tick == s_last ? 1 : 0;\n    }\n}\n\npublic sealed class TicksGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<TicksGame>();\n\n    private int _framePresses;\n\n    public override void OnStart() => Entity.Find(\"Ball\").AddComponent<TickWatcher>();\n\n    public override void OnUpdate(float dt)\n    {\n        if (Input.Pressed(Key.J))\n            ++_framePresses;\n        Hud.Show($\"tick presses {TickWatcher.TickPresses} action {TickWatcher.ActionPresses} frame presses {_framePresses} \" +\n                 $\"delta {TickWatcher.DeltaOk} total {TickWatcher.TotalOk} hit in tick {TickWatcher.HitInTick} \" +\n                 $\"in tick {Time.InTick} dmath {DMath.SelfHash():x16}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.hold",
+  "key": "J"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 300
+ },
+ {
+  "type": "test.hold",
+  "key": "J",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 300
+ },
+ {
+  "type": "test.hold",
+  "key": "J"
+ },
+ {
+  "type": "test.wait",
+  "frames": 1
+ },
+ {
+  "type": "test.hold",
+  "key": "J",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 300
+ },
+ {
+  "type": "test.hold",
+  "key": "K"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 300
+ },
+ {
+  "type": "test.hold",
+  "key": "K",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "tick presses 2 action 1 frame presses 2 delta True total True hit in tick 1 in tick False dmath 38d7ca740fd695b0"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.exit"
+ }
+]

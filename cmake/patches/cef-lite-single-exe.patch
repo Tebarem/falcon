@@ -1,0 +1,179 @@
+diff --git a/include/cef_lite.h b/include/cef_lite.h
+index cb43ec7..ac5f54b 100644
+--- a/include/cef_lite.h
++++ b/include/cef_lite.h
+@@ -101,6 +101,11 @@ typedef struct CefLiteInputEvent {
+  * target target_format from the config and preserve its existing color.
+  * Create, pump, draw, resize, and destroy on the host thread; stop any input or
+  * message producer threads before destroy. */
++/* Runs this process as one of CEF's helper processes (the command line has
++ * --type=...): call it first in main and return its exit code. The host passes
++ * its own executable as subprocess_path. */
++CEF_LITE_API int cef_lite_run_subprocess(void);
++
+ CEF_LITE_API CefLiteStatus cef_lite_create(
+     SDL_GPUDevice* device,
+     const CefLiteConfig* config,
+diff --git a/src/cef_subprocess.cpp b/src/cef_subprocess.cpp
+index dc856ac..8c2697f 100644
+--- a/src/cef_subprocess.cpp
++++ b/src/cef_subprocess.cpp
+@@ -3,9 +3,10 @@
+ #include "include/cef_process_message.h"
+ #include "include/cef_render_process_handler.h"
+ #include "include/cef_registration.h"
+-#include "include/cef_sandbox_win.h"
+ #include "include/wrapper/cef_helpers.h"
+ 
++#include "cef_lite.h"
++
+ #include <windows.h>
+ 
+ namespace {
+@@ -112,13 +113,10 @@ class SubprocessApp final : public CefApp {
+ 
+ }  // namespace
+ 
+-extern "C" CEF_BOOTSTRAP_EXPORT int RunWinMain(
+-    HINSTANCE instance,
+-    LPTSTR /*command_line*/,
+-    int /*show_command*/,
+-    void* sandbox_info,
+-    cef_version_info_t* /*version_info*/) {
+-  CefMainArgs main_args(instance);
++/* The host executable doubles as CEF's helper (renderer, GPU, utility):
++ * Chromium relaunches it with --type=..., and it calls this first thing. */
++extern "C" CEF_LITE_API int cef_lite_run_subprocess(void) {
++  CefMainArgs main_args(GetModuleHandleW(nullptr));
+   CefRefPtr<SubprocessApp> app = new SubprocessApp();
+-  return CefExecuteProcess(main_args, app, sandbox_info);
++  return CefExecuteProcess(main_args, app, nullptr);
+ }
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 02aae49..9a40d1d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -84,6 +84,7 @@ endif()
+ 
+ add_library(cef_lite STATIC
+   src/cef_lite.cpp
++  src/cef_subprocess.cpp
+   src/falcon_cef_ui.cpp)
+ target_compile_features(cef_lite PRIVATE c_std_11 cxx_std_20)
+ target_include_directories(cef_lite
+@@ -109,18 +110,6 @@ if(MSVC)
+ endif()
+ add_dependencies(cef_lite cef_lite_shaders)
+ 
+-add_library(falcon_cef_subprocess SHARED src/cef_subprocess.cpp)
+-SET_LIBRARY_TARGET_PROPERTIES(falcon_cef_subprocess)
+-target_compile_features(falcon_cef_subprocess PRIVATE cxx_std_20)
+-target_compile_definitions(falcon_cef_subprocess PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+-target_include_directories(falcon_cef_subprocess PRIVATE "${CEF_INCLUDE_PATH}")
+-target_link_libraries(falcon_cef_subprocess PRIVATE
+-  libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
+-set_target_properties(falcon_cef_subprocess PROPERTIES
+-  RUNTIME_OUTPUT_DIRECTORY "${CEF_LITE_RUNTIME_DIR}"
+-  LIBRARY_OUTPUT_DIRECTORY "${CEF_LITE_RUNTIME_DIR}"
+-  ARCHIVE_OUTPUT_DIRECTORY "${CEF_LITE_RUNTIME_DIR}")
+-add_dependencies(falcon_cef_subprocess cef_lite_shaders)
+ set(CEF_LITE_BINARY_FILES
+   chrome_elf.dll
+   d3dcompiler_47.dll
+@@ -133,14 +122,13 @@ set(CEF_LITE_RESOURCE_FILES
+   chrome_200_percent.pak
+   resources.pak
+   icudtl.dat)
+-add_custom_command(TARGET falcon_cef_subprocess POST_BUILD
++# The CEF runtime next to the host (CEF_LITE_RUNTIME_DIR); the host executable is
++# also CEF's helper process (cef_lite_run_subprocess).
++add_custom_target(cef_lite_runtime ALL
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CEF_LITE_RUNTIME_DIR}/locales"
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CEF_LITE_RUNTIME_DIR}/ui"
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CEF_LITE_RUNTIME_DIR}/LICENSES"
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CEF_LITE_SHADER_STAGE_DIR}"
+-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-    "${CEF_BINARY_DIR}/bootstrap.exe"
+-    "$<TARGET_FILE_DIR:falcon_cef_subprocess>/falcon_cef_subprocess.exe"
+   COMMAND ${CMAKE_COMMAND} -E copy_directory
+     "${CMAKE_CURRENT_SOURCE_DIR}/ui"
+     "${CEF_LITE_RUNTIME_DIR}/ui"
+@@ -158,23 +146,24 @@ add_custom_command(TARGET falcon_cef_subprocess POST_BUILD
+     "${CEF_LITE_RUNTIME_DIR}/CREDITS.html"
+   VERBATIM)
+ foreach(file ${CEF_LITE_BINARY_FILES})
+-  add_custom_command(TARGET falcon_cef_subprocess POST_BUILD
++  add_custom_command(TARGET cef_lite_runtime POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+       "${CEF_BINARY_DIR}/${file}" "${CEF_LITE_RUNTIME_DIR}/${file}"
+     VERBATIM)
+ endforeach()
+ foreach(file ${CEF_LITE_RESOURCE_FILES})
+-  add_custom_command(TARGET falcon_cef_subprocess POST_BUILD
++  add_custom_command(TARGET cef_lite_runtime POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+       "${CEF_RESOURCE_DIR}/${file}" "${CEF_LITE_RUNTIME_DIR}/${file}"
+     VERBATIM)
+ endforeach()
+ if(NOT SDL3_STATIC)
+-  add_custom_command(TARGET falcon_cef_subprocess POST_BUILD
++  add_custom_command(TARGET cef_lite_runtime POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+       "$<TARGET_FILE:SDL3::SDL3>" "${CEF_LITE_RUNTIME_DIR}/SDL3.dll"
+     VERBATIM)
+ endif()
++add_dependencies(cef_lite_runtime cef_lite_shaders)
+ 
+ set_target_properties(cef_lite PROPERTIES
+   ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+@@ -186,7 +175,7 @@ if(CEF_LITE_BUILD_EXAMPLE)
+   set_target_properties(cef_lite_sdl_gpu_example PROPERTIES
+     LINKER_LANGUAGE CXX
+     RUNTIME_OUTPUT_DIRECTORY "${CEF_LITE_RUNTIME_DIR}")
+-  add_dependencies(cef_lite_sdl_gpu_example falcon_cef_subprocess)
++  add_dependencies(cef_lite_sdl_gpu_example cef_lite_runtime)
+   if(MSVC)
+     set_property(TARGET cef_lite_sdl_gpu_example PROPERTY
+       MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+@@ -207,7 +196,7 @@ if(CEF_LITE_BUILD_TESTS)
+   target_link_libraries(cef_lite_multi_surface_test PRIVATE cef_lite)
+   set_target_properties(cef_lite_multi_surface_test PROPERTIES
+     RUNTIME_OUTPUT_DIRECTORY "${CEF_LITE_RUNTIME_DIR}")
+-  add_dependencies(cef_lite_multi_surface_test falcon_cef_subprocess)
++  add_dependencies(cef_lite_multi_surface_test cef_lite_runtime)
+   add_test(NAME cef_lite_multi_surface
+     COMMAND cef_lite_multi_surface_test
+       "${CEF_LITE_RUNTIME_DIR}/ui"
+diff --git a/src/falcon_cef_ui.cpp b/src/falcon_cef_ui.cpp
+index 34710ab..a7cc407 100644
+--- a/src/falcon_cef_ui.cpp
++++ b/src/falcon_cef_ui.cpp
+@@ -387,6 +387,19 @@ std::filesystem::path ExecutableDirectory() {
+   return std::filesystem::path(buffer, buffer + length).parent_path();
+ }
+ 
++/* Chromium's resources (paks, locales, icudtl, v8 snapshot) sit next to
++ * libcef.dll, which the host may load from a folder of its own (delay-loaded). */
++std::filesystem::path LibcefDirectory() {
++  HMODULE module = GetModuleHandleW(L"libcef.dll");
++  wchar_t buffer[32768] = {};
++  const DWORD length = module ? GetModuleFileNameW(
++      module, buffer, static_cast<DWORD>(std::size(buffer))) : 0;
++  if (length == 0 || length >= std::size(buffer)) {
++    return {};
++  }
++  return std::filesystem::path(buffer, buffer + length).parent_path();
++}
++
+ std::filesystem::path FacadeDirectory() {
+   HMODULE module = nullptr;
+   if (!GetModuleHandleExW(
+@@ -2240,7 +2253,7 @@ bool InitializeHost(FalconCefUiHost* host) {
+     return false;
+   }
+   CefString(&settings.root_cache_path).FromWString(root_cache_path.wstring());
+-  const auto facade_directory = FacadeDirectory();
++  const auto facade_directory = LibcefDirectory();
+   if (!facade_directory.empty()) {
+     CefString(&settings.resources_dir_path)
+         .FromWString(facade_directory.wstring());

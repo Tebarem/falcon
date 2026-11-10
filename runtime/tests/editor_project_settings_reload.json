@@ -1,0 +1,10 @@
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "settings": {"lodPixels": 0.3, "cullPixels": 2, "terrainPixels": 2.5, "detailDistance": 25}},
+  {"type": "editor.settings.set", "key": "lodPixels", "value": 0.5},
+  {"type": "editor.settings.set", "key": "cullPixels", "value": 4},
+  {"type": "editor.settings.set", "key": "terrainPixels", "value": 1},
+  {"type": "editor.settings.set", "key": "detailDistance", "value": 10},
+  {"type": "test.wait", "frames": 10, "ms": 1200},
+  {"type": "test.exit"}
+]

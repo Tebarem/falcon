@@ -1,0 +1,18 @@
+// Editor test: editor_audio's scene reopened. Speaker keeps its Audio Source (Beep.fsound) and Ears
+// its Audio Listener; the project's master volume is as saved. Play plays the source again.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "entity": {"name": "Speaker", "has": ["AudioSource"], "sound": "Assets/Beep.fsound"}},
+  {"type": "test.expect", "entity": {"name": "Ears", "has": ["AudioListener"]}},
+  {"type": "test.expect", "settings": {"audioMaster": 0.7}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.expect", "audio": {"sources": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.expect", "audio": {"sources": 0}},
+  {"type": "editor.settings.set", "key": "audioMaster", "value": 1},
+  {"type": "test.wait", "frames": 10, "ms": 600},
+  {"type": "test.exit"}
+]

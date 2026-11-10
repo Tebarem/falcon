@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Dark Wood",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.0,
+    2.0
+  ],
+  "parallax": 0.004,
+  "textures": {
+    "baseColor": "@falcon/Wood/Textures/Dark Wood/color.jpg",
+    "normal": "@falcon/Wood/Textures/Dark Wood/normal.jpg",
+    "metallicRoughness": "@falcon/Wood/Textures/Dark Wood/arm.jpg",
+    "occlusion": "@falcon/Wood/Textures/Dark Wood/arm.jpg",
+    "height": "@falcon/Wood/Textures/Dark Wood/height.jpg"
+  },
+  "acoustic": {
+    "preset": "wood"
+  },
+  "surface": {
+    "preset": "wood"
+  }
+}

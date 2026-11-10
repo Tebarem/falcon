@@ -1,0 +1,36 @@
+// The skinned model placed whole (an empty named after it, the bar below), an Animator added on
+// the empty: it picks the project's graph for the bar's skeleton and drives the bar. Its parameter
+// values (over the graph's defaults) choose the state, also in edit mode; Play plays it, Stop puts
+// it back to its start; a parameter back to its default, undone. Saved for _reload.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "modelLoaded": "Assets/skinned.gltf"},
+  {"type": "test.view", "position": [2, 1.5, 3], "target": [0, 0.5, 0]},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.asset.place", "model": "Assets/skinned.gltf", "at": {"x": 0.5, "y": 0.5}},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "skinned", "children": 1}},
+  {"type": "editor.component.add", "id": "skinned", "component": "Animator"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "graph": "Assets/skinned.fgraph", "meshes": 1, "maxCharacters": 4, "state": "Straight",
+                                   "params": {"Bent": false, "Speed": 1}}},
+  {"type": "editor.animator.set", "id": "skinned", "params": {"Bent": true, "Speed": 2}},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "state": "Bent", "params": {"Bent": true, "Speed": 2}}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.expect", "playing": true, "anim": {"entity": "skinned", "state": "Bent"}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "playing": false, "anim": {"entity": "skinned", "state": "Bent", "params": {"Bent": true, "Speed": 2}}},
+  {"type": "editor.animator.set", "id": "skinned", "params": {"Bent": null}},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "state": "Straight", "params": {"Bent": false, "Speed": 2}}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "state": "Bent", "params": {"Bent": true}}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.exit"}
+]

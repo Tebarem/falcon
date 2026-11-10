@@ -1,0 +1,45 @@
+// Editor test: Rigidbody entities in water. A pool's surface at y 1.5 over Sponza's floor; a light
+// crate (100 kg, 1 m: a tenth of water's density) and a beach ball (1 kg, 1 m) dropped into it
+// float at the surface, a 260 kg ball (half water's density) floats half under, a heavy crate
+// (3000 kg) sinks to the floor. Stop: all back.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.entity.create", "kind": "water", "primitive": "pool", "name": "Pool"},
+  {"type": "editor.transform.set", "id": "Pool", "position": [0, 1.5, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.water.set", "id": "Pool", "width": 12, "length": 6, "depth": 2},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Raft"},
+  {"type": "editor.transform.set", "id": "Raft", "position": [-3, 4, 0], "rotation": [0, 20, 10], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Raft", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Raft", "component": "BoxCollider"},
+  {"type": "editor.body.set", "id": "Raft", "mass": 100},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Heavy"},
+  {"type": "editor.transform.set", "id": "Heavy", "position": [3, 4, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Heavy", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Heavy", "component": "BoxCollider"},
+  {"type": "editor.body.set", "id": "Heavy", "mass": 3000},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Ball"},
+  {"type": "editor.transform.set", "id": "Ball", "position": [0, 4, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Ball", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Ball", "component": "SphereCollider"},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Buoy"},
+  {"type": "editor.transform.set", "id": "Buoy", "position": [1.5, 4, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Buoy", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Buoy", "component": "SphereCollider"},
+  {"type": "editor.body.set", "id": "Buoy", "mass": 262},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 360, "ms": 6000},
+  {"type": "test.expect", "playing": true, "entity": {"name": "Raft", "yAbove": 1.85, "yBelow": 1.95}},
+  {"type": "test.expect", "entity": {"name": "Ball", "yAbove": 1.93, "yBelow": 2.0}},
+  {"type": "test.expect", "entity": {"name": "Buoy", "yAbove": 1.45, "yBelow": 1.55}},
+  {"type": "test.expect", "entity": {"name": "Heavy", "yBelow": 1.2, "yAbove": -2}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "playing": false, "entity": {"name": "Raft", "position": [-3, 4, 0]}},
+  {"type": "test.expect", "entity": {"name": "Ball", "position": [0, 4, 0]}},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,121 @@
+// Editor test (Script Test project): input (API v22). A virtual gamepad (its south button and left stick,
+// then taken away), actions bound to keys and the gamepad, a key of the full scancode enum, and the
+// game's view size, on the HUD.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_input (API v22): a virtual gamepad, actions bound to keys and the gamepad, typed text,\n// a key the old enum lacked (F13 is not: the full scancode enum has it), and the game's view, on the HUD.\npublic sealed class InputGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<InputGame>();\n\n    private string _typed = \"\";\n    private bool _jumped;\n\n    public override void OnStart()\n    {\n        Input.Action(\"Jump\").Bind(Key.Space).Bind(GamepadButton.South);\n        Input.Action(\"MoveX\").Bind(Key.A, Key.D).Bind(GamepadAxis.LeftX);\n        Input.TextInput = true;\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        _typed += Input.Text;\n        if (Input.Action(\"Jump\").Pressed)\n            _jumped = true;\n        Gamepad pad = Gamepad.First;\n        Hud.Show($\"pads {Gamepad.Count} south {(pad.IsDown(GamepadButton.South) ? \"down\" : \"up\")} lx {pad.Axis(GamepadAxis.LeftX):F1} \" +\n                 $\"jump {(_jumped ? \"yes\" : \"no\")} movex {Input.Action(\"MoveX\").Value:F1} typed [{_typed}] \" +\n                 $\"view {(Input.ViewSize.X > 0 && Input.ViewSize.Y > 0 ? \"ok\" : \"BAD\")} f5 {(Input.IsDown(Key.F5) ? \"down\" : \"up\")}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "UI/Game/index.html",
+  "remove": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "pads 0 south up lx 0.0 jump no movex 0.0"
+ },
+ {
+  "type": "test.gamepad",
+  "buttons": {
+   "south": true
+  },
+  "axes": {
+   "leftx": 0.5
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "hud": "pads 1 south down lx 0.5 jump yes movex 0.5"
+ },
+ {
+  "type": "test.hold",
+  "key": "F5",
+  "down": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "hud": "f5 down"
+ },
+ {
+  "type": "test.hold",
+  "key": "F5",
+  "down": false
+ },
+ {
+  "type": "test.expect",
+  "hud": "view ok"
+ },
+ {
+  "type": "test.gamepad",
+  "remove": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "hud": "pads 0 south up"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.exit"
+ }
+]

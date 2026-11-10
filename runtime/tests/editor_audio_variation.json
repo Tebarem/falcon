@@ -1,0 +1,40 @@
+// Sound variation: a one-shot sound (Tick.fsound, no variation of its own) on a source that plays on
+// start is varied by the project's Sound variation (the looping Beep beside it is not); the source's
+// Vary off, or the project's setting off, plays it exactly as made. Nothing saved.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.assets.newSound", "folder": "Assets", "name": "Tick", "clips": ["Assets/beep.wav"]},
+  {"type": "test.wait", "frames": 5, "ms": 500},
+  {"type": "test.expect", "fileExists": "Assets/Tick.fsound"},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Ticker"},
+  {"type": "test.wait", "frames": 3, "ms": 300},
+  {"type": "editor.component.add", "id": "Ticker", "component": "AudioSource"},
+  {"type": "editor.audio.source.set", "id": "Ticker", "sound": "Assets/Tick.fsound", "playOnStart": true},
+  {"type": "test.wait", "frames": 3, "ms": 300},
+  {"type": "test.expect", "settings": {"audioVariation": true}},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": true, "audio": {"variedPlays": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+
+  {"type": "editor.audio.source.set", "id": "Ticker", "vary": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": true, "audio": {"variedPlays": 0}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+
+  {"type": "editor.audio.source.set", "id": "Ticker", "vary": true},
+  {"type": "editor.settings.set", "key": "audioVariation", "value": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": true, "audio": {"variedPlays": 0}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "editor.settings.set", "key": "audioVariation", "value": true},
+  {"type": "test.wait", "frames": 10, "ms": 1200},
+  {"type": "test.exit"}
+]

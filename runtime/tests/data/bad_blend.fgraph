@@ -1,0 +1,18 @@
+// A blend space on one line and a mask naming a bone the skeleton lacks: both reported, with
+// their nodes (render_anim_graph_g5_errors).
+{
+  "version": 2,
+  "skeleton": 0,
+  "parameters": { "X": "float" },
+  "root": "@layers",
+  "nodes": {
+    "layers": { "type": "layers", "base": "@line", "layers": [ { "pose": "@look", "weight": 1, "mask": "@tailless" } ] },
+    "line": { "type": "blend2d", "x": "$X", "y": "$X",
+              "sources": [ { "value": [0, 0], "pose": "@a" }, { "value": [1, 1], "pose": "@b" }, { "value": [2, 2], "pose": "@c" } ] },
+    "a": { "type": "clip", "clip": "Survey" },
+    "b": { "type": "clip", "clip": "Walk" },
+    "c": { "type": "clip", "clip": "Run" },
+    "look": { "type": "clip", "clip": "Survey" },
+    "tailless": { "type": "boneMask", "bones": { "b_Wing_01": 1 } }
+  }
+}

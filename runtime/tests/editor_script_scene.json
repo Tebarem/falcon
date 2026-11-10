@@ -1,0 +1,83 @@
+// Scene.Load in the editor (L4): a second scene made for the game; an unsaved entity made; Play.
+// The game goes on from scene to scene (Main, Second, Main, Second, Main; loads 2 and 4 in the
+// background), writes what it saw and quits: Stop comes back to the scene being edited with its
+// unsaved entity, dirty flag and undo. script_scene_run then plays the game alone.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "../../scene_loaded.txt",
+  "remove": true
+ },
+ {
+  "type": "test.newScene",
+  "name": "Second"
+ },
+ {
+  "type": "test.expect",
+  "fileExists": "Scenes/Second.fpak"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.IO;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\npublic enum Axis { X, Y, Z }\n\n// The component the Main scene's Spinny has (editor_script_components): counted as scenes come and go.\npublic sealed class Spinner : Component\n{\n    [Property, Range(0, 720)] public float Speed = 90f;\n    [Property] public Axis Around = Axis.Y;\n    [Property] public Entity Target;\n    [Property] public Vector3 Lift = new(0, 1, 0);\n    [Property] public string Label = \"spinner\";\n\n    public static int Starts, Destroys;\n\n    public override void OnStart() => ++Starts;\n    public override void OnDestroy() => ++Destroys;\n}\n\n[Component(\"ScriptTest.Mark\")]\npublic struct Mark\n{\n    public int Load;\n}\n\n// Scene.Load's test (loads 2 and 4 with LoadAsync, the game updating while they read): Main -> Second\n// -> Main -> Second -> Main in one process, the game going on (its\n// fields and statics), each scene's components made and ended, the game's own component found\n// again in each new world (by a query made once), then the result written where it runs. In the\n// editor, the first Scene.Load stops Play instead.\npublic sealed class SceneGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<SceneGame>();\n\n    private static int s_loads;\n    private int _loads, _frames, _marksMin = int.MaxValue, _marksMax, _async, _loadingFrames;\n    private string _stages = \"\";\n    private bool _foundInMain = true, _foundInSecond;\n    private Query? _marks;\n\n    public override void OnStart()\n    {\n        _marks = new Query(Query.In<Mark>());\n        Mark();\n    }\n\n    public override void OnSceneLoaded(string scene)\n    {\n        ++_loads;\n        ++s_loads;\n        _frames = 0;\n        bool found = Entity.Find(\"Spinny\").IsValid;\n        if (scene.EndsWith(\"Second.fpak\"))\n            _foundInSecond |= found;\n        else\n            _foundInMain &= found;\n        Mark();\n    }\n\n    private void Mark()\n    {\n        Entity e = Ecs.Create();\n        Ecs.Set(e, new Mark { Load = _loads });\n        int n = _marks!.Count();\n        _marksMin = System.Math.Min(_marksMin, n);\n        _marksMax = System.Math.Max(_marksMax, n);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        if (Scene.IsLoading)  // (LoadAsync: the game goes on while the next scene is read)\n        {\n            ++_loadingFrames;\n            if (!_stages.Contains(Scene.LoadStage))\n                _stages += (_stages.Length > 0 ? \"+\" : \"\") + Scene.LoadStage;\n            return;\n        }\n        if (++_frames != 20)\n            return;\n        if (_loads < 4)\n        {\n            string next = Scene.Current.EndsWith(\"Second.fpak\") ? \"Scenes/Main.fpak\" : \"Scenes/Second.fpak\";\n            if (_loads % 2 == 1)  // (loads 2 and 4 in the background)\n            {\n                ++_async;\n                Scene.LoadAsync(next);\n            }\n            else\n            {\n                Scene.Load(next);\n            }\n            return;\n        }\n        File.WriteAllText(\"scene_loaded.txt\", $\"loads {_loads}/{s_loads}, spinner {Spinner.Starts}/{Spinner.Destroys}, \" +\n                                              $\"found {_foundInMain}/{_foundInSecond}, marks {_marksMin}-{_marksMax}, scene {Scene.Current}, \" +\n                                              $\"refused {!Scene.Load(\"Scenes/NoSuchScene.fpak\")}, \" +\n                                              $\"async {_async}, loading frames {(_loadingFrames > 0 ? \"some\" : \"none\")}, stages {_stages}\");\n        Game.Quit();\n    }\n}\n"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Kept"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "canUndo": true,
+  "dirty": true,
+  "entity": {
+   "name": "Kept",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "ms": 6000
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "sceneOpen": "Scenes/Main.fpak",
+  "sceneSwitches": 5,
+  "canUndo": true,
+  "dirty": true,
+  "entity": {
+   "name": "Kept",
+   "alive": true
+  },
+  "fileContains": {
+   "../../scene_loaded.txt": "loads 4/4"
+  }
+ },
+ {
+  "type": "test.writeFile",
+  "path": "../../scene_loaded.txt",
+  "remove": true
+ },
+ {
+  "type": "test.exit"
+ }
+]

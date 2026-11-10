@@ -1,0 +1,249 @@
+diff --git a/SDL/include/SDL3/SDL_falcon_native.h b/SDL/include/SDL3/SDL_falcon_native.h
+new file mode 100644
+index 0000000..10453f7
+--- /dev/null
++++ b/SDL/include/SDL3/SDL_falcon_native.h
+@@ -0,0 +1,55 @@
++/*
++  Falcon native Direct3D 12 access for SDL_GPU.
++
++  SDL_GPU exposes no native handles. This private extension lets an application
++  record its own D3D12 work (e.g. an AMD FidelityFX dispatch) into an SDL_GPU
++  command buffer: get the device, open the command list between SDL passes, look
++  up the ID3D12Resource behind an SDL_GPU texture and the state SDL keeps it in,
++  then hand the command list back. Native work must leave every texture it
++  touched in the state reported for it. Other backends return NULL with an error.
++*/
++
++#ifndef SDL_falcon_native_h_
++#define SDL_falcon_native_h_
++
++#include <SDL3/SDL_gpu.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define SDL_FALCON_NATIVE_REVISION 1u
++
++#if defined(SDL_FALCON_STATIC) /* SDL linked into the executable: no DLL boundary */
++#define SDL_FALCON_NATIVE_API
++#elif defined(SDL_FALCON_NATIVE_BUILD) && defined(_WIN32)
++#define SDL_FALCON_NATIVE_API __declspec(dllexport)
++#elif defined(_WIN32)
++#define SDL_FALCON_NATIVE_API __declspec(dllimport)
++#elif defined(__GNUC__)
++#define SDL_FALCON_NATIVE_API __attribute__((visibility("default")))
++#else
++#define SDL_FALCON_NATIVE_API
++#endif
++
++/* The ID3D12Device *, or NULL (with an error) on other backends. Not AddRef'd. */
++extern SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconD3D12Device(SDL_GPUDevice *device);
++
++/* Outside passes: the command buffer's ID3D12GraphicsCommandList *, or NULL (with an error).
++   Pair with SDL_FalconEndD3D12Commands before the next SDL pass or submit. */
++extern SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconBeginD3D12Commands(SDL_GPUCommandBuffer *command_buffer);
++
++/* Outside passes: the ID3D12Resource * currently backing `texture` (its active cycle), kept
++   alive until the command buffer completes. `*state` (may be NULL) receives the
++   D3D12_RESOURCE_STATES SDL keeps it in between passes. NULL (with an error) on failure. */
++extern SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconD3D12Texture(SDL_GPUCommandBuffer *command_buffer, SDL_GPUTexture *texture, Uint32 *state);
++
++/* After native work: restores SDL's descriptor heaps and makes the next SDL pass rebind
++   its pipeline, root signature and resources. */
++extern SDL_FALCON_NATIVE_API void SDLCALL SDL_FalconEndD3D12Commands(SDL_GPUCommandBuffer *command_buffer);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* SDL_falcon_native_h_ */
+diff --git a/SDL/src/gpu/SDL_falcon_native.c b/SDL/src/gpu/SDL_falcon_native.c
+new file mode 100644
+index 0000000..f3b57e5
+--- /dev/null
++++ b/SDL/src/gpu/SDL_falcon_native.c
+@@ -0,0 +1,83 @@
++/* Falcon native Direct3D 12 access (see SDL_falcon_native.h). Local patch for Falcon Engine,
++   not an SDL contribution. */
++
++#define SDL_FALCON_NATIVE_BUILD 1
++
++#include "SDL_internal.h"
++#include "SDL_sysgpu.h"
++#include <SDL3/SDL_falcon_native.h>
++
++#define FALCON_CB_DEVICE(cb) (((CommandBufferCommonHeader *)(cb))->device)
++
++static bool FalconNativeOutsidePasses(SDL_GPUCommandBuffer *cb)
++{
++    const CommandBufferCommonHeader *h = (const CommandBufferCommonHeader *)cb;
++    if (h->render_pass.in_progress || h->compute_pass.in_progress || h->copy_pass.in_progress) {
++        SDL_SetError("Native D3D12 commands must be recorded outside passes");
++        return false;
++    }
++    return true;
++}
++
++static bool FalconNativeUnsupported(void)
++{
++    return SDL_SetError("The selected SDL_GPU backend is not Direct3D 12");
++}
++
++SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconD3D12Device(SDL_GPUDevice *device)
++{
++    if (device == NULL) {
++        SDL_InvalidParamError("device");
++        return NULL;
++    }
++    if (device->FalconD3D12Device == NULL) {
++        FalconNativeUnsupported();
++        return NULL;
++    }
++    return device->FalconD3D12Device(device->driverData);
++}
++
++SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconBeginD3D12Commands(SDL_GPUCommandBuffer *command_buffer)
++{
++    if (command_buffer == NULL) {
++        SDL_InvalidParamError("command_buffer");
++        return NULL;
++    }
++    if (!FalconNativeOutsidePasses(command_buffer)) {
++        return NULL;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconBeginD3D12Commands == NULL) {
++        FalconNativeUnsupported();
++        return NULL;
++    }
++    return device->FalconBeginD3D12Commands(command_buffer);
++}
++
++SDL_FALCON_NATIVE_API void *SDLCALL SDL_FalconD3D12Texture(SDL_GPUCommandBuffer *command_buffer, SDL_GPUTexture *texture, Uint32 *state)
++{
++    if (command_buffer == NULL || texture == NULL) {
++        SDL_InvalidParamError("command_buffer / texture");
++        return NULL;
++    }
++    if (!FalconNativeOutsidePasses(command_buffer)) {
++        return NULL;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconD3D12Texture == NULL) {
++        FalconNativeUnsupported();
++        return NULL;
++    }
++    return device->FalconD3D12Texture(command_buffer, texture, state);
++}
++
++SDL_FALCON_NATIVE_API void SDLCALL SDL_FalconEndD3D12Commands(SDL_GPUCommandBuffer *command_buffer)
++{
++    if (command_buffer == NULL || !FalconNativeOutsidePasses(command_buffer)) {
++        return;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconEndD3D12Commands != NULL) {
++        device->FalconEndD3D12Commands(command_buffer);
++    }
++}
+diff --git a/SDL/src/gpu/SDL_sysgpu.h b/SDL/src/gpu/SDL_sysgpu.h
+index f4fe878..b62e414 100644
+--- a/SDL/src/gpu/SDL_sysgpu.h
++++ b/SDL/src/gpu/SDL_sysgpu.h
+@@ -1119,6 +1119,13 @@ struct SDL_GPUDevice
+     void (*FalconWriteTimestamp)(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 index);
+     void (*FalconResolveTimestamps)(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 count);
+     bool (*FalconReadTimestamps)(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks);
++
++    // Falcon native D3D12 access (SDL_falcon_native.h): set by the D3D12 backend after
++    // ASSIGN_DRIVER, NULL elsewhere.
++    void *(*FalconD3D12Device)(SDL_GPURenderer *driverData);
++    void *(*FalconBeginD3D12Commands)(SDL_GPUCommandBuffer *commandBuffer);
++    void *(*FalconD3D12Texture)(SDL_GPUCommandBuffer *commandBuffer, SDL_GPUTexture *texture, Uint32 *state);
++    void (*FalconEndD3D12Commands)(SDL_GPUCommandBuffer *commandBuffer);
+ };
+ 
+ #define ASSIGN_DRIVER_FUNC(func, name) \
+diff --git a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+index f6cacfc..ab92f4a 100644
+--- a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
++++ b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+@@ -9284,6 +9284,65 @@ static bool D3D12_FalconReadTimestamps(SDL_GPURenderer *driverData, SDL_FalconTi
+     return true;
+ }
+ 
++// Falcon native D3D12 access (SDL_falcon_native.h): the application records into the command
++// buffer's own command list between passes, then SDL forgets the state it had bound.
++
++static void *D3D12_FalconD3D12Device(SDL_GPURenderer *driverData)
++{
++    return ((D3D12Renderer *)driverData)->device;
++}
++
++static void *D3D12_FalconBeginD3D12Commands(SDL_GPUCommandBuffer *commandBuffer)
++{
++    return ((D3D12CommandBuffer *)commandBuffer)->graphicsCommandList;
++}
++
++static void *D3D12_FalconD3D12Texture(SDL_GPUCommandBuffer *commandBuffer, SDL_GPUTexture *texture, Uint32 *state)
++{
++    D3D12CommandBuffer *d3d12CommandBuffer = (D3D12CommandBuffer *)commandBuffer;
++    D3D12TextureContainer *container = (D3D12TextureContainer *)texture;
++    D3D12Texture *activeTexture = container->activeTexture;
++
++    D3D12_INTERNAL_TrackTexture(d3d12CommandBuffer, activeTexture);
++    if (state) {
++        *state = (Uint32)D3D12_INTERNAL_DefaultTextureResourceState(container->header.info.usage);
++    }
++    return activeTexture->resource;
++}
++
++static void D3D12_FalconEndD3D12Commands(SDL_GPUCommandBuffer *commandBuffer)
++{
++    D3D12CommandBuffer *d3d12CommandBuffer = (D3D12CommandBuffer *)commandBuffer;
++    Uint32 i;
++
++    // Native work may have set its own heaps; SDL only sets them when it acquires new ones.
++    if (d3d12CommandBuffer->gpuDescriptorHeaps[0] != NULL) {
++        ID3D12DescriptorHeap *heaps[2];
++        heaps[0] = d3d12CommandBuffer->gpuDescriptorHeaps[0]->handle;
++        heaps[1] = d3d12CommandBuffer->gpuDescriptorHeaps[1]->handle;
++        ID3D12GraphicsCommandList_SetDescriptorHeaps(d3d12CommandBuffer->graphicsCommandList, 2, heaps);
++    }
++
++    // Binding a pipeline sets its PSO and root signature and rebinds every resource slot.
++    d3d12CommandBuffer->currentGraphicsPipeline = NULL;
++    d3d12CommandBuffer->currentComputePipeline = NULL;
++    d3d12CommandBuffer->needVertexBufferBind = true;
++    d3d12CommandBuffer->needVertexSamplerBind = true;
++    d3d12CommandBuffer->needVertexStorageTextureBind = true;
++    d3d12CommandBuffer->needVertexStorageBufferBind = true;
++    d3d12CommandBuffer->needFragmentSamplerBind = true;
++    d3d12CommandBuffer->needFragmentStorageTextureBind = true;
++    d3d12CommandBuffer->needFragmentStorageBufferBind = true;
++    d3d12CommandBuffer->needComputeSamplerBind = true;
++    d3d12CommandBuffer->needComputeReadOnlyStorageTextureBind = true;
++    d3d12CommandBuffer->needComputeReadOnlyStorageBufferBind = true;
++    for (i = 0; i < MAX_UNIFORM_BUFFERS_PER_STAGE; i += 1) {
++        d3d12CommandBuffer->needVertexUniformBufferBind[i] = true;
++        d3d12CommandBuffer->needFragmentUniformBufferBind[i] = true;
++        d3d12CommandBuffer->needComputeUniformBufferBind[i] = true;
++    }
++}
++
+ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SDL_PropertiesID props)
+ {
+     SDL_GPUDevice *result;
+@@ -9952,6 +10011,10 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
+     result->FalconWriteTimestamp = D3D12_FalconWriteTimestamp;
+     result->FalconResolveTimestamps = D3D12_FalconResolveTimestamps;
+     result->FalconReadTimestamps = D3D12_FalconReadTimestamps;
++    result->FalconD3D12Device = D3D12_FalconD3D12Device;
++    result->FalconBeginD3D12Commands = D3D12_FalconBeginD3D12Commands;
++    result->FalconD3D12Texture = D3D12_FalconD3D12Texture;
++    result->FalconEndD3D12Commands = D3D12_FalconEndD3D12Commands;
+     result->driverData = (SDL_GPURenderer *)renderer;
+     result->shader_formats = shaderFormats;
+     result->debug_mode = debugMode;

@@ -1,0 +1,54 @@
+[submodule "external/cef-lite"]
+	path = external/cef-lite
+	url = https://github.com/Tebarem/cef-lite
+[submodule "external/sdl-src/SDL"]
+	path = external/sdl-src/SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "external/flecs"]
+	path = external/flecs
+	url = https://github.com/SanderMertens/flecs
+[submodule "external/meshoptimizer"]
+	path = external/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer
+[submodule "external/cgltf"]
+	path = external/cgltf
+	url = https://github.com/jkuhlmann/cgltf
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy
+[submodule "external/mimalloc"]
+	path = external/mimalloc
+	url = https://github.com/microsoft/mimalloc
+[submodule "external/enkiTS"]
+	path = external/enkiTS
+	url = https://github.com/dougbinks/enkiTS
+[submodule "external/box3d"]
+	path = external/box3d
+	url = https://github.com/erincatto/box3d
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb
+[submodule "external/bc7enc"]
+	path = external/bc7enc
+	url = https://github.com/richgel999/bc7enc
+[submodule "external/stb_image_resize"]
+	path = external/stb_image_resize
+	url = https://github.com/nothings/stb_image_resize
+[submodule "external/esoterica"]
+	path = external/esoterica
+	url = https://github.com/BobbyAnguelov/Esoterica
+[submodule "external/manifold"]
+	path = external/manifold
+	url = https://github.com/elalish/manifold
+[submodule "external/recastnavigation"]
+	path = external/recastnavigation
+	url = https://github.com/recastnavigation/recastnavigation
+[submodule "external/mikktspace"]
+	path = external/mikktspace
+	url = https://github.com/mmikk/MikkTSpace
+[submodule "external/xatlas"]
+	path = external/xatlas
+	url = https://github.com/jpcy/xatlas
+[submodule "external/SPIRV-Cross"]
+	path = external/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross

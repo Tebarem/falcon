@@ -1,0 +1,19 @@
+// Opened after editor_displace: cooked first with the cube's displaced copy (and the sphere's,
+// for the material's preview); the cube draws it, the panel offers no Reload, and the view shows
+// the studs (compared with editor_displace's capture by editor_displace_differs).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "meshExists": ["cube~Assets/Studs.fmat", "sphere~Assets/Studs.fmat"],
+   "entity": {"name": "Studded", "material": "Assets/Studs.fmat", "drawnMesh": "cube~Assets/Studs.fmat"}, "probe": {"assetsStale": false}},
+  {"type": "test.view", "position": [-20, 11, 5], "target": [-20, 8.5, 0]},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 60, "ms": 500},
+  {"type": "test.capture", "path": "displace_after.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.entity.duplicate", "id": "Studded"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "entity": {"name": "Studded (1)", "material": "Assets/Studs.fmat", "drawnMesh": "cube~Assets/Studs.fmat"}},
+  {"type": "test.exit"}
+]

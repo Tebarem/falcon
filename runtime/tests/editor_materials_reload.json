@@ -1,0 +1,12 @@
+// editor_materials' sphere and its material, opened again: the material (not cooked: it has
+// no textures) takes a spare slot and draws it red again (material_reload.png, by eye).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "entity": {"name": "Sphere 1", "bottom": 7.5, "material": "Assets/New Material.fmat"}},
+  {"type": "test.view", "position": [-20, 14, 6], "target": [-20, 7.5, 0]},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 30, "ms": 300},
+  {"type": "test.capture", "path": "material_reload.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

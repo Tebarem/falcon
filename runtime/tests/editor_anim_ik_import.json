@@ -1,0 +1,75 @@
+// The IK test rig (runtime/tests/data/legs.gltf: legs, a spine, a head and a left arm; clip Idle)
+// imported into Assets and cooked.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.assets.importFiles",
+  "paths": [
+   "data/legs.gltf"
+  ],
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 1500
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-as=\"reload\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "fileExists": [
+   "Assets/legs.gltf"
+  ],
+  "probe": {
+   "assetsStale": true
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-as=\"reload\"]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.wait",
+  "frames": 6000,
+  "cook": true
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "cookStages": [
+   "done"
+  ],
+  "sceneOpen": "Scenes/Main.fpak",
+  "sceneSwitches": 1,
+  "fileExists": [
+   "Scenes/Main.fpak",
+   "Scenes/Main.fvt"
+  ],
+  "fileMissing": [
+   "Cache/Cook/Scenes_Main.fpak",
+   "Cache/Cook/Scenes_Main.fvt"
+  ]
+ },
+ {
+  "type": "test.exit"
+ }
+]

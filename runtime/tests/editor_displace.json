@@ -1,0 +1,34 @@
+// Height displacement (the project the material and prefab tests left): a grey height map
+// imported, a material asset with it and a displacement amount, put on a cube. Until a cook the
+// cube draws the plain mesh (and the panel offers Reload: the scene now needs a displaced copy).
+// Saved for editor_displace_reload, which opens the project again (cooked first).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.assets.importFiles", "paths": ["samples/height_studs.png"], "folder": "Assets"},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.expect", "fileExists": "Assets/height_studs.png"},
+  {"type": "editor.assets.newMaterial", "folder": "Assets", "name": "Studs"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.key", "key": "Escape"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "fileExists": "Assets/Studs.fmat"},
+  {"type": "editor.material.set", "path": "Assets/Studs.fmat", "values": {"baseColor": [0.75, 0.62, 0.5, 1], "roughness": 0.6,
+   "displacement": 0.12, "heightCenter": 0, "displacementDetail": 0.02, "textures": {"height": "Assets/height_studs.png"}}},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Studded"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.transform.set", "id": "Studded", "position": [-20, 8.5, 0], "rotation": [0, 30, 0], "scale": [1.5, 1.5, 1.5]},
+  {"type": "editor.entity.material", "id": "Studded", "material": "Assets/Studs.fmat"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "entity": {"name": "Studded", "material": "Assets/Studs.fmat", "drawnMesh": "cube"}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 10, "ms": 1500},
+  {"type": "test.probe"},
+  {"type": "test.expect", "probe": {"assetsStale": true}},
+  {"type": "test.view", "position": [-20, 11, 5], "target": [-20, 8.5, 0]},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 60, "ms": 500},
+  {"type": "test.capture", "path": "displace_before.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,33 @@
+// Layers and bone masks in the Animator (editor_anim_events's project): a mask of the bar's Tip
+// bone, a Layers node made the graph's result (the state machine its base, the Bend clip a layer
+// over it masked to the tip; the root no longer a state machine). Compiles clean; the mask's bones
+// come from the skeleton (the bar's three: the armature root, Root, Tip).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.anim.open", "path": "Assets/skinned.fgraph"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "editor.anim.do", "op": "mask", "name": "TipOnly", "bones": {"Tip": 1}},
+  {"type": "editor.anim.do", "op": "view", "scope": "root"},
+  {"type": "editor.anim.do", "op": "add", "nodeType": "layers", "as": "lay", "at": [-100, 120]},
+  {"type": "editor.anim.do", "op": "add", "nodeType": "clip", "as": "over", "at": [-340, 160]},
+  {"type": "editor.anim.do", "op": "set", "node": "over", "path": "clip", "value": "Bend"},
+  {"type": "editor.anim.do", "op": "add", "nodeType": "boneMask", "as": "tip", "at": [-340, 280]},
+  {"type": "editor.anim.do", "op": "set", "node": "tip", "path": "mask", "value": "TipOnly"},
+  {"type": "editor.anim.do", "op": "link", "from": "machine", "to": "lay", "input": "base"},
+  {"type": "editor.anim.do", "op": "link", "from": "over", "to": "lay", "input": "layers.0.pose"},
+  {"type": "editor.anim.do", "op": "link", "from": "tip", "to": "lay", "input": "layers.0.mask"},
+  {"type": "editor.anim.do", "op": "link", "from": "lay", "to": "#result"},
+  {"type": "editor.anim.do", "op": "select", "keys": ["mask:TipOnly"]},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 0, "animatorMasks": 1, "animatorBones": 3, "animatorState": ""}},
+  {"type": "test.capture", "path": "anim_masks.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.anim.do", "op": "set", "node": "tip", "path": "mask", "value": "Nope"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 1}},
+  {"type": "test.exit"}
+]

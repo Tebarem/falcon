@@ -1,0 +1,33 @@
+// An older scene's Animator (written by editor_anim_ik_reload: "footIk", "footReach" and "targets"
+// {look, leftHand} on a graph without IK) migrated as it is read: its own IK (feet, a look at
+// $LookTarget, a reach of the left hand to $LeftHandTarget) and those bindings, which work as they
+// did (the head looking at "Look Target", the left hand reaching "Hand Target", foot IK on). The
+// Inspector shows its entity slots and the older settings; Move IK to the Graph writes them into
+// Assets/LegsPlain.fgraph (its "ik" and entity parameters LookTarget and LeftHandTarget), the
+// Animator keeping its bindings and losing its own IK, the rig posed the same; saved and reopened
+// (editor_anim_ik_legacy_reload). The button is probed; the test then sends what it sends
+// (editor.animator.set moveIk): its click, delivered through Chromium, was lost now and then.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "anim": {"entity": "legs", "graph": "Assets/LegsPlain.fgraph", "ownIk": true, "footIk": true, "bound": ["LookTarget", "LeftHandTarget"], "entities": {"LookTarget": "Look Target", "LeftHandTarget": "Hand Target"}, "looking": {"bone": "head", "at": [3.5, 2.2, 2.5], "within": 2}, "bonesAt": [{"bone": "hand_l", "at": [5.35, 1.2, 0.35], "within": 0.01}]}},
+  {"type": "editor.select", "id": "legs"},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.probe", "rects": ["[data-own-ik]", "[data-entity-param=\"LookTarget\"]", "[data-entity-param=\"LeftHandTarget\"]", "[data-own-ik-action] .tbtn"]},
+  {"type": "test.wait", "frames": 2, "ms": 100},
+  {"type": "test.capture", "path": "anim_ik_legacy.png"},
+  {"type": "editor.animator.set", "id": "legs", "moveIk": true},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.expect", "fileContains": {"Assets/LegsPlain.fgraph": "\"LeftHandTarget\""}, "anim": {"entity": "legs", "ownIk": false, "footIk": true, "bound": ["LookTarget", "LeftHandTarget"], "looking": {"bone": "head", "at": [3.5, 2.2, 2.5], "within": 2}, "bonesAt": [{"bone": "hand_l", "at": [5.35, 1.2, 0.35], "within": 0.01}]}},
+  {"type": "test.probe", "rects": ["[data-entity-param=\"LookTarget\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 100},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "anim": {"entity": "legs", "ownIk": true}},
+  {"type": "editor.redo"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "anim": {"entity": "legs", "ownIk": false, "footIk": true}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.exit"}
+]

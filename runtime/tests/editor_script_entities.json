@@ -1,0 +1,347 @@
+// Editor test (Script Test project): script API v18. A test game finds the scene's entities by name and
+// checks names, the hierarchy, renaming, Destroy, Enabled (a parent takes its child), tint, shadows,
+// material and visibility, transforms (position, local position, rotation), a cached Ref and a spawned
+// mesh, on the HUD; the rows as drawn are checked during Play, and Stop puts every one back.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "fileExists": "Assets/New Material.fmat"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_entities (API v18): what a game does to the scene's entities, checked on the HUD\n// (each check \"ok\" or \"BAD\"); the test then checks the rows as drawn and that Stop puts it all back.\npublic sealed class EntitiesGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<EntitiesGame>();\n\n    private string _report = \"\";\n    private Entity _box, _child, _spawned;\n\n    private static string Ok(bool ok) => ok ? \"ok\" : \"BAD\";\n\n    public override void OnStart()\n    {\n        _box = Entity.Find(\"Box\");\n        _child = Entity.Find(\"Child\");\n        Entity gone = Entity.Find(\"Gone\"), tinted = Entity.Find(\"Tinted\"), hidden = Entity.Find(\"Hidden\");\n\n        Span<Entity> children = stackalloc Entity[4];\n        int n = _box.Children(children);\n        bool names = _box.Name == \"Box\" && _child.Name == \"Child\";\n        bool parent = _child.Parent == _box && n == 1 && children[0] == _child;\n\n        tinted.Name = \"Painted\";\n        bool renamed = Entity.Find(\"Painted\") == tinted && tinted.Name == \"Painted\" && !Entity.Find(\"Tinted\").IsValid;\n\n        gone.Destroy();\n        bool destroyed = !gone.Enabled;\n\n        _box.Enabled = false;\n        bool off = !_box.Enabled && !_child.Enabled;\n        _box.Enabled = true;\n        bool on = _box.Enabled && _child.Enabled;\n\n        bool tint = Renderer.SetTint(tinted, new Vector4(1, 0, 0, 1)) && Renderer.Tint(tinted).X == 1f && Renderer.Tint(tinted).Y == 0f;\n        bool shadows = Renderer.SetCastShadows(tinted, false) && !Renderer.CastsShadows(tinted);\n        bool material = Renderer.SetMaterial(tinted, \"Assets/New Material.fmat\");\n        bool visible = Renderer.SetVisible(hidden, false) && !Renderer.IsVisible(hidden) && hidden.Enabled;\n\n        _box.Position = new Vector3(3, 1, 0);\n        _child.LocalPosition = new Vector3(0, 2, 0);\n        _box.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2);\n        Quaternion back = _box.Rotation;\n        bool rotation = MathF.Abs(MathF.Abs(Quaternion.Dot(back, Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2))) - 1f) < 1e-4f\n                        && Vector3.Distance(_box.Forward, -Vector3.UnitX) < 1e-4f;\n        _box.Rotation = Quaternion.Identity;\n\n        var reference = new Ref<WorldTransform>(_box);\n        bool refOk = reference.Has && Vector3.Distance(reference.Get().Position, new Vector3(3, 1, 0)) < 1e-5f;\n\n        _spawned = Scene.SpawnMesh(\"cube\", new Vector3(5, 1, 0));\n        bool spawned = _spawned.IsValid && Renderer.IsVisible(_spawned);\n        Renderer.SetTint(_spawned, new Vector4(0, 1, 0, 1));\n\n        _report = $\"names {Ok(names)} parent {Ok(parent)} renamed {Ok(renamed)} destroyed {Ok(destroyed)} enabled {Ok(off && on)} \" +\n                  $\"tint {Ok(tint)} shadows {Ok(shadows)} material {Ok(material)} visible {Ok(visible)} rotation {Ok(rotation)} \" +\n                  $\"ref {Ok(refOk)} spawned {Ok(spawned)}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        // A frame later the child has followed its parent (Scene::propagate).\n        bool follows = Vector3.Distance(_child.Position, new Vector3(3, 3, 0)) < 1e-4f;\n        Hud.Show($\"{_report} follows {Ok(follows)} spawnedAlive {Ok(_spawned.IsAlive)}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Box"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Box",
+  "position": [
+   0,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "sphere",
+  "name": "Child",
+  "parent": "Box"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Child",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Gone"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Gone",
+  "position": [
+   -3,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Tinted"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Tinted",
+  "position": [
+   -5,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Hidden"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Hidden",
+  "position": [
+   -7,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "playing": false
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "names ok parent ok renamed ok destroyed ok enabled ok tint ok shadows ok material ok visible ok rotation ok ref ok spawned ok follows ok spawnedAlive ok"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Gone",
+   "alive": false,
+   "rowHidden": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Tinted",
+   "rowTint": [
+    255,
+    0,
+    0,
+    255
+   ],
+   "rowShadow": false,
+   "rowMaterial": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Hidden",
+   "alive": true,
+   "rowHidden": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Box",
+   "position": [
+    3,
+    1,
+    0
+   ],
+   "rowHidden": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Child",
+   "parent": "Box",
+   "position": [
+    3,
+    3,
+    0
+   ],
+   "rowHidden": false
+  }
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "game": {
+   "running": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Gone",
+   "alive": true,
+   "rowHidden": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Tinted",
+   "rowTint": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "rowShadow": true,
+   "rowMaterial": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Hidden",
+   "rowHidden": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Box",
+   "position": [
+    0,
+    1,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Child",
+   "parent": "Box",
+   "position": [
+    0,
+    1,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

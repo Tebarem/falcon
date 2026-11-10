@@ -1,0 +1,8 @@
+// The animation tests' project (editor_anim_*): a new empty one.
+[
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "launcher.create", "name": "Anim Test", "location": "projects"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.expect", "projectExists": "projects/Anim Test", "error": false},
+  {"type": "test.exit"}
+]

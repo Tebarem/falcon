@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Cobblestone Floor 04",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.5,
+    1.5
+  ],
+  "parallax": 0.04,
+  "textures": {
+    "baseColor": "@falcon/Ground/Textures/Cobblestone Floor 04/color.jpg",
+    "normal": "@falcon/Ground/Textures/Cobblestone Floor 04/normal.jpg",
+    "metallicRoughness": "@falcon/Ground/Textures/Cobblestone Floor 04/arm.jpg",
+    "occlusion": "@falcon/Ground/Textures/Cobblestone Floor 04/arm.jpg",
+    "height": "@falcon/Ground/Textures/Cobblestone Floor 04/height.jpg"
+  },
+  "acoustic": {
+    "preset": "rock"
+  },
+  "surface": {
+    "preset": "rock"
+  }
+}

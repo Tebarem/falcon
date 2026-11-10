@@ -1,0 +1,19 @@
+// Project settings in a short window (1280x600): opened from the File menu, the dialog stays on
+// screen with its buttons, and its body scrolls (it used to run off the bottom of the window).
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.probe", "rects": ["[data-menu=\"file\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": "[data-menu=\"file\"]"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.probe", "rects": [".menu-item[data-value=\"project-settings\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": ".menu-item[data-value=\"project-settings\"]"},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"dialogFits": true, "dialogScrolls": true}},
+  {"type": "test.capture", "path": "project_settings_scroll.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

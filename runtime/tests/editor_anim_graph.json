@@ -1,0 +1,65 @@
+// The Animator's graph editor (editor_anim_preview's project): skinned.fgraph opened (its inline
+// nodes get ids; the preview plays it from the graph's defaults: Straight, the scene's bar from its
+// Animator's values: Bent). A clip with a wrong name made the result: one error, on that node; the preview
+// and the scene's bar keep the last good graph. The name fixed: both swap to the new graph at
+// once. Undo and redo; the stray node deleted; a parameter, a state and a transition added; saved.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.anim.open", "path": "Assets/skinned.fgraph"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorShown": true, "animatorNodes": 5, "animatorLinks": 1, "animatorErrors": 0, "animatorDirty": false,
+                                    "animatorView": "root"},
+                          "anim": {"entity": "skinned", "state": "Bent"}},
+
+  {"type": "editor.anim.do", "op": "add", "nodeType": "clip", "as": "bad", "at": [-260, 160]},
+  {"type": "editor.anim.do", "op": "set", "node": "bad", "path": "clip", "value": "Nope"},
+  {"type": "editor.anim.do", "op": "link", "from": "bad", "to": "#result"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorNodes": 6, "animatorErrors": 1, "animatorDirty": true, "animatorState": "Straight"},
+                          "anim": {"entity": "skinned", "state": "Bent"}},
+
+  {"type": "editor.anim.do", "op": "set", "node": "bad", "path": "clip", "value": "Bend"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 0, "animatorState": ""}, "anim": {"entity": "skinned", "state": ""}},
+
+  {"type": "editor.anim.do", "op": "undo"},
+  {"type": "editor.anim.do", "op": "undo"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 0, "animatorState": "Straight", "animatorUndo": 2}, "anim": {"entity": "skinned", "state": "Bent"}},
+  {"type": "editor.anim.do", "op": "redo"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 1}},
+  {"type": "editor.anim.do", "op": "undo"},
+  {"type": "editor.anim.do", "op": "delete", "keys": ["bad"]},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorNodes": 5, "animatorErrors": 0, "animatorState": "Straight"}},
+
+  {"type": "editor.anim.do", "op": "param", "name": "Jump", "paramType": "bool", "default": false},
+  {"type": "editor.anim.do", "op": "state", "machine": "machine", "name": "Jumping", "at": [0, 220]},
+  {"type": "editor.anim.do", "op": "transition", "machine": "machine", "from": "Bent", "to": "Jumping", "when": "$Jump"},
+  {"type": "editor.anim.do", "op": "view", "machine": "machine"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 0, "animatorParams": 3, "animatorView": "machine:machine", "animatorLive>": 0}},
+  {"type": "test.capture", "path": "anim_graph_machine.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.anim.do", "op": "save"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorDirty": false}, "fileExists": "Assets/skinned.fgraph"},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,29 @@
+// Editor test: the network. Project Settings > Network's preset sets the rest and a change makes
+// it Custom (saved with the project); Play with one client (the Play bar's Clients): the editor's
+// game hosts, a client process of the scene joins, the Network tab shows the session; Stop ends it.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.settings.set", "key": "netPreset", "value": "large"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "settings": {"netPreset": "large", "netSendRate": 20, "netMaxPlayers": 1000, "netBandwidth": 256, "netMode": "authoritative"}},
+  {"type": "editor.settings.set", "key": "netSendRate", "value": 25},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "settings": {"netPreset": "custom", "netSendRate": 25, "netMaxPlayers": 1000}},
+
+  {"type": "editor.settings.set", "key": "netPlayClients", "value": 1},
+  {"type": "editor.play"},
+  {"type": "test.wait", "ms": 1000},
+  {"type": "test.probe", "rects": ["[data-tab=\"network\"]"]},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.mouse", "at": "[data-tab=\"network\"]"},
+  {"type": "test.wait", "ms": 12000},
+  {"type": "test.probe"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "probe": {"networkShown": true, "networkRole": "host", "networkMode": "authoritative", "networkPlayers": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "ms": 500},
+  {"type": "editor.settings.set", "key": "netPlayClients", "value": 0},
+  {"type": "editor.settings.set", "key": "netPreset", "value": "competitive"},
+  {"type": "test.wait", "frames": 10, "ms": 1200},
+  {"type": "test.exit"}
+]

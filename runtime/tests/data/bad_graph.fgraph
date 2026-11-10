@@ -1,0 +1,19 @@
+// Graph errors are reported per node, all in one compile (render_anim_graph_errors).
+{
+  "version": 2,
+  "skeleton": 0,
+  "parameters": { "Speed": "float" },
+  "root": "@machine",
+  "nodes": {
+    "machine": {
+      "type": "stateMachine",
+      "default": "Idle",
+      "states": {
+        "Idle": { "pose": "@walk", "transitions": [ { "to": "Nowhere", "when": "@moving" } ] },
+        "Move": { "pose": "@walk", "transitions": [ { "to": "Idle", "when": "@moving" } ] }
+      }
+    },
+    "walk": { "type": "clip", "clip": "Walk" },
+    "moving": { "type": "compare", "input": "$Sped", "op": ">", "value": 0.1 }
+  }
+}

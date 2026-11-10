@@ -1,0 +1,180 @@
+// Surface shaders (R4): Shaders/Toon.slang (a surface and a light function) compiled into the
+// project's resolve; a sphere's material naming it draws in its colour and bands; its params
+// changed from a script while playing, back at Stop; the shader removed, the engine's resolve again.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "sphere",
+  "name": "Ball"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Ball",
+  "position": [
+   0,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Ball",
+  "material": "Assets/New Material.fmat"
+ },
+ {
+  "type": "editor.frame",
+  "id": "Ball"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "surface_plain.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Toon.slang",
+  "text": "// A toon surface (R4): the albedo tinted toward the material's params.rgb by params.a in the surface,\n// the sun's light in three bands in the light.\nimport falcon_surface;\n\nvoid surface(SurfaceIn i, inout SurfaceOut o)\n{\n    o.albedo = lerp(o.albedo, i.params.rgb, i.params.a);\n    o.roughness = 1.0;\n}\n\nvoid light(LightIn l, inout float3 color)\n{\n    const float bands = 3.0;\n    color = l.albedo * l.sunColor * (floor(saturate(l.sunDot) * l.shadow * bands + 0.5) / bands) + l.albedo * l.ambient;\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Assets/Toon.fmat",
+  "text": "{\n  \"format\": 1,\n  \"name\": \"Toon\",\n  \"baseColor\": [\n    1,\n    1,\n    1,\n    1\n  ],\n  \"metallic\": 0,\n  \"roughness\": 0.5,\n  \"emissive\": [\n    0,\n    0,\n    0\n  ],\n  \"emissiveStrength\": 1,\n  \"normalScale\": 1,\n  \"occlusionStrength\": 1,\n  \"alpha\": \"opaque\",\n  \"alphaCutoff\": 0.5,\n  \"doubleSided\": false,\n  \"shader\": \"Shaders/Toon.slang\",\n  \"params\": [\n    0.1,\n    0.8,\n    0.2,\n    1.0\n  ],\n  \"textures\": {}\n}"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Toon.slang",
+   "compiled": true
+  },
+  "fileExists": "Cache/Shaders/resolve2.fshader"
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Ball",
+  "material": "Assets/Toon.fmat"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "surface_toon.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_surface_shader (R4): the toon material's params changed while playing (green to orange).\npublic sealed class SurfaceGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<SurfaceGame>();\n\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        Material toon = Material.Find(\"Assets/Toon.fmat\");\n        Vector4 was = toon.Params;\n        toon.Params = new Vector4(1f, 0.4f, 0.05f, 1f);\n        _report = $\"surface found {toon.IsValid} was {was.Y:0.0} now {toon.Params.X:0.0}\";\n    }\n\n    public override void OnUpdate(float dt) => Hud.Show(_report);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "surface found True was 0.8 now 1.0"
+ },
+ {
+  "type": "test.capture",
+  "path": "surface_playing.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "surface_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Toon.slang",
+  "remove": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "fileMissing": "Cache/Shaders/resolve2.fshader"
+ },
+ {
+  "type": "test.exit"
+ }
+]

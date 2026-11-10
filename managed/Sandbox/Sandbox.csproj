@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Sample game. JIT (development, hot reload): dotnet build -> Sandbox.dll + Falcon.Engine.dll.
+       Shipping: dotnet publish -r win-x64 -p:PublishAot=true -> one native Sandbox.dll that
+       exports falcon_script_init (game + Falcon.Engine compiled ahead of time). -->
+  <PropertyGroup>
+    <RootNamespace>Sandbox</RootNamespace>
+    <!-- Hosted by the engine: emit a runtimeconfig.json and copy references next to the game. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <NativeLib>Shared</NativeLib>
+    <!-- Adds the falcon_script_init export (Directory.Build.targets). -->
+    <FalconGame>true</FalconGame>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Falcon.Engine\Falcon.Engine.csproj" />
+  </ItemGroup>
+</Project>

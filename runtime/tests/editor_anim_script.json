@@ -1,0 +1,34 @@
+// Script API v9 in a project: Entity.Find names the placed model (its root); Animation.*
+// on the root drives its graph; keys a test holds (test.hold) and the mouse over the game's
+// view (motion, wheel, buttons) reach the game.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace AnimTest;\n\n[Component(\"AnimTest.Seen\")]\npublic struct Seen\n{\n    public float MouseX, Wheel;\n    public uint RightClicks;\n}\n\n// Test game: the placed model found by name; W held sets its graph's Speed and Bent (through the\n// model's root); the mouse's motion, wheel and right clicks over the game's view counted.\npublic sealed class AnimTestGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<AnimTestGame>();\n\n    public override void OnUpdate(float dt)\n    {\n        Entity bar = Entity.Find(\"skinned\");\n        if (!bar.IsValid)\n        {\n            Hud.Show(\"find: none\");\n            return;\n        }\n        Seen s = Ecs.Has<Seen>(bar) ? Ecs.Get<Seen>(bar) : default;\n        s.MouseX += Input.MouseDelta.X;\n        s.Wheel += Input.MouseWheel;\n        if (Input.Pressed(MouseButton.Right))\n            s.RightClicks++;\n        Ecs.Set(bar, s);\n        bool w = Input.IsDown(Key.W);\n        Animation.SetFloat(bar, \"Speed\", w ? 3f : 1f);\n        Animation.SetBool(bar, Animation.Parameter(bar, \"Bent\"), w);\n        Hud.Show($\"find: ok, nobody {Entity.Find(\"nobody\").Id}, W {(w ? \"down\" : \"up\")}, mouse {s.MouseX:0}, wheel {s.Wheel:0}, right {s.RightClicks}\");\n    }\n}\n"},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "playing": true, "hud": "find: ok, nobody 0, W up"},
+  {"type": "test.expect", "anim": {"entity": "skinned", "params": {"Speed": 1, "Bent": false}}},
+  {"type": "test.hold", "key": "W"},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "W down", "anim": {"entity": "skinned", "params": {"Speed": 3, "Bent": true}}},
+  {"type": "test.hold", "key": "W", "down": false},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "W up", "anim": {"entity": "skinned", "params": {"Speed": 1, "Bent": false}}},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.6, "fy": 0.5, "action": "move"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.4, "fy": 0.5, "action": "move"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.4, "fy": 0.5, "button": "right"},
+  {"type": "test.wheel", "at": "#viewport", "y": 1},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.wheel", "at": "#viewport", "y": 1},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "mouse -"},
+  {"type": "test.expect", "hud": "wheel 2, right 1"},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "playing": false, "hud": ""},
+  {"type": "test.exit"}
+]

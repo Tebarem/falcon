@@ -1,0 +1,64 @@
+// S8: File > Build Game. The project's game published with NativeAOT (no editor code), and
+// Build/<name>/: the engine as <name>.exe without debug files, script builds or steamcmd, and
+// Game/: the project without its sources. A Steam game (App ID 480 for the test): SteamPipe's
+// scripts beside it. game_build_run then starts it alone (Steam not restarting it).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "../../game_started.txt",
+  "remove": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.IO;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// File > Build Game's test: the game, published with NativeAOT and started on its own, writes\n// where it runs (the test's folder) that it ran, then quits.\npublic sealed class BuiltGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<BuiltGame>();\n\n    private int _frames;\n\n    public override void OnUpdate(float dt)\n    {\n        if (++_frames != 30)\n            return;\n        File.WriteAllText(\"game_started.txt\", $\"started, aot {!RuntimeFeature.IsDynamicCodeSupported}, scene {Entity.Find(\"nobody\").IsValid}\");\n        Game.Quit();\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {"type": "editor.settings.set", "key": "steamAppId", "value": 480},
+ {"type": "editor.settings.set", "key": "steamRestart", "value": false},
+ {"type": "editor.settings.set", "key": "steamBranch", "value": "beta"},
+ {"type": "test.wait", "frames": 10, "ms": 1200},
+ {
+  "type": "editor.game.build"
+ },
+ {
+  "type": "test.wait",
+  "frames": 1000000,
+  "ms": 1000,
+  "gameBuild": true
+ },
+ {
+  "type": "test.expect",
+  "gameBuild": "ok",
+  "fileExists": [
+   "Build/Script Test/Script Test.exe",
+   "Build/Script Test/Game/project.falcon",
+   "Build/Script Test/Game/Cache/Scripts/aot/Game.dll",
+   "Build/Script Test/cef/libcef.dll", "Build/Script Test/Game/Libraries/Made/Assets",
+   "Build/Script Test SteamPipe/app_build_480.vdf", "Build/Script Test SteamPipe/depot_build_481.vdf"
+  ],
+  "fileMissing": [
+   "Build/Script Test/Game/Scripts/Game.cs",
+   "Build/Script Test/falcon.pdb",
+   "Build/Script Test/scripts/jit/Falcon.Engine.dll",
+   "Build/Script Test/Game/Cache/Scripts/bin/Game.dll",
+   "Build/Script Test/Game/Libraries/Waves/Code", "Build/Script Test/Game/Libraries/Toolbox/Editor",
+   "Build/Script Test/steamcmd/steamcmd.exe", "Build/Script Test/content/library"
+  ]
+ },
+ {"type": "editor.settings.set", "key": "steamAppId", "value": 0},
+ {"type": "editor.settings.set", "key": "steamBranch", "value": ""},
+ {"type": "test.wait", "frames": 10, "ms": 1200},
+ {
+  "type": "test.exit"
+ }
+]

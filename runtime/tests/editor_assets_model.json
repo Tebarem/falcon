@@ -1,0 +1,29 @@
+// The project reopened after the import: the scene was cooked again with the model
+// (Assets/DamagedHelmet.glb), the rock placed before is back (a mesh saved by name), nothing is
+// stale. The whole model is placed in the middle of the view: an empty named after it, its node
+// below. Its preview renders in the Assets folder. Saved for editor_assets_model_reload.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "modelLoaded": "Assets/DamagedHelmet.glb", "entity": {"name": "Rock_boulder_a 1", "bottom": 7.5}},
+  {"type": "test.view", "position": [6, 30, 30], "target": [6, 7.5, 0]},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.asset.place", "model": "Assets/DamagedHelmet.glb", "at": {"x": 0.5, "y": 0.5}},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "DamagedHelmet", "children": 1}},
+  {"type": "test.probe", "rects": ["[data-key=\"Assets\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": "[data-key=\"Assets\"]", "clicks": 1},
+  {"type": "test.wait", "ms": 80},
+  {"type": "test.mouse", "at": "[data-key=\"Assets\"]", "clicks": 2},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.wait", "frames": 6000, "previews": true, "ms": 500},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"assetsFolder": "Assets", "assetsStale": false, "assetsPreviews>": 0}},
+  {"type": "test.capture", "path": "assets_model.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.exit"}
+]

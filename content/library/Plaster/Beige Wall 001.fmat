@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Beige Wall 001",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    3.0,
+    3.0
+  ],
+  "parallax": 0.004,
+  "textures": {
+    "baseColor": "@falcon/Plaster/Textures/Beige Wall 001/color.jpg",
+    "normal": "@falcon/Plaster/Textures/Beige Wall 001/normal.jpg",
+    "metallicRoughness": "@falcon/Plaster/Textures/Beige Wall 001/arm.jpg",
+    "occlusion": "@falcon/Plaster/Textures/Beige Wall 001/arm.jpg",
+    "height": "@falcon/Plaster/Textures/Beige Wall 001/height.jpg"
+  },
+  "acoustic": {
+    "preset": "plaster"
+  },
+  "surface": {
+    "preset": "concrete"
+  }
+}

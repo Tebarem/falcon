@@ -1,0 +1,170 @@
+// Cuts off the main thread: a slab of 10000 boxes (a grid array, welded: 40800 triangles) with a big
+// damage hole through it. The hole moved: for the frames its cut takes the slab is drawn as it was
+// (the cut still pending), then with the hole where it went. Undo the same way; the cut deleted:
+// whole at once.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "AsyncCuts"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/AsyncCuts.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Slab"
+ },
+ {
+  "type": "editor.level.modifier",
+  "op": "add",
+  "kind": "array",
+  "mode": "grid"
+ },
+ {
+  "type": "editor.level.modifier",
+  "op": "set",
+  "index": 0,
+  "count": [
+   100,
+   1,
+   100
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Slab",
+   "levelDrawnTriangles>": 40000
+  }
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "damage",
+  "name": "Blast"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Blast",
+  "position": [
+   40,
+   0.5,
+   40
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   50,
+   3,
+   50
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "cutsPending": 0,
+  "freshCuts": 1,
+  "lastCutMs>": 0
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Blast",
+  "position": [
+   55,
+   0.5,
+   55
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   50,
+   3,
+   50
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "cutsPending": 1,
+  "freshCuts": 1
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "cutsPending": 0,
+  "freshCuts": 2,
+  "lastCutMs>": 20
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "cutsPending": 0,
+  "freshCuts": 3
+ },
+ {
+  "type": "editor.entity.delete",
+  "id": "Blast"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "cutsPending": 0,
+  "freshCuts": 3,
+  "entity": {
+   "name": "Slab",
+   "levelDrawnTriangles": 40800
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

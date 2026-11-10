@@ -1,0 +1,396 @@
+// Walls and rooms: the wall tool (two corners, Enter), an L by message with a door in it (drawn cut), made
+// taller and back, converted to a plain mesh (the door a plain cut) and back, a room with a floor and a
+// ceiling, saved and opened again.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Walls"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Walls.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.view",
+  "position": [
+   0,
+   12,
+   10
+  ],
+  "target": [
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "F3"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 200
+ },
+ {
+  "type": "test.type",
+  "text": "create/wall"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true,
+   "hint": "Wall"
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.35,
+  "fy": 0.6,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.35,
+  "fy": 0.6,
+  "action": "click"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.65,
+  "fy": 0.6,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.65,
+  "fy": 0.6,
+  "action": "click"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "wall": true,
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "editor.level.wall.create",
+  "name": "Ell",
+  "points": [
+   [
+    -2,
+    4
+   ],
+   [
+    2,
+    4
+   ],
+   [
+    2,
+    7
+   ]
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "wall": true,
+   "levelTriangles": 20,
+   "levelHeight": 3
+  }
+ },
+ {
+  "type": "editor.level.opening",
+  "distance": 2,
+  "width": 1,
+  "height": 2.1,
+  "name": "Door"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "opening": true,
+   "cut": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "Ell"
+ },
+ {
+  "type": "editor.level.wall",
+  "height": 4
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "levelHeight": 4,
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "levelHeight": 3
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "Ell"
+ },
+ {
+  "type": "editor.level.convert"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "wall": false,
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "opening": false,
+   "cut": true
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "wall": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "opening": true
+  }
+ },
+ {
+  "type": "editor.level.wall.create",
+  "name": "Hall",
+  "points": [
+   [
+    -8,
+    -8
+   ],
+   [
+    -4,
+    -8
+   ],
+   [
+    -4,
+    -4
+   ],
+   [
+    -8,
+    -4
+   ]
+  ],
+  "closed": true,
+  "floor": true,
+  "ceiling": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Hall",
+   "wall": true,
+   "levelTriangles": 56
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_walls.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Walls.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ell",
+   "wall": true,
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "opening": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Hall",
+   "wall": true
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

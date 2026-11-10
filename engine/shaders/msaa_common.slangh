@@ -1,0 +1,87 @@
+// Shared by msaa_edges.slang and msaa_edges_masked.slang (#include'd: it uses their resources, which
+// sit at different slots in the two layouts): the visibility raster's vertex stage, and the
+// colour a multisampled fragment takes from the 1x frame.
+//   expects: Sampler2D<float4> shaded (1x lit colour), Sampler2D<float> depth1x,
+//            Texture2D<uint> visBuffer
+
+import scene_types;
+import skinning;
+
+struct VisUniforms
+{
+    float4x4 viewProj;
+};
+
+struct MsaaUniforms
+{
+    uint2 screen;
+    uint pageTableOffset;  // masked: alpha test
+    float mipBias;
+};
+
+// Vertex stage: as visbuffer.
+[[vk::binding(0, 0)]] ByteAddressBuffer visible : register(t0, space0);
+[[vk::binding(1, 0)]] ByteAddressBuffer scene : register(t1, space0);
+[[vk::binding(2, 0)]] ByteAddressBuffer skin : register(t2, space0);
+[[vk::binding(3, 0)]] ByteAddressBuffer triangleBase : register(t3, space0);  // (cluster_expand)
+[[vk::binding(0, 1)]] ConstantBuffer<VisUniforms> vis : register(b0, space1);
+[[vk::binding(0, 3)]] ConstantBuffer<MsaaUniforms> u : register(b0, space3);
+
+struct VisVertex
+{
+    float4 position;
+    float2 uv;
+    uint id;  // the visibility id less SV_PrimitiveID (visbuffer)
+    uint material;
+};
+
+VisVertex visVertex(uint index)
+{
+    const uint visibleIndex = index >> 7;
+    const uint2 item = visible.Load2(visibleIndex * 8);
+    const InstanceGpu inst = loadInstance(scene, (item.x & 0x7fffffffu));
+    const MeshGpu mesh = loadMesh(scene, inst.mesh);
+    const ClusterGpu cl = loadCluster(scene, item.y);
+    const uint vertex = loadClusterVertex(scene, cl, (index & 127));
+    const DecodedVertex v = loadInstanceVertex(scene, skin, inst, mesh, vertex);
+    VisVertex o;
+    o.position = mul(vis.viewProj, float4(transformPoint(inst, v.position), 1.0));
+    o.uv = v.uv;
+    o.id = (visibleIndex << 7) + 1 - triangleBase.Load(visibleIndex * 4);
+    o.material = instanceMaterial(inst, cl);
+    return o;
+}
+
+int2 clampPixel(int2 p) { return clamp(p, int2(0, 0), int2(u.screen) - 1); }
+float2 centerUv(int2 p) { return (float2(p) + 0.5) / float2(u.screen); }
+float3 colorAt(int2 p) { return shaded.SampleLevel(centerUv(p), 0.0).rgb; }
+uint visAt(int2 p) { return visBuffer[uint2(p)]; }
+bool isSky(int2 p) { return depth1x.SampleLevel(centerUv(p), 0.0) == 0.0; }  // reverse-Z far
+
+// The shaded colour for a fragment of triangle `id` (visibility-buffer encoding) at `pixel`:
+// the nearest pixel whose 1x sample is that triangle, else the one whose 1x depth is closest
+// (the same surface, or the side of the edge it belongs to).
+float3 reconstruct(int2 pixel, uint id, float z)
+{
+    if (visAt(pixel) == id)
+        return colorAt(pixel);
+    int2 best = pixel;
+    float bestDistance = 1e30;
+    for (int y = -1; y <= 1; ++y)
+        for (int x = -1; x <= 1; ++x)
+        {
+            const int2 q = clampPixel(pixel + int2(x, y));
+            if (visAt(q) == id)
+                return colorAt(q);
+            const float d = depth1x.SampleLevel(centerUv(q), 0.0);  // reverse-Z: 0 is the sky
+            const float distance = abs(d - z) / max(max(d, z), 1e-20);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = q;
+            }
+        }
+    return colorAt(best);
+}
+
+uint visibilityId(uint id, uint primitive) { return id + primitive; }

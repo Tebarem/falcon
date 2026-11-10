@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Plywood",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    0.5,
+    0.5
+  ],
+  "parallax": 0.002,
+  "textures": {
+    "baseColor": "@falcon/Wood/Textures/Plywood/color.jpg",
+    "normal": "@falcon/Wood/Textures/Plywood/normal.jpg",
+    "metallicRoughness": "@falcon/Wood/Textures/Plywood/arm.jpg",
+    "occlusion": "@falcon/Wood/Textures/Plywood/arm.jpg",
+    "height": "@falcon/Wood/Textures/Plywood/height.jpg"
+  },
+  "acoustic": {
+    "preset": "wood"
+  },
+  "surface": {
+    "preset": "wood"
+  }
+}

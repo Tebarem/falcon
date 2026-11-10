@@ -1,0 +1,192 @@
+// Editor test (Script Test project): editor code (E2). A library's Editor/ code (built into the editor's
+// build only): a Tools menu item renaming the selection (undone in one step), one making an entity and
+// moving it (Undo.Scope: one step, undone and redone), and an EditorTool hearing the selection, Play and
+// Stop (it writes them to a file the test reads).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Cache/toolbox-events.txt",
+  "text": ""
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Toolbox/library.json",
+  "text": "{\n  \"name\": \"Toolbox\",\n  \"version\": \"1.0.0\",\n  \"description\": \"A test library of editor tools: menu items and an editor tool that hears the editor's events.\",\n  \"author\": \"Falcon tests\",\n  \"dependencies\": []\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Toolbox/Editor/Tools.cs",
+  "text": "using System.IO;\nusing System.Numerics;\nusing System.Text.Json;\nusing Falcon;\nusing Falcon.Editor;\n\nnamespace Toolbox;\n\n// editor_library_api: editor code from a library's Editor/ folder (built into the editor's build only).\npublic static class Tools\n{\n    [EditorMenu(\"Tools/Toolbox/Rename Selection\", Shortcut = \"Ctrl+Alt+R\")]\n    public static void RenameSelection()\n    {\n        using var _ = Undo.Scope(\"Rename selection\");\n        EditorEntity e = Selection.Entity;\n        if (e.IsValid)\n            EditorScene.Rename(e, \"Renamed\");\n    }\n\n    // Two changes, one undo step.\n    [EditorMenu(\"Tools/Toolbox/Make Marker\")]\n    public static void MakeMarker()\n    {\n        using var _ = Undo.Scope(\"Make marker\");\n        EditorEntity m = EditorScene.Create(\"empty\", \"Marker\");\n        EditorScene.SetTransform(m, new Vector3(1, 2, 3), Vector3.Zero, Vector3.One);\n    }\n}\n\n// Hears the editor: what it heard goes to Cache/toolbox-events.txt (the test reads it).\npublic sealed class Watcher : EditorTool\n{\n    private static void Note(string what)\n    {\n        using JsonDocument project = EditorApp.Query(\"project\");\n        string dir = project.RootElement.GetProperty(\"dir\").GetString() ?? \".\";\n        File.AppendAllText(Path.Combine(dir, \"Cache\", \"toolbox-events.txt\"), what + \"\\n\");\n    }\n\n    public override void OnSelectionChanged(EditorEntity selected)\n    {\n        if (selected.IsValid)\n            Note(\"select \" + selected.Name);\n    }\n\n    public override void OnPlay() => Note(\"play \" + (EditorApp.Playing ? \"playing\" : \"not playing\"));\n    public override void OnStop() => Note(\"stop\");\n}\n"
+ },
+ {
+  "type": "editor.libraries.trust",
+  "name": "Toolbox",
+  "trust": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Toolbox",
+   "trusted": true,
+   "error": ""
+  }
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Target"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.tools.run",
+  "menu": "Tools/Toolbox/Rename Selection"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Renamed",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Target",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.tools.run",
+  "menu": "Tools/Toolbox/Make Marker"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Marker",
+   "alive": true,
+   "position": [
+    1,
+    2,
+    3
+   ]
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Marker",
+   "alive": false
+  }
+ },
+ {
+  "type": "editor.redo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Marker",
+   "alive": true,
+   "position": [
+    1,
+    2,
+    3
+   ]
+  }
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/toolbox-events.txt": "select Target"
+  }
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/toolbox-events.txt": "play playing"
+  }
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/toolbox-events.txt": "stop"
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

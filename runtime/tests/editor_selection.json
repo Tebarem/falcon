@@ -1,0 +1,486 @@
+// Selection: several entities (primary last; add, toggle), Delete on all of them and one undo; a box;
+// two moved by the gizmo together; a level mesh's faces picked, raised by the gizmo and undone; a
+// box of faces.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Select"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Select.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "move"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "A"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "B"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "C"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "A",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "B",
+  "position": [
+   50,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "C",
+  "position": [
+   -50,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.select",
+  "ids": [
+   "A",
+   "B"
+  ]
+ },
+ {
+  "type": "test.expect",
+  "selection": [
+   "A",
+   "B"
+  ]
+ },
+ {
+  "type": "editor.select",
+  "id": "C",
+  "mode": "add"
+ },
+ {
+  "type": "editor.select",
+  "id": "A",
+  "mode": "toggle"
+ },
+ {
+  "type": "test.expect",
+  "selection": [
+   "B",
+   "C"
+  ]
+ },
+ {
+  "type": "editor.entity.delete"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "B",
+   "alive": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "C",
+   "alive": false
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "B",
+   "alive": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "C",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "A"
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1200
+ },
+ {
+  "type": "editor.select",
+  "id": 0
+ },
+ {
+  "type": "test.expect",
+  "selection": []
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.08,
+  "fy": 0.06,
+  "action": "down"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.98,
+  "fy": 0.96,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "selection": [
+   "A"
+  ]
+ },
+ {
+  "type": "editor.select",
+  "ids": [
+   "B",
+   "A"
+  ]
+ },
+ {
+  "type": "editor.tool.set",
+  "tool": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "action": "down"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dx": 40,
+  "dy": 10,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dx": 80,
+  "dy": 20,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dx": 80,
+  "dy": 20,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "movedFrom": [
+    0,
+    0,
+    0
+   ],
+   "atLeast": 0.1
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "B",
+   "relative": {
+    "to": "A",
+    "position": [
+     50,
+     0,
+     0
+    ],
+    "within": 0.01
+   }
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "position": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "B",
+   "position": [
+    50,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "A"
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "face"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dy": -55,
+  "action": "down"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dy": -90,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dy": -140,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "@gizmo",
+  "dy": -140,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelHeight>": 1.05,
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.08,
+  "fy": 0.06,
+  "action": "down"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5,
+  "action": "move"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.98,
+  "fy": 0.96,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "face",
+   "count": 6
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "select_faces.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.capture",
+  "path": "select_faces_window.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "object"
+ },
+ {
+  "type": "test.exit"
+ }
+]

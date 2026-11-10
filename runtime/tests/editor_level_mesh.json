@@ -1,0 +1,270 @@
+// Level meshes (level API): created in the editor (Create > Level Mesh), picked to the face, changed
+// by editor code (an undo step each; undo, redo), another made by it; saved, the scene opened
+// again; changed by the game while playing and put back at Stop.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Editor/LevelTools.cs",
+  "text": "using System.Numerics;\nusing Falcon;\nusing Falcon.Editor;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_mesh: editor code changing level meshes (each change an undo step).\npublic static class LevelTools\n{\n    // The selected level mesh's top face (facing +Y) raised 1 m: its sides stretch with it.\n    [EditorMenu(\"Tools/Level/Raise Top\")]\n    public static void RaiseTop()\n    {\n        EditorEntity e = Selection.Entity;\n        PolyMesh? m = e.IsValid ? LevelMeshes.Get(e.Entity) : null;\n        if (m == null)\n            return;\n        for (int f = 0; f < m.Faces.Count; ++f)\n            if (Vector3.Dot(m.FaceNormal(f), Vector3.UnitY) > 0.9f)\n                for (int c = 0; c < m.Faces[f].Count; ++c)\n                {\n                    int v = m.Corner(f, c);\n                    m.Positions[v] += Vector3.UnitY;\n                }\n        LevelMeshes.Set(e.Entity, m);\n    }\n\n    // A new L-shaped floor (one concave 6-corner face) beside it, named Floor.\n    [EditorMenu(\"Tools/Level/Make Floor\")]\n    public static void MakeFloor()\n    {\n        using var _ = Undo.Scope(\"Make floor\");\n        var m = new PolyMesh();\n        foreach (var (x, z) in new[] { (0f, 0f), (0f, 2f), (1f, 2f), (1f, 1f), (2f, 1f), (2f, 0f) })\n            m.Positions.Add(new Vector3(x, 0, z));\n        m.AddFace(stackalloc int[] { 0, 1, 2, 3, 4, 5 });\n        Entity floor = LevelMeshes.Create(m, new Vector3(3, 0, 0));\n        EditorScene.Rename(EditorEntity.Of(floor), \"Floor\");\n    }\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_mesh: the game reads the Block's mesh and makes it a 3 m box while playing (Stop\n// puts the editor's back).\npublic sealed class LevelMeshGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<LevelMeshGame>();\n\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        Entity block = Entity.Find(\"Block\");\n        PolyMesh? m = LevelMeshes.Get(block);\n        bool set = LevelMeshes.Set(block, PolyMesh.Box(new Vector3(3, 3, 3)));\n        Entity made = LevelMeshes.Create(PolyMesh.Box(Vector3.One), new Vector3(0, 5, 0));\n        _report = $\"level got {m?.TriangleCount ?? -1} set {(set ? \"ok\" : \"BAD\")} made {(made.Id != 0 ? \"ok\" : \"BAD\")}\";\n    }\n\n    public override void OnUpdate(float dt) => Hud.Show(_report);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.newScene",
+  "name": "LevelMesh"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/LevelMesh.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Block"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "alive": true,
+   "levelTriangles": 12,
+   "levelHeight": 1
+  },
+  "live": {
+   "meshes": 1,
+   "triangles": 12
+  }
+ },
+ {
+  "type": "test.pick",
+  "x": 0.5,
+  "y": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "pick": {
+   "face>=": 0,
+   "selected": "Block"
+  }
+ },
+ {
+  "type": "editor.tools.run",
+  "menu": "Tools/Level/Raise Top"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "levelTriangles": 12,
+   "levelHeight": 2
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "editor.redo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "levelHeight": 2
+  }
+ },
+ {
+  "type": "editor.tools.run",
+  "menu": "Tools/Level/Make Floor"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Floor",
+   "alive": true,
+   "levelTriangles": 4
+  },
+  "live": {
+   "meshes": 2,
+   "triangles": 16
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Level Mesh 2",
+   "alive": false
+  }
+ },
+ {
+  "type": "editor.redo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/LevelMesh.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "alive": true,
+   "levelTriangles": 12,
+   "levelHeight": 2
+  },
+  "live": {
+   "meshes": 2,
+   "triangles": 16
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Floor",
+   "alive": true,
+   "levelTriangles": 4
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_mesh_saved.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "level got 12 set ok made ok",
+  "entity": {
+   "name": "Block",
+   "levelHeight": 3
+  },
+  "live": {
+   "meshes": 3
+  }
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "levelHeight": 2
+  },
+  "live": {
+   "meshes": 2,
+   "triangles": 16
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

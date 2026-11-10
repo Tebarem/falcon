@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Coast Sand 01",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    15.0,
+    15.0
+  ],
+  "parallax": 0.008,
+  "textures": {
+    "baseColor": "@falcon/Ground/Textures/Coast Sand 01/color.jpg",
+    "normal": "@falcon/Ground/Textures/Coast Sand 01/normal.jpg",
+    "metallicRoughness": "@falcon/Ground/Textures/Coast Sand 01/arm.jpg",
+    "occlusion": "@falcon/Ground/Textures/Coast Sand 01/arm.jpg",
+    "height": "@falcon/Ground/Textures/Coast Sand 01/height.jpg"
+  },
+  "acoustic": {
+    "preset": "sand"
+  },
+  "surface": {
+    "preset": "sand"
+  }
+}

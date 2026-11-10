@@ -1,0 +1,320 @@
+// Vertex functions (V1): Shaders/Wave.slang lifts a sphere by params.x and waves it by params.y.
+// Still (vertex_still), lifted 1.5 m (vertex_lifted; picked where it is now), waving at two
+// moments (vertex_wave_a / _b differ), and lifted but past its vertexDistance (vertex_far: as still).
+// Both of those wait for the GI's probes to settle (the sphere and floor were just made).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "Wave"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "Ground"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Wave.slang",
+  "text": "// A vertex function (V1): the surface lifted by params.x, and waving by params.y (along x, in time).\nimport falcon_surface;\n\nvoid surface(SurfaceIn i, inout SurfaceOut o) {}\n\nvoid vertex(VertexIn i, inout VertexOut o)\n{\n    o.offset = float3(0.0, i.params.x + sin(i.time * 3.0 + i.world.x * 2.0) * i.params.y, 0.0);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Wave.slang",
+   "compiled": true
+  },
+  "fileExists": "Cache/Shaders/deform.fshader"
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Wave.fmat",
+  "values": {
+   "baseColor": [
+    0.9,
+    0.45,
+    0.1,
+    1
+   ],
+   "roughness": 0.6,
+   "shader": "Shaders/Wave.slang",
+   "params": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "vertexBound": 2
+  }
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Ground.fmat",
+  "values": {
+   "baseColor": [
+    0.3,
+    0.3,
+    0.3,
+    1
+   ],
+   "roughness": 0.9
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "sphere",
+  "name": "Blob"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Blob",
+  "position": [
+   0,
+   30,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Blob",
+  "material": "Assets/Wave.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Floor"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   28.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   10,
+   0.2,
+   10
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Floor",
+  "material": "Assets/Ground.fmat"
+ },
+ {
+  "type": "editor.select",
+  "id": 0
+ },
+ {
+  "type": "test.view",
+  "position": [
+   0,
+   32,
+   9
+  ],
+  "target": [
+   0,
+   30,
+   0
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1200
+ },
+ {
+  "type": "test.wait",
+  "frames": 1500,
+  "gi": true
+ },
+ {
+  "type": "test.capture",
+  "path": "vertex_still.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Wave.fmat",
+  "values": {
+   "params": [
+    1.5,
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.capture",
+  "path": "vertex_lifted.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.pick",
+  "x": 0.5,
+  "y": 0.3
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "selectedName": "Blob"
+ },
+ {
+  "type": "editor.select",
+  "id": 0
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Wave.fmat",
+  "values": {
+   "params": [
+    0,
+    0.5,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.capture",
+  "path": "vertex_wave_a.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 400
+ },
+ {
+  "type": "test.capture",
+  "path": "vertex_wave_b.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Wave.fmat",
+  "values": {
+   "params": [
+    1.5,
+    0,
+    0,
+    0
+   ],
+   "vertexDistance": 0.5
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.wait",
+  "frames": 1500,
+  "gi": true
+ },
+ {
+  "type": "test.capture",
+  "path": "vertex_far.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

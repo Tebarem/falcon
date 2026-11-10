@@ -1,0 +1,86 @@
+// Editor test (Script Test project): render settings and debug drawing (API v24). Bloom set by name (and
+// put back at Stop: the bloom expectation after Stop is the editor's own), an unknown setting NaN, a
+// clamped one; a box of debug lines each frame and a line that lasts 5 s, gone at Stop.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_render (API v24): render settings by name (bloom set, an unknown one NaN), and debug\n// lines: a box (12 lines) every frame, a line for 5 s.\npublic sealed class RenderGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<RenderGame>();\n\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        float was = Render.Bloom;\n        Render.Bloom = 0.5f;\n        bool bloom = MathF.Abs(Render.Bloom - 0.5f) < 1e-5f && MathF.Abs(was - 0.5f) > 1e-5f;\n        bool unknown = float.IsNaN(Render.Get(\"noSuchSetting\"));\n        bool clamped = Render.Set(\"renderScale\", 5f) == 1f;\n        Falcon.Debug.Line(Vector3.Zero, Vector3.UnitY * 3f, Falcon.Debug.Red, 5f);\n        _report = $\"bloom {(bloom ? \"ok\" : \"BAD\")} unknown {(unknown ? \"ok\" : \"BAD\")} clamped {(clamped ? \"ok\" : \"BAD\")}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        Falcon.Debug.Box(new Vector3(0, 1, 0), Vector3.One, Falcon.Debug.Green);\n        Hud.Show(_report);\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "bloom ok unknown ok clamped ok",
+  "bloom": 0.5,
+  "debugLines": {
+   "atLeast": 13
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "debugLines": {
+   "atLeast": 13,
+   "atMost": 13
+  }
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "debugLines": {
+   "atMost": 0
+  },
+  "bloom": 0.12
+ },
+ {
+  "type": "test.exit"
+ }
+]

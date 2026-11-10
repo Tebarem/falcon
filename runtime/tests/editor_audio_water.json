@@ -1,0 +1,47 @@
+// Editor test (the project fixture, after editor_audio): water sounds. A pool 150 m up (above any
+// terrain an earlier test saved): its Sound fields are a material's like any other (a splash
+// sound set as an override, then reset; the splash volume raised). A crate and a ball dropped
+// into it splash and slosh, heard from editor_audio's listener (Ears) beside it; Ears under the
+// surface, the world is muffled. Stop silences it all.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.view", "position": [-60, 153, -50], "target": [-60, 150, -60]},
+  {"type": "editor.entity.create", "kind": "water", "primitive": "pool", "name": "AudioPool"},
+  {"type": "editor.transform.set", "id": "AudioPool", "position": [-60, 150, -60], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.water.set", "id": "AudioPool", "width": 12, "length": 6, "depth": 2},
+  {"type": "test.expect", "water": {"name": "AudioPool", "field": {"splashSound": "", "sloshVolume": 1}}},
+  {"type": "editor.water.set", "id": "AudioPool", "field": "splashSound", "value": "Assets/Beep.fsound"},
+  {"type": "test.expect", "water": {"name": "AudioPool", "field": {"splashSound": "Assets/Beep.fsound"}}},
+  {"type": "editor.water.set", "id": "AudioPool", "field": "splashSound"},
+  {"type": "editor.water.set", "id": "AudioPool", "field": "splashVolume", "value": 1.5},
+  {"type": "test.expect", "water": {"name": "AudioPool", "field": {"splashSound": "", "splashVolume": 1.5}}},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Dropper"},
+  {"type": "editor.transform.set", "id": "Dropper", "position": [-62, 154, -60], "rotation": [0, 20, 10], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Dropper", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Dropper", "component": "BoxCollider"},
+  {"type": "editor.body.set", "id": "Dropper", "mass": 100},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Bob"},
+  {"type": "editor.transform.set", "id": "Bob", "position": [-58, 153, -60], "rotation": [0, 0, 0], "scale": [0.6, 0.6, 0.6]},
+  {"type": "editor.component.add", "id": "Bob", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Bob", "component": "SphereCollider"},
+
+  {"type": "editor.transform.set", "id": "Ears", "position": [-60, 152, -55], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 150, "ms": 2500},
+  {"type": "test.expect", "playing": true, "audio": {"splashesAbove": 1, "underwater": false}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": false, "audio": {"voices": 0, "underwater": false}},
+
+  {"type": "editor.transform.set", "id": "Ears", "position": [-60, 149.3, -59], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 60, "ms": 1000},
+  {"type": "test.expect", "playing": true, "audio": {"underwater": true}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": false, "audio": {"underwater": false}},
+  {"type": "test.exit"}
+]

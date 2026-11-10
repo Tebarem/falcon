@@ -1,0 +1,281 @@
+// Editor test (Script Test project): libraries (E1). A library copied into Libraries/ by hand is found but not
+// trusted (its component isn't built); trusted, its component is added to an entity; exported as a zip,
+// removed, added back from the zip (trusted, entered in project.falcon), and played (its component on the
+// HUD); turned off (still builds); a new library made from the Library Manager.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_library: the game itself does nothing; the library's component shows on the HUD.\npublic sealed class LibraryGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<LibraryGame>();\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Waves/library.json",
+  "text": "{\n  \"name\": \"Waves\",\n  \"version\": \"1.0.0\",\n  \"description\": \"A test library: a component that bobs its entity and says so on the HUD.\",\n  \"author\": \"Falcon tests\",\n  \"dependencies\": []\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Waves/Code/Wave.cs",
+  "text": "using System;\nusing System.Numerics;\nusing Falcon;\n\nnamespace Waves;\n\n// A library's script component (editor_library): built into the game once the library is trusted.\npublic sealed class Wave : Component\n{\n    [Property] public float Height = 2.5f;\n\n    public override void OnUpdate(float dt) => Hud.Show($\"wave {Height}\");\n}\n"
+ },
+ {
+  "type": "editor.libraries.trust",
+  "name": "Waves",
+  "trust": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Waves",
+   "exists": true,
+   "trusted": false,
+   "enabled": true,
+   "error": ""
+  }
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Waver"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Waver",
+  "component": "Script:Waves.Wave"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Waver",
+   "scripts": []
+  }
+ },
+ {
+  "type": "editor.libraries.trust",
+  "name": "Waves",
+  "trust": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Waves",
+   "trusted": true
+  }
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Waver",
+  "component": "Script:Waves.Wave"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Waver",
+   "scripts": [
+    "Waves.Wave"
+   ]
+  }
+ },
+ {
+  "type": "editor.script.set",
+  "id": "Waver",
+  "class": "Waves.Wave",
+  "values": {
+   "Height": 4
+  }
+ },
+ {
+  "type": "editor.libraries.export",
+  "name": "Waves"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "fileExists": "Exports/Waves-1.0.0.zip"
+ },
+ {
+  "type": "editor.libraries.remove",
+  "name": "Waves"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "library": {
+   "name": "Waves",
+   "exists": false
+  },
+  "fileMissing": "Libraries/Waves"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.libraries.add",
+  "source": "zip",
+  "path": "projects/Script Test/Exports/Waves-1.0.0.zip"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "libraries": true
+ },
+ {
+  "type": "test.expect",
+  "library": {
+   "name": "Waves",
+   "exists": true,
+   "trusted": true,
+   "enabled": true,
+   "error": ""
+  },
+  "fileContains": {
+   "project.falcon": "\"source\": \"zip\""
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 400
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "wave 4"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "editor.libraries.enable",
+  "name": "Waves",
+  "enabled": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Waves",
+   "enabled": false
+  }
+ },
+ {
+  "type": "editor.libraries.create",
+  "name": "Made"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Made",
+   "exists": true,
+   "trusted": true,
+   "enabled": true
+  },
+  "fileExists": "Libraries/Made/Code/Example.cs"
+ },
+ {
+  "type": "test.exit"
+ }
+]

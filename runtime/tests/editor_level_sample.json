@@ -1,0 +1,30 @@
+// The sample level (Help/Make Sample Level): a room with a door and a window cut in it, worn old
+// concrete, a road along a spline with fence posts, a ground, an entrance trigger, a nav area and
+// the navigation mesh, all made by one command in an empty scene (drawn: editor_level_sample_drawn).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "Sample"},
+  {"type": "editor.project.openScene", "scene": "Scenes/Sample.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.capture", "path": "level_sample_before.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.tools.run", "menu": "Help/Make Sample Level"},
+  {"type": "test.wait", "frames": 120, "ms": 2500},
+  {"type": "test.expect", "entity": {"name": "Sample Room", "wallHeight": 3, "levelWear": 2, "levelDrawnTriangles>": 40}},
+  {"type": "test.expect", "entity": {"name": "Sample Door", "opening": true, "parent": "Sample Room"}},
+  {"type": "test.expect", "entity": {"name": "Sample Window", "opening": true}},
+  {"type": "test.expect", "entity": {"name": "Sample Roof", "roofStyle": "hip", "levelTriangles": 8}},
+  {"type": "test.expect", "entity": {"name": "Sample Road", "splineProfile": "road", "splinePoints": 4}},
+  {"type": "test.expect", "entity": {"name": "Sample Fence Post", "parent": "Sample Road", "modifierTitles": ["Copies Along Spline"], "levelDrawnTriangles>": 60}},
+  {"type": "test.expect", "entity": {"name": "Sample Entrance", "volume": "trigger"}},
+  {"type": "test.expect", "entity": {"name": "Sample Mud", "volume": "navArea"}},
+  {"type": "test.expect", "navPolys>": 4},
+  {"type": "test.capture", "path": "level_sample_after.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 30, "ms": 800},
+  {"type": "test.exit"}
+]

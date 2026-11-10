@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Ganges River Pebbles",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.16,
+    2.16
+  ],
+  "parallax": 0.03,
+  "textures": {
+    "baseColor": "@falcon/Ground/Textures/Ganges River Pebbles/color.jpg",
+    "normal": "@falcon/Ground/Textures/Ganges River Pebbles/normal.jpg",
+    "metallicRoughness": "@falcon/Ground/Textures/Ganges River Pebbles/arm.jpg",
+    "occlusion": "@falcon/Ground/Textures/Ganges River Pebbles/arm.jpg",
+    "height": "@falcon/Ground/Textures/Ganges River Pebbles/height.jpg"
+  },
+  "acoustic": {
+    "preset": "gravel"
+  },
+  "surface": {
+    "preset": "gravel"
+  }
+}

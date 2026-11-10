@@ -1,0 +1,113 @@
+// Live meshes (level API v1): a slab with a mesh collider (a ball lands on it, a ray hits it) and a
+// panel facing the camera made while playing; a click at the view's centre picks the panel's
+// third triangle; bad data refused; both gone after Stop.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Collections.Generic;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_live (level API v1): live meshes made while playing. A 4 x 0.5 x 4 slab (12\n// triangles) with a mesh collider that a ball lands on and a ray hits; a panel facing the camera\n// (4 triangles, the third under the view's centre) to pick; bad data refused. The game's end frees them.\npublic sealed class LevelLiveGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<LevelLiveGame>();\n\n    private LiveMesh? _slab, _panel;\n    private Entity _ball;\n    private Vector3 _at;\n    private double _started = -1;\n    private string _start = \"\", _later = \"\";\n\n    private static string Ok(bool ok) => ok ? \"ok\" : \"BAD\";\n\n    // A quad's two triangles wound so they face `normal` (counter-clockwise seen from it).\n    private static void Quad(List<Vector3> p, List<Vector3> n, List<Vector2> uv, List<uint> idx, Vector3 a, Vector3 b, Vector3 c,\n                             Vector3 d, Vector3 normal)\n    {\n        uint s = (uint)p.Count;\n        p.AddRange(new[] { a, b, c, d });\n        n.AddRange(new[] { normal, normal, normal, normal });\n        uv.AddRange(new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) });\n        bool ccw = Vector3.Dot(Vector3.Cross(b - a, c - a), normal) > 0;\n        idx.AddRange(ccw ? new[] { s, s + 1, s + 2, s, s + 2, s + 3 } : new[] { s, s + 2, s + 1, s, s + 3, s + 2 });\n    }\n\n    private static void Tri(List<Vector3> p, List<Vector3> n, List<Vector2> uv, List<uint> idx, Vector3 a, Vector3 b, Vector3 c, Vector3 normal)\n    {\n        uint s = (uint)p.Count;\n        p.AddRange(new[] { a, b, c });\n        n.AddRange(new[] { normal, normal, normal });\n        uv.AddRange(new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 1) });\n        bool ccw = Vector3.Dot(Vector3.Cross(b - a, c - a), normal) > 0;\n        idx.AddRange(ccw ? new[] { s, s + 1, s + 2 } : new[] { s, s + 2, s + 1 });\n    }\n\n    public override void OnStart()\n    {\n        // The slab, 10 m ahead and 3 m down; its entity at its centre.\n        _at = Camera.Position + Camera.Forward * 10f - Vector3.UnitY * 3f;\n        _slab = LiveMesh.Create(_at);\n        var p = new List<Vector3>();\n        var n = new List<Vector3>();\n        var uv = new List<Vector2>();\n        var idx = new List<uint>();\n        Vector3 h = new(2f, 0.25f, 2f);\n        for (int axis = 0; axis < 3; ++axis)\n            for (int sign = -1; sign <= 1; sign += 2)\n            {\n                Vector3 normal = axis == 0 ? Vector3.UnitX : axis == 1 ? Vector3.UnitY : Vector3.UnitZ;\n                normal *= sign;\n                Vector3 u = axis == 0 ? Vector3.UnitY : axis == 1 ? Vector3.UnitZ : Vector3.UnitX;\n                Vector3 v = Vector3.Cross(normal, u);\n                Vector3 c = normal * h;\n                Vector3 hu = u * h, hv = v * h;\n                Quad(p, n, uv, idx, c - hu - hv, c + hu - hv, c + hu + hv, c - hu + hv, normal);\n            }\n        bool set = _slab != null && _slab.Set(p.ToArray(), n.ToArray(), uv.ToArray(), idx.ToArray());\n        if (_slab != null)\n        {\n            Collider col = default;\n            col.shape = 2;\n            Ecs.Set(_slab.Entity, col);\n        }\n\n        // The panel, 4 m ahead facing the camera: triangles far left, left, across the centre, right.\n        Vector3 at = Camera.Position + Camera.Forward * 4f;\n        _panel = LiveMesh.Create(at);\n        p.Clear();\n        n.Clear();\n        uv.Clear();\n        idx.Clear();\n        Vector3 r = Camera.Right, up = Camera.Up, toward = -Camera.Forward;\n        Vector3 P(float x, float y) => r * x + up * y;\n        Tri(p, n, uv, idx, P(-3.0f, -0.5f), P(-2.4f, -0.5f), P(-2.7f, 0.5f), toward);\n        Tri(p, n, uv, idx, P(-2.2f, -0.5f), P(-1.6f, -0.5f), P(-1.9f, 0.5f), toward);\n        Tri(p, n, uv, idx, P(-1.0f, -1.0f), P(1.0f, -1.0f), P(0.0f, 1.2f), toward);\n        Tri(p, n, uv, idx, P(1.6f, -0.5f), P(2.2f, -0.5f), P(1.9f, 0.5f), toward);\n        bool panel = _panel != null && _panel.Set(p.ToArray(), n.ToArray(), uv.ToArray(), idx.ToArray(), default, false);\n        bool refused = _panel != null && !_panel.Set(p.ToArray(), n.ToArray(), uv.ToArray(), new uint[] { 0, 1, 99 });\n\n        var stats = LiveMesh.Stats;\n        bool counted = stats.meshes == 2 && stats.triangles == 16;\n        _ball = Physics.Spawn(BodyShape.Sphere, _at + new Vector3(0.3f, 3f, -0.2f), new Vector3(0.5f, 0f, 0f), Vector3.Zero, Vector3.One);\n        _start = $\"made {Ok(_slab != null && _panel != null)} set {Ok(set && panel)} refused {Ok(refused)} counted {Ok(counted)}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        if (_started < 0)\n            _started = Time.Total;\n        if (_later.Length == 0 && Time.Total - _started > 2.5)\n        {\n            float top = _at.Y + 0.25f;\n            bool rests = MathF.Abs(_ball.Position.Y - (top + 0.5f)) < 0.08f;\n            bool ray = Physics.Raycast(_at + new Vector3(1f, 6f, 1f), -Vector3.UnitY, out SurfaceHit hit, 20f, QueryFilter.All.Ignoring(_ball)) &&\n                       hit.Entity == _slab!.Entity && MathF.Abs(hit.Point.Y - top) < 0.02f;\n            _later = $\" rests {Ok(rests)} ray {Ok(ray)} (ball at {_ball.Position.Y - top:0.000})\";\n        }\n        Hud.Show(_start + _later);\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "level_live_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "made ok set ok refused ok counted ok",
+  "live": {
+   "meshes": 2,
+   "triangles": 16
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 2500
+ },
+ {
+  "type": "test.expect",
+  "hud": "rests ok ray ok"
+ },
+ {
+  "type": "test.pick",
+  "x": 0.5,
+  "y": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "pick": {
+   "live": 1,
+   "liveTriangle": 2
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_live_playing.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "live": {
+   "meshes": 0,
+   "triangles": 0
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_live_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

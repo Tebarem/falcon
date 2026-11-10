@@ -1,0 +1,202 @@
+// Placing from the Project panel (the project editor_previews_cached left): the camera looks
+// down at the terrain (flat at 7.5 m); rock_boulder_a dragged from the panel into the middle of
+// the view stands on it. Saved, then a model is imported into Assets: the panel says the scene
+// needs reloading (it is cooked again with the project's models) and Reload asks for that.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.view",
+  "position": [
+   0,
+   30,
+   30
+  ],
+  "target": [
+   0,
+   7.5,
+   0
+  ]
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   ".as-search input"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": ".as-search input"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 100
+ },
+ {
+  "type": "test.type",
+  "text": "rock_boulder_a"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-key=\"mesh:rock_boulder_a\"]",
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-key=\"mesh:rock_boulder_a\"]",
+  "action": "down"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 50
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.45,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 50
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 50
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Rock_boulder_a 1",
+   "bottom": 7.5
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "editor.assets.importFiles",
+  "paths": [
+   "samples/DamagedHelmet.glb"
+  ],
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 1500
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-as=\"reload\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "fileExists": "Assets/DamagedHelmet.glb",
+  "probe": {
+   "assetsStale": true
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-as=\"reload\"]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.probe"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "cooking": true,
+  "probe": {
+   "assetsStale": true
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 6000,
+  "cook": true
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "cookStages": [
+   "done"
+  ],
+  "fileExists": [
+   "Scenes/Main.fpak",
+   "Scenes/Main.fvt"
+  ],
+  "fileMissing": [
+   "Cache/Stamps/Scenes_Main.fpak.cooking",
+   "Cache/Cook/Scenes_Main.fpak",
+   "Cache/Cook/Scenes_Main.fvt"
+  ],
+  "sceneOpen": "Scenes/Main.fpak",
+  "sceneSwitches": 1
+ },
+ {
+  "type": "test.exit"
+ }
+]

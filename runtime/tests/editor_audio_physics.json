@@ -1,0 +1,44 @@
+// Editor test (the project fixture): physics sounds. A static floor and a ramp tilted 25 degrees;
+// a crate dropped on the floor (an impact), a frictionless box on the ramp (it slides: a scrape) and
+// a ball on it (it rolls), 150 m up (above any terrain an earlier test saved). Play runs them; the
+// physics sounds' counters say what played. The floor sounds like
+// concrete (its own surface sounds) and the crate (DropBox) is synthesized as wood. The game hears from
+// editor_audio's listener (Ears), moved here (sounds farther than 60 m are not played).
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.view", "position": [62, 154, 72], "target": [62, 151, 60]},
+  {"type": "editor.transform.set", "id": "Ears", "position": [62, 154, 72], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Floor"},
+  {"type": "editor.transform.set", "id": "Floor", "position": [60, 149.75, 60], "rotation": [0, 0, 0], "scale": [24, 0.5, 24]},
+  {"type": "editor.component.add", "id": "Floor", "component": "BoxCollider"},
+  {"type": "editor.audio.surface.set", "id": "Floor", "surface": "concrete"},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Ramp"},
+  {"type": "editor.transform.set", "id": "Ramp", "position": [66, 152, 60], "rotation": [0, 0, 25], "scale": [8, 0.3, 4]},
+  {"type": "editor.component.add", "id": "Ramp", "component": "BoxCollider"},
+  {"type": "editor.collider.set", "id": "Ramp", "friction": 0.6},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "DropBox"},
+  {"type": "editor.transform.set", "id": "DropBox", "position": [58, 153, 60], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "DropBox", "component": "PhysicsBody"},
+  {"type": "editor.component.add", "id": "DropBox", "component": "BoxCollider"},
+  {"type": "editor.audio.surface.set", "id": "DropBox", "surface": "wood"},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Slider"},
+  {"type": "editor.transform.set", "id": "Slider", "position": [68, 153.6, 60], "rotation": [0, 0, 25], "scale": [0.6, 0.3, 0.6]},
+  {"type": "editor.component.add", "id": "Slider", "component": "PhysicsBody"},
+  {"type": "editor.component.add", "id": "Slider", "component": "BoxCollider"},
+  {"type": "editor.collider.set", "id": "Slider", "friction": 0},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Ball"},
+  {"type": "editor.transform.set", "id": "Ball", "position": [68, 154.2, 61], "rotation": [0, 0, 0], "scale": [0.6, 0.6, 0.6]},
+  {"type": "editor.component.add", "id": "Ball", "component": "PhysicsBody"},
+  {"type": "editor.component.add", "id": "Ball", "component": "SphereCollider"},
+  {"type": "test.expect", "entity": {"name": "Floor", "has": ["Collider", "AcousticSurface"], "lacks": ["PhysicsBody"]}},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 150, "ms": 2500},
+  {"type": "test.expect", "playing": true, "audio": {"impactsAbove": 0, "scrapesAbove": 0, "rollsAbove": 0}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "DropBox", "yAbove": 152.9}},
+  {"type": "test.exit"}
+]

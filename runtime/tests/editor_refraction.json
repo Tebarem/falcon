@@ -1,0 +1,544 @@
+// Refraction (T2): a glass ball in front of a striped wall. Plain (no refraction: refract_plain),
+// bent (refract_bent), rough (blurred: refract_rough), and with a surface shader of the project on it
+// (tinted red, more opaque at the rim, bent twice as far: refract_surface; the project's build of the
+// transparent pass).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "StripeDark"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "StripeLight"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "Lens"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/StripeDark.fmat",
+  "values": {
+   "baseColor": [
+    0.05,
+    0.05,
+    0.4,
+    1
+   ],
+   "roughness": 0.9
+  }
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/StripeLight.fmat",
+  "values": {
+   "baseColor": [
+    0.9,
+    0.85,
+    0.2,
+    1
+   ],
+   "roughness": 0.9
+  }
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Lens.fmat",
+  "values": {
+   "baseColor": [
+    0.9,
+    0.95,
+    1.0,
+    0.15
+   ],
+   "roughness": 0.05,
+   "alpha": "blend",
+   "refraction": 0,
+   "ior": 1.5
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe0"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe0",
+  "position": [
+   -3.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe0",
+  "material": "Assets/StripeDark.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe1"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe1",
+  "position": [
+   -2.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe1",
+  "material": "Assets/StripeLight.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe2"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe2",
+  "position": [
+   -1.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe2",
+  "material": "Assets/StripeDark.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe3"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe3",
+  "position": [
+   -0.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe3",
+  "material": "Assets/StripeLight.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe4"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe4",
+  "position": [
+   0.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe4",
+  "material": "Assets/StripeDark.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe5"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe5",
+  "position": [
+   1.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe5",
+  "material": "Assets/StripeLight.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe6"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe6",
+  "position": [
+   2.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe6",
+  "material": "Assets/StripeDark.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Stripe7"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Stripe7",
+  "position": [
+   3.5,
+   40,
+   -3
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   8,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Stripe7",
+  "material": "Assets/StripeLight.fmat"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "sphere",
+  "name": "LensBall"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "LensBall",
+  "position": [
+   0,
+   40,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   3.5,
+   3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "LensBall",
+  "material": "Assets/Lens.fmat"
+ },
+ {
+  "type": "editor.select",
+  "id": 0
+ },
+ {
+  "type": "test.view",
+  "position": [
+   0,
+   40,
+   8
+  ],
+  "target": [
+   0,
+   40,
+   0
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1200
+ },
+ {
+  "type": "test.capture",
+  "path": "refract_plain.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Lens.fmat",
+  "values": {
+   "refraction": 0.4
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.capture",
+  "path": "refract_bent.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Lens.fmat",
+  "values": {
+   "roughness": 0.8
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.capture",
+  "path": "refract_rough.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Lens.fmat",
+  "values": {
+   "roughness": 0.05
+  }
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/RedGlass.slang",
+  "text": "// A transparent surface shader (T2): the glass tinted red, more opaque at its rim, and bent further.\nimport falcon_surface;\n\nvoid surface(SurfaceIn i, inout SurfaceOut o)\n{\n    o.albedo = float3(1.0, 0.15, 0.1);\n    const float rim = 1.0 - saturate(dot(i.normal, i.view));\n    o.alpha = lerp(o.alpha, 0.9, rim);\n    o.refraction *= i.params.x;\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/RedGlass.slang",
+   "compiled": true
+  },
+  "fileExists": "Cache/Shaders/transparent.fshader"
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Lens.fmat",
+  "values": {
+   "shader": "Shaders/RedGlass.slang",
+   "params": [
+    2,
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "refract_surface.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

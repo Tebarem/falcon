@@ -1,0 +1,64 @@
+// Editor test (Script Test project): editor_script_components' scene opened again: the Spinner and its
+// properties were saved (in its prefab), and Play runs it as before.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "playing": false
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scripts": [
+    "ScriptTest.Spinner"
+   ],
+   "scriptProps": {
+    "ScriptTest.Spinner": {
+     "Speed": 180,
+     "Around": "X",
+     "Label": "spun"
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "VERSION 2 awakes 2 starts 2 fixed yes updates yes spawned yes speed 180 around X target ok lift 1 label spun"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.exit"
+ }
+]

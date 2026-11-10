@@ -1,0 +1,70 @@
+// Editor test (the project fixture): audio. A clip (beep.wav, written by the test before) is imported,
+// and a sound (Beep.fsound) made from it and set to loop. An empty "Speaker" gets an Audio Source
+// (Add Component) playing it; the Inspector's slot shows it; undo and redo the change. "Ears" gets an
+// Audio Listener. The source previews in edit mode and stops. Play starts it (it plays on start),
+// Stop stops it. A clip dropped in the scene ("editor.asset.place") becomes an entity with a source.
+// The project's master volume is saved with it. Saved: editor_audio_reload finds it all.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "audio": {"voices": 0, "sources": 0, "previewing": false}},
+  {"type": "editor.assets.importFiles", "paths": ["beep.wav"], "folder": "Assets"},
+  {"type": "test.wait", "frames": 5, "ms": 500},
+  {"type": "test.expect", "fileExists": "Assets/beep.wav"},
+  {"type": "editor.assets.newSound", "folder": "Assets", "name": "Beep", "clips": ["Assets/beep.wav"]},
+  {"type": "test.wait", "frames": 5, "ms": 500},
+  {"type": "test.expect", "fileExists": "Assets/Beep.fsound"},
+  {"type": "editor.sound.set", "path": "Assets/Beep.fsound", "values": {"loop": true, "minDistance": 2, "maxDistance": 40}},
+
+  {"type": "editor.entity.create", "kind": "empty", "name": "Speaker"},
+  {"type": "test.wait", "frames": 3, "ms": 300},
+  {"type": "editor.component.add", "id": "Speaker", "component": "AudioSource"},
+  {"type": "test.expect", "entity": {"name": "Speaker", "has": ["AudioSource"], "sound": ""}},
+  {"type": "editor.audio.source.set", "id": "Speaker", "sound": "Assets/Beep.fsound", "volume": 0.5},
+  {"type": "test.wait", "frames": 3, "ms": 400},
+  {"type": "test.expect", "entity": {"name": "Speaker", "sound": "Assets/Beep.fsound"}},
+  {"type": "test.probe"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "probe": {"audioSourceSound": "Beep"}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Speaker", "sound": ""}},
+  {"type": "editor.redo"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Speaker", "sound": "Assets/Beep.fsound"}},
+
+  {"type": "editor.entity.create", "kind": "empty", "name": "Ears"},
+  {"type": "editor.component.add", "id": "Ears", "component": "AudioListener"},
+  {"type": "editor.audio.listener.set", "id": "Ears", "gain": 0.8},
+  {"type": "test.expect", "entity": {"name": "Ears", "has": ["AudioListener"], "lacks": ["AudioSource"]}},
+
+  {"type": "editor.audio.play", "id": "Speaker"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "audio": {"previewing": true, "voices": 1, "sources": 0}},
+  {"type": "editor.audio.stop"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"previewing": false, "voices": 0}},
+
+  {"type": "editor.settings.set", "key": "audioPhysicsSounds", "value": false},
+  {"type": "editor.settings.set", "key": "audioWaterSounds", "value": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.expect", "playing": true, "audio": {"sources": 1, "voices": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "test.expect", "playing": false, "audio": {"sources": 0, "voices": 0}, "entity": {"name": "Speaker", "sound": "Assets/Beep.fsound"}},
+  {"type": "editor.settings.set", "key": "audioPhysicsSounds", "value": true},
+  {"type": "editor.settings.set", "key": "audioWaterSounds", "value": true},
+
+  {"type": "editor.asset.place", "sound": "Assets/beep.wav"},
+  {"type": "test.wait", "frames": 3, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "beep", "has": ["AudioSource"], "sound": "Assets/beep.wav"}},
+  {"type": "editor.entity.delete", "id": "beep"},
+
+  {"type": "editor.settings.set", "key": "audioMaster", "value": 0.7},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "settings": {"audioMaster": 0.7, "audioHrtf": true}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 10, "ms": 800},
+  {"type": "test.exit"}
+]

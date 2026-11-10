@@ -1,0 +1,43 @@
+// Launcher test (falcon --launcher, run in the test folder): a new project from the page's
+// message (an empty project: Scenes/Main.fpak cooked, project.falcon written), on the recent
+// list and "opened" (--no-relaunch records it); creating it again fails (the folder is in use).
+// Then real mouse input: hovering the project's row highlights it (launcher.png), a click opens it.
+[
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "launcher.create", "name": "Launcher Test", "location": "projects"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.expect", "projectExists": "projects/Launcher Test", "sceneExists": "projects/Launcher Test/Scenes/Main.fpak",
+   "recentContains": "projects/Launcher Test", "opened": "projects/Launcher Test", "error": false},
+  {"type": "launcher.create", "name": "Launcher Test", "location": "projects"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.expect", "error": true},
+  {"type": "launcher.open", "path": "projects/Launcher Test/project.falcon"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "opened": "projects/Launcher Test", "opens": 2, "error": false},
+  {"type": "test.mouse", "at": "#list .project", "fx": 0.3, "action": "move"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.capture", "path": "launcher.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.mouse", "at": "#list .project", "fx": 0.3},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.expect", "opened": "projects/Launcher Test", "opens": 3, "error": false},
+  {"type": "test.mouse", "at": "#btn-new"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.probe", "at": "#new-name"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "dialog": true, "focused": true, "value": "My World", "textInput": true},
+  {"type": "test.type", "text": "Typed"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.key", "key": "Backspace"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.probe", "at": "#new-name"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "value": "Type"},
+  {"type": "test.key", "key": "Escape"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.probe", "at": "#new-name"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "dialog": false},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

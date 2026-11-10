@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- Falcon launcher: recent projects, New Project, Open Project. Engine side:
+     engine/editor/launcher.cpp (projects, the folder picker, starting the editor). -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Falcon</title>
+  <link rel="stylesheet" href="launcher.css">
+</head>
+
+<body>
+  <header class="titlebar" id="titlebar">
+    <span class="logo">F</span>
+    <span class="title">Falcon</span>
+    <span class="spacer"></span>
+    <div class="window-buttons" id="window-buttons">
+      <button id="win-min" title="Minimize" data-icon="winMin"></button>
+      <button id="win-max" title="Maximize" data-icon="winMax"></button>
+      <button id="win-close" class="close" title="Close" data-icon="winClose"></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <nav class="side">
+      <div class="side-item active"><span data-icon="folder"></span>Projects</div>
+    </nav>
+    <section class="content">
+      <div class="content-head">
+        <h1>Projects</h1>
+        <span class="spacer"></span>
+        <button class="button" id="btn-open"><span data-icon="folder"></span>Open</button>
+        <button class="button primary" id="btn-new"><span data-icon="plus"></span>New project</button>
+      </div>
+      <div class="error" id="error" hidden></div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+
+  <div class="modal-back" id="new-dialog" hidden>
+    <div class="modal">
+      <h2>New project</h2>
+      <label class="field-label" for="new-name">Name</label>
+      <input class="field" id="new-name" value="My World" spellcheck="false">
+      <label class="field-label" for="new-location">Location</label>
+      <div class="row">
+        <input class="field" id="new-location" spellcheck="false">
+        <button class="button" id="btn-browse">Browse…</button>
+      </div>
+      <div class="hint" id="new-path"></div>
+      <span class="field-label">Template</span>
+      <div class="templates">
+        <div class="template selected">
+          <span class="template-icon" data-icon="scene"></span>
+          <div>
+            <div class="template-name">Empty</div>
+            <div class="hint">A sky, a sun, nothing else. Add a terrain from the Terrain tab (New Terrain, then Generate).</div>
+          </div>
+        </div>
+      </div>
+      <div class="error" id="new-error" hidden></div>
+      <div class="modal-buttons">
+        <button class="button" id="btn-cancel">Cancel</button>
+        <button class="button primary" id="btn-create">Create project</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="busy" id="busy" hidden><div class="spinner"></div><span id="busy-text">Creating the project…</span></div>
+
+  <script src="launcher.js"></script>
+</body>
+
+</html>

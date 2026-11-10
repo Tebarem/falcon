@@ -1,0 +1,33 @@
+// Editor test: a new flat terrain, sculpted with the brush through real mouse events on the
+// scene view (held still: dabs keep coming), then undo (exactly flat again) and redo. Captures
+// terrain_sculpt.png (the scene view) in the working directory.
+[
+  {"type": "editor.terrain.create", "tiles": 1, "spacing": 0.5, "heightMin": -50, "heightMax": 100, "hills": 0, "height": -1.5},
+  {"type": "test.expect", "terrain": {"exists": true}},
+  {"type": "test.view", "position": [0, 12, 24], "target": [0, -1.5, 0]},
+  {"type": "editor.tool.set", "tool": "brush"},
+  {"type": "editor.terrain.brush", "op": "raise", "radius": 6, "strength": 1, "falloffPreset": "smooth", "jitterPosition": 0},
+  {"type": "test.wait", "frames": 30},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.75, "action": "move"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.75, "action": "down"},
+  {"type": "test.wait", "ms": 600},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.55, "fy": 0.75, "action": "move"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.55, "fy": 0.75, "action": "up"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "canUndo": true, "tool": "brush", "terrain": {"atStroke": true, ">": -1}},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.4, "fy": 0.7, "action": "move"},
+  {"type": "test.wait", "frames": 20},
+  {"type": "test.capture", "path": "terrain_sculpt.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "canRedo": true, "terrain": {"atStroke": true, "height": -1.5, "tolerance": 0.005}},
+  {"type": "editor.redo"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "terrain": {"atStroke": true, ">": -1}},
+  {"type": "test.exit"}
+]

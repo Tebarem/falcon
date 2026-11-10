@@ -1,0 +1,14 @@
+// Editor test (VFX Test project): editor_particles' effects come back from the saved scene, their
+// fields as set, the child's renderer still working for its parent's effect.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "entity": {"name": "Sparks", "has": ["ParticleEffect", "ParticleConeEmitter"],
+    "vfx": {"particleEffect": {"maxParticles": 500, "force": true, "lifetime": 3}, "particleConeEmitter": {"burst": 30, "angle": 15, "loop": false}}}},
+  {"type": "test.expect", "entity": {"name": "Glow", "parent": "Sparks", "has": ["ParticleSpriteRenderer"], "lacks": ["ParticleNoise"],
+    "vfx": {"particleSprite": {"blend": "additive", "columns": 4, "rows": 4, "lit": true}}}},
+  {"type": "test.expect", "entity": {"name": "Puff", "alive": true, "vfx": {"particleEffect": {"temporary": true}, "particleSphereEmitter": {"burst": 10, "loop": false}}}},
+  {"type": "editor.vfx.restart", "id": "Sparks"},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "Glow", "particles": 30}},
+  {"type": "test.exit"}
+]

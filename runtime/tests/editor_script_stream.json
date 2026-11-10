@@ -1,0 +1,185 @@
+// Audio streams and shapes from scripts (X4, API v35): a sine written as it plays, heard (the
+// mixer's peak), silent once disposed (K held); a convex hull and a compound of two spheres resting on a
+// floor at their heights.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Floor",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   -0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   20,
+   1,
+   20
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Floor",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Rock",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Rock",
+  "position": [
+   -3,
+   2,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Rock",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Rock",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Pair",
+  "primitive": "cube"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Pair",
+  "position": [
+   3,
+   2,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Pair",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_stream (API v35): a sine the game writes into an audio stream as it goes (heard at\n// its level, no underruns once it plays), and shapes from scripts: a convex hull (a box of half\n// size 0.2 as 8 points) and a compound of two spheres (radius 0.4) resting on a floor.\npublic sealed class StreamGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<StreamGame>();\n\n    private AudioStream? _stream;\n    private double _phase;\n    private readonly float[] _buffer = new float[4096];\n\n    public override void OnStart()\n    {\n        _stream = new AudioStream(1, 0.25f);\n        Fill();\n        _stream.Play2D(0.5f);\n        Span<Vector3> box = stackalloc Vector3[8];\n        for (int i = 0; i < 8; ++i)\n            box[i] = new Vector3((i & 1) != 0 ? 0.2f : -0.2f, (i & 2) != 0 ? 0.2f : -0.2f, (i & 4) != 0 ? 0.2f : -0.2f);\n        Physics.SetConvexHull(Entity.Find(\"Rock\"), box);\n        Entity pair = Entity.Find(\"Pair\");\n        Physics.AddShape(pair, ShapeKind.Sphere, new Vector3(0.4f), new Vector3(-0.5f, 0, 0));\n        Physics.AddShape(pair, ShapeKind.Sphere, new Vector3(0.4f), new Vector3(0.5f, 0, 0));\n    }\n\n    // What there is room for, keeping it full: a 440 Hz sine at 0.8.\n    private void Fill()\n    {\n        int n = Math.Min(_stream!.Free, _buffer.Length);\n        for (int i = 0; i < n; ++i)\n        {\n            _buffer[i] = 0.8f * MathF.Sin((float)(_phase * 2 * Math.PI));\n            _phase = (_phase + 440.0 / AudioStream.SampleRate) % 1.0;\n        }\n        _stream.Write(_buffer.AsSpan(0, n));\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        Fill();\n        if (Input.IsDown(Key.K))\n            _stream!.Dispose();  // (silence after)\n        float rock = Entity.Find(\"Rock\").Position.Y, pair = Entity.Find(\"Pair\").Position.Y;\n        Hud.Show($\"stream {(_stream!.IsValid ? \"on\" : \"off\")} rock {rock:0.0} pair {pair:0.0}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "audio": {
+   "peakAbove": 0.1
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 180,
+  "ms": 2500
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "stream on rock 0.2 pair 0.4",
+  "audio": {
+   "peakAbove": 0.1
+  }
+ },
+ {
+  "type": "test.hold",
+  "key": "K"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 400
+ },
+ {
+  "type": "test.hold",
+  "key": "K",
+  "down": false
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "stream off",
+  "audio": {
+   "peakBelow": 0.01
+  }
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.exit"
+ }
+]

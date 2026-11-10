@@ -1,0 +1,108 @@
+// Editor test (Script Test project): game flow and the camera (API v23). Time.Scale (Delta half the real
+// one), Storage (a save written, read, deleted), the main camera (a Cam entity) and its field of view,
+// ScreenToRay and WorldToScreen agreeing, then Game.Quit stopping Play.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_flow (API v23): time scale, saves, the camera (main, field of view, rays both ways),\n// then Game.Quit (in the editor: Play stops).\npublic sealed class FlowGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<FlowGame>();\n\n    private int _frames;\n    private string _report = \"\";\n\n    private static string Ok(bool ok) => ok ? \"ok\" : \"BAD\";\n\n    public override void OnStart()\n    {\n        Time.Scale = 0.5f;\n        Storage.Save(\"flow.txt\", \"saved\");\n        bool storage = Storage.Load(\"flow.txt\") == \"saved\" && Storage.Exists(\"flow.txt\");\n        Storage.Delete(\"flow.txt\");\n        storage &= !Storage.Exists(\"flow.txt\");\n        bool main = Camera.Main == Entity.Find(\"Cam\");\n        bool fov = MathF.Abs(Camera.FieldOfView - 50f) < 0.5f;\n        Vector2 center = Input.ViewSize / 2f;\n        var (origin, direction) = Camera.ScreenToRay(center);\n        bool ray = Vector3.Distance(origin, Camera.Position) < 1e-3f && Vector3.Dot(direction, Camera.Forward) > 0.9999f;\n        var (pixel, inFront) = Camera.WorldToScreen(Camera.Position + Camera.Forward * 10f + Camera.Right * 2f);\n        var (back, _) = Camera.ScreenToRay(pixel);\n        bool screen = inFront && pixel.X > center.X && MathF.Abs(pixel.Y - center.Y) < 0.5f && back == origin;\n        _report = $\"storage {Ok(storage)} main {Ok(main)} fov {Ok(fov)} ray {Ok(ray)} screen {Ok(screen)}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        ++_frames;\n        bool scaled = MathF.Abs(Time.Delta - 0.5f * Time.UnscaledDelta) < 1e-5f && Time.Scale == 0.5f;\n        Hud.Show($\"{_report} scale {Ok(scaled)} frames {(_frames >= 30 ? \"30\" : \"few\")}\");\n        if (_frames == 60)\n            Quit();\n    }\n}\n"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Cam"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Cam",
+  "position": [
+   0,
+   2,
+   8
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Cam",
+  "component": "CameraComponent"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.camera.set",
+  "id": "Cam",
+  "fov": 50
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 40
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "storage ok main ok fov ok ray ok screen ok scale ok frames 30"
+ },
+ {
+  "type": "test.wait",
+  "frames": 40,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "game": {
+   "running": false
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

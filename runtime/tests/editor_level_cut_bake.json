@@ -1,0 +1,220 @@
+// Baked cuts: a level wall with a door cut and a created cube with a sphere cut, saved (the scene's
+// .cuts written), another scene opened and this one again: both drawn cut from the bake, nothing cut
+// afresh. Then the door moved: that one cut again as usual.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "CutBake"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/CutBake.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "cutBake": 0,
+  "bakedCuts": 0
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Wall"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Wall",
+  "position": [
+   0,
+   1.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   4,
+   3,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "box",
+  "name": "Door"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Door",
+  "position": [
+   0,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   2.2,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Crate"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Crate",
+  "position": [
+   6,
+   0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "sphere",
+  "name": "Bite"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Bite",
+  "position": [
+   6,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1.4,
+   1.4,
+   1.4
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 1,
+  "bakedCuts": 0,
+  "entity": {
+   "name": "Wall",
+   "levelTriangles": 12,
+   "levelDrawnTriangles": 28
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/CutBake.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "cutBake": 2,
+  "bakedCuts": 2,
+  "freshCuts": 0,
+  "cutCopies": 1,
+  "entity": {
+   "name": "Wall",
+   "levelTriangles": 12,
+   "levelDrawnTriangles": 28
+  }
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Door",
+  "position": [
+   0.5,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   2.2,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "bakedCuts": 2,
+  "freshCuts": 1,
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles": 28
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

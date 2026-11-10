@@ -1,0 +1,39 @@
+// Script API v11: Animation.HideBone hides a bone and what is below it (first person's head): to
+// the eye the bar's Tip bone collapses into its joint while the rest stays, and its skinning (the
+// shadows') stays whole; then its whole skeleton. An unknown bone is refused; Stop shows every bone
+// again. Esc frees the cursor the game holds until a click in the game's view.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace AnimTest;\n\n// Test game: H held hides the bar's Tip bone (API v11), R held its whole skeleton (from \"root\");\n// it holds the cursor all along (Esc frees it until a click).\npublic sealed class AnimTestGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<AnimTestGame>();\n\n    public override void OnUpdate(float dt)\n    {\n        Entity bar = Entity.Find(\"skinned\");\n        bool tip = Animation.HideBone(bar, \"Tip\", Input.IsDown(Key.H));\n        bool all = Animation.HideBone(bar, \"root\", Input.IsDown(Key.R));\n        Input.MouseLocked = true;\n        Hud.Show($\"hide: {tip} {all} {Animation.HideBone(bar, \"nope\")}, tip {Animation.IsBoneHidden(bar, \"Tip\")}, root {Animation.IsBoneHidden(bar, \"Root\")}, locked {Input.MouseLocked}\");\n    }\n}\n"},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "playing": true, "hud": "hide: True True False, tip False, root False, locked True"},
+  {"type": "test.expect", "anim": {"entity": "skinned", "shown": ["Tip", "Root"], "whole": ["Root", "Tip"]}},
+  {"type": "test.hold", "key": "H"},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "tip True, root False"},
+  {"type": "test.expect", "anim": {"entity": "skinned", "hidden": ["Tip"], "shown": ["Root"], "collapsed": ["Tip"], "whole": ["Root"]}},
+  {"type": "test.hold", "key": "H", "down": false},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "tip False, root False"},
+  {"type": "test.expect", "anim": {"entity": "skinned", "shown": ["Tip"], "whole": ["Tip"]}},
+  {"type": "test.hold", "key": "R"},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "tip True, root True"},
+  {"type": "test.expect", "anim": {"entity": "skinned", "hidden": ["Root", "Tip"], "collapsed": ["Root", "Tip"]}},
+  {"type": "test.hold", "key": "R", "down": false},
+  {"type": "test.hold", "key": "Escape"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.hold", "key": "Escape", "down": false},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "playing": true, "hud": "locked False"},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "left"},
+  {"type": "test.wait", "frames": 5, "ms": 100},
+  {"type": "test.expect", "hud": "locked True"},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "playing": false, "anim": {"entity": "skinned", "shown": ["Root", "Tip"], "whole": ["Tip"]}},
+  {"type": "test.exit"}
+]

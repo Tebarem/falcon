@@ -1,0 +1,107 @@
+// Runtime meshes (R5, API v31): an opaque red quad and a see-through blue one drawn each frame in
+// front of the camera; the red one's vertices replaced (a triangle); gone at Stop.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_mesh (API v31): a red quad (opaque) and a see-through blue one in front of the camera,\n// made in OnStart; the red one made a triangle with M held (Update); a bad mesh refused.\npublic sealed class MeshGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<MeshGame>();\n\n    private Mesh? _red, _glass;\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        _red = Mesh.Quad(1.2f);\n        _glass = Mesh.Quad(1.2f);\n        Span<MeshVertex> bad = stackalloc MeshVertex[3];\n        Span<uint> badIndices = stackalloc uint[3] { 0, 1, 7 };\n        bool refused = !new Mesh(bad, badIndices).IsValid;\n        _report = $\"mesh made {_red.IsValid && _glass.IsValid} refused {refused}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        Vector3 at = Camera.Position + Camera.Forward * 4f;\n        Matrix4x4 facing = Matrix4x4.CreateWorld(Vector3.Zero, -Camera.Forward, Camera.Up);\n        _red!.Draw(facing * Matrix4x4.CreateTranslation(at - Camera.Right * 0.4f), new Vector4(1f, 0.05f, 0.05f, 1f));\n        _glass!.Draw(facing * Matrix4x4.CreateTranslation(at + Camera.Right * 0.4f - Camera.Forward * 0.5f), new Vector4(0.1f, 0.3f, 1f, 0.5f));\n        if (Input.Pressed(Key.M))\n        {\n            // (now a triangle, its top half gone)\n            Span<MeshVertex> v = stackalloc MeshVertex[3]\n            {\n                new(new Vector3(-0.6f, -0.6f, 0), Vector3.UnitZ),\n                new(new Vector3(0.6f, -0.6f, 0), Vector3.UnitZ),\n                new(new Vector3(0f, 0f, 0), Vector3.UnitZ),\n            };\n            Span<uint> idx = stackalloc uint[3] { 0, 1, 2 };\n            _report += $\" updated {_red.Update(v, idx)}\";\n        }\n        Hud.Show(_report);\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "mesh_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "mesh made True refused True"
+ },
+ {
+  "type": "test.capture",
+  "path": "mesh_playing.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.hold",
+  "key": "M"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.hold",
+  "key": "M",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "hud": "updated True"
+ },
+ {
+  "type": "test.capture",
+  "path": "mesh_updated.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "mesh_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

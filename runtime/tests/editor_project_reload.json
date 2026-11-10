@@ -1,0 +1,7 @@
+// Editor test: the project editor_project saved, opened again. Its Main scene has the terrain
+// (7.5 m, as saved); the project lists both scenes.
+[
+  {"type": "test.wait", "frames": 10},
+  {"type": "test.expect", "projectScenes": 2, "terrain": {"exists": true, "x": 10, "z": -10, "height": 7.5, "tolerance": 0.02}},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The scripting API's speed test (CTest script_bench_*): what each call costs, and that a
+       steady frame allocates nothing. Built like the Sandbox, JIT and NativeAOT. -->
+  <PropertyGroup>
+    <RootNamespace>Bench</RootNamespace>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <NativeLib>Shared</NativeLib>
+    <FalconGame>true</FalconGame>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Falcon.Engine\Falcon.Engine.csproj" />
+  </ItemGroup>
+</Project>

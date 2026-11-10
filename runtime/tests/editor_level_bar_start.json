@@ -1,0 +1,20 @@
+// The Level window on a level mesh when the project's scripts are already built: the editor code then
+// loads before the page is ready, and its commands (the window's rows) reach the page all the same.
+// (No wait for a build here: the steps before this one leave the scripts built. Tests have no saved prefs:
+// the window opens when asked, Ctrl+Shift+L.)
+[
+ {"type": "test.wait", "frames": 20, "ms": 800},
+ {"type": "test.newScene", "name": "BarStart"},
+ {"type": "editor.project.openScene", "scene": "Scenes/BarStart.fpak"},
+ {"type": "test.wait", "frames": 60, "ms": 1500},
+ {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "A"},
+ {"type": "test.wait", "frames": 10, "ms": 300},
+ {"type": "editor.select", "id": "A"},
+ {"type": "test.wait", "frames": 30, "ms": 800},
+ {"type": "test.key", "key": "l", "ctrl": true, "shift": true},
+ {"type": "test.wait", "frames": 5, "ms": 300},
+ {"type": "test.probe", "rects": ["#viewport"]},
+ {"type": "test.wait", "frames": 3, "ms": 200},
+ {"type": "test.expect", "probe": {"levelWindowX>": 0, "levelWindowRows>": 0}},
+ {"type": "test.exit"}
+]

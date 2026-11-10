@@ -1,0 +1,122 @@
+// Editor test (Script Test project): custom UI (E3). A library's editor window: its HTML page (UI/echo.html,
+// with falcon-panel.js) opened in a floating window of the editor; the page says hello, its C# side
+// (an EditorWindow) answers, and the page tells it what it got back: both ways through the editor's page.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Cache/panel-events.txt",
+  "text": ""
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/library.json",
+  "text": "{\n  \"name\": \"Panels\",\n  \"version\": \"1.0.0\",\n  \"description\": \"A test library with an editor window of its own HTML (editor_library_ui).\",\n  \"author\": \"Falcon tests\",\n  \"dependencies\": []\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/Editor/Echo.cs",
+  "text": "using System.IO;\nusing System.Text.Json;\nusing Falcon;\nusing Falcon.Editor;\n\nnamespace Panels;\n\n// editor_library_ui: an editor window whose page (UI/echo.html) and C# side talk both ways; what the\n// C# side hears goes to Cache/panel-events.txt (the test reads it).\n[EditorWindow(\"Tools/Panels/Echo\", Title = \"Echo\", Page = \"echo.html\", Width = 320, Height = 200)]\npublic sealed class Echo : EditorWindow\n{\n    private static void Note(string what)\n    {\n        using JsonDocument project = EditorApp.Query(\"project\");\n        string dir = project.RootElement.GetProperty(\"dir\").GetString() ?? \".\";\n        File.AppendAllText(Path.Combine(dir, \"Cache\", \"panel-events.txt\"), what + \"\\n\");\n    }\n\n    public override void OnOpen() => Note(\"open\");\n\n    public override void OnMessage(string json)\n    {\n        Note(\"got \" + json);\n        if (json == \"\\\"hello\\\"\")\n            Send(\"\\\"pong\\\"\");\n    }\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/UI/echo.html",
+  "text": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <link rel=\"stylesheet\" href=\"echo.css\">\n</head>\n<body>\n  <p id=\"status\">Echo</p>\n  <script src=\"falcon-panel.js\"></script>\n  <script src=\"echo.js\"></script>\n</body>\n</html>\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/UI/echo.js",
+  "text": "// editor_library_ui: says hello to its C# side, and tells it what came back.\nFalconPanel.onMessage = v => {\n  document.getElementById('status').textContent = 'got ' + v;\n  FalconPanel.send('received ' + v);\n};\nFalconPanel.send('hello');\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/UI/echo.css",
+  "text": "body { background: var(--panel); color: var(--text); font: 13px system-ui, sans-serif; margin: 12px; }\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Libraries/Panels/UI/falcon-panel.js",
+  "text": "// falcon-panel.js: for a library's editor window page (UI/*.html, opened by an [EditorWindow] C#\n// class). Include it with <script src=\"falcon-panel.js\"></script> (a copy beside the page: a new\n// library gets one).\n//\n//   FalconPanel.send(value)          a JSON value to the window's C# side (EditorWindow.OnMessage)\n//   FalconPanel.onMessage = v => {}  what its C# side sends (EditorWindow.Send)\n//\n// The page takes the editor's colours as CSS variables (--app, --panel, --text, --text-dim,\n// --accent, --line, --field, --button, ...), so `background: var(--panel)` matches the editor.\n'use strict';\nconst FalconPanel = (() => {\n  const panel = {\n    send(value) { parent.postMessage({ falcon: 'panel', data: value === undefined ? null : value }, '*'); },\n    onMessage: null,\n  };\n  addEventListener('message', e => {\n    const m = e.data;\n    if (!m || e.source !== parent) return;\n    if (m.falcon === 'theme') {\n      for (const [name, value] of Object.entries(m.vars || {})) document.documentElement.style.setProperty(name, value);\n      document.documentElement.classList.add('falcon-themed');\n    } else if (m.falcon === 'panel' && panel.onMessage) {\n      panel.onMessage(m.data);\n    }\n  });\n  return panel;\n})();\n"
+ },
+ {
+  "type": "editor.libraries.trust",
+  "name": "Panels",
+  "trust": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "library": {
+   "name": "Panels",
+   "trusted": true,
+   "error": ""
+  }
+ },
+ {
+  "type": "editor.window.show",
+  "window": "Tools/Panels/Echo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 2000
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/panel-events.txt": "open"
+  }
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/panel-events.txt": "got \"hello\""
+  }
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Cache/panel-events.txt": "got \"received pong\""
+  }
+ },
+ {
+  "type": "test.editFile",
+  "path": "Libraries/Panels/UI/echo.js",
+  "find": "'received '",
+  "replace": "'reloaded '"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 2000
+ },
+ {
+  "type": "test.expect",
+  "pageChanges": 1,
+  "fileContains": {
+   "Cache/panel-events.txt": "got \"reloaded pong\""
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

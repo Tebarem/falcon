@@ -1,0 +1,5 @@
+// Editor test: load the saved edits and save them again unchanged.
+[
+  {"type": "editor.scene.save"},
+  {"type": "test.exit"}
+]

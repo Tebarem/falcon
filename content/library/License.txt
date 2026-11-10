@@ -1,0 +1,39 @@
+Falcon's material library: textures from Poly Haven (https://polyhaven.com), CC0 1.0 Universal
+(public domain dedication, https://creativecommons.org/publicdomain/zero/1.0/). They may be used,
+changed and shipped in any project, commercial or not, without attribution (credit is appreciated).
+
+Each material: its colour, OpenGL normal, arm (ambient occlusion, roughness, metalness) and
+displacement (height) maps at 2K, as Poly Haven publishes them; "size" in its .fmat is the
+real-world width and height in metres one repeat of the texture covers, "parallax" how deep its
+height map's relief is drawn.
+
+  Brick/Medieval Blocks 03  (polyhaven.com/a/medieval_blocks_03; Rob Tuytel; 2 x 2 m)
+  Brick/Red Brick 03  (polyhaven.com/a/red_brick_03; Rob Tuytel; 1 x 1 m)
+  Brick/Sandstone Blocks 05  (polyhaven.com/a/sandstone_blocks_05; Rob Tuytel; 3 x 3 m)
+  Concrete/Concrete Floor 02  (polyhaven.com/a/concrete_floor_02; Rob Tuytel; 2 x 2 m)
+  Concrete/Concrete Floor Worn 001  (polyhaven.com/a/concrete_floor_worn_001; Dimitrios Savva, Rico Cilliers; 3 x 3 m)
+  Concrete/Concrete Wall 003  (polyhaven.com/a/concrete_wall_003; Dimitrios Savva, Rico Cilliers; 3 x 3 m)
+  Concrete/Concrete Wall 008  (polyhaven.com/a/concrete_wall_008; Charlotte Baglioni, Dario Barresi; 2.71 x 2.71 m)
+  Ground/Asphalt 02  (polyhaven.com/a/asphalt_02; Rob Tuytel; 3 x 3 m)
+  Ground/Coast Sand 01  (polyhaven.com/a/coast_sand_01; Rob Tuytel; 15 x 15 m)
+  Ground/Cobblestone Floor 04  (polyhaven.com/a/cobblestone_floor_04; Rob Tuytel; 1.5 x 1.5 m)
+  Ground/Forest Ground 01  (polyhaven.com/a/forrest_ground_01; Rob Tuytel; 2 x 2 m)
+  Ground/Ganges River Pebbles  (polyhaven.com/a/ganges_river_pebbles; Amal Kumar; 2.16 x 2.16 m)
+  Ground/Rock 01  (polyhaven.com/a/rock_01; Rob Tuytel; 1.5 x 1.5 m)
+  Metal/Blue Metal Plate  (polyhaven.com/a/blue_metal_plate; Rob Tuytel; 2.5 x 2.5 m)
+  Metal/Corrugated Iron  (polyhaven.com/a/corrugated_iron; Dimitrios Savva, Jenelle van Heerden; 1.12 x 1.12 m)
+  Metal/Metal Plate  (polyhaven.com/a/metal_plate; Rob Tuytel; 0.5 x 0.5 m)
+  Metal/Rusty Metal 02  (polyhaven.com/a/rusty_metal_02; Rob Tuytel; 1 x 1 m)
+  Plaster/Beige Wall 001  (polyhaven.com/a/beige_wall_001; Dimitrios Savva, Rico Cilliers; 3 x 3 m)
+  Plaster/Grey Plaster  (polyhaven.com/a/grey_plaster; Rob Tuytel; 1 x 1 m)
+  Plaster/Plastered Wall  (polyhaven.com/a/plastered_wall; Amal Kumar; 2 x 2 m)
+  Roofing/Clay Roof Tiles 02  (polyhaven.com/a/clay_roof_tiles_02; Amal Kumar; 2.5 x 2.5 m)
+  Roofing/Roof Slates 03  (polyhaven.com/a/roof_slates_03; Rob Tuytel; 3 x 3 m)
+  Tiles/Checkered Pavement Tiles  (polyhaven.com/a/checkered_pavement_tiles; Amal Kumar; 2 x 2 m)
+  Tiles/Interior Tiles  (polyhaven.com/a/interior_tiles; Charlotte Baglioni; 1.9 x 1.9 m)
+  Wood/Brown Planks 03  (polyhaven.com/a/brown_planks_03; Rob Tuytel; 1 x 1 m)
+  Wood/Dark Wood  (polyhaven.com/a/dark_wood; Dario Barresi, Dimitrios Savva, Rico Cilliers; 2 x 2 m)
+  Wood/Laminate Floor 02  (polyhaven.com/a/laminate_floor_02; Charlotte Baglioni, Dario Barresi; 1.7 x 1.7 m)
+  Wood/Oak Veneer 01  (polyhaven.com/a/oak_veneer_01; Jenelle van Heerden; 1.83 x 1.83 m)
+  Wood/Old Planks 02  (polyhaven.com/a/old_planks_02; Rob Tuytel; 2 x 2 m)
+  Wood/Plywood  (polyhaven.com/a/plywood; Rob Tuytel; 0.5 x 0.5 m)

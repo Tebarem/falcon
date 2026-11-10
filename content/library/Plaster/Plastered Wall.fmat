@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Plastered Wall",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.0,
+    2.0
+  ],
+  "parallax": 0.004,
+  "textures": {
+    "baseColor": "@falcon/Plaster/Textures/Plastered Wall/color.jpg",
+    "normal": "@falcon/Plaster/Textures/Plastered Wall/normal.jpg",
+    "metallicRoughness": "@falcon/Plaster/Textures/Plastered Wall/arm.jpg",
+    "occlusion": "@falcon/Plaster/Textures/Plastered Wall/arm.jpg",
+    "height": "@falcon/Plaster/Textures/Plastered Wall/height.jpg"
+  },
+  "acoustic": {
+    "preset": "plaster"
+  },
+  "surface": {
+    "preset": "concrete"
+  }
+}

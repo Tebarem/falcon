@@ -1,0 +1,25 @@
+// Editor test: rigid node animation. A model with animation (runtime/tests/data/animated.gltf:
+// an arm turning 90 degrees over a second, carrying a box; a static cube; a moving camera) is
+// placed; Play turns the box with its arm (and leaves the static one), Stop puts it back. Saved
+// for editor_node_anim_reload.
+[
+  {"type": "test.wait", "frames": 20},
+  {"type": "editor.asset.place", "model": "animated.gltf"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "editor.transform.set", "id": "animated", "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "entity": {"name": "Box", "position": [2, 0, 0]}},
+  {"type": "test.expect", "entity": {"name": "Static", "position": [-3, 0, 0]}},
+  {"type": "test.expect", "entity": {"name": "Shot", "position": [0, 1.5, 6]}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 5, "ms": 1400},
+  {"type": "test.expect", "playing": true, "entity": {"name": "Box", "position": [0, 0, -2]}},
+  {"type": "test.expect", "entity": {"name": "Static", "position": [-3, 0, 0]}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "playing": false, "entity": {"name": "Box", "position": [2, 0, 0]}},
+  {"type": "test.expect", "entity": {"name": "Shot", "position": [0, 1.5, 6]}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.exit"}
+]

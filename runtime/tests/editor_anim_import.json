@@ -1,0 +1,78 @@
+// A skinned model (runtime/tests/data/skinned.gltf: a bar on two bones, clips Straight and Bend)
+// and its graph (skinned.fgraph) imported into Assets; Reload cooks the scene with the model's
+// skeleton and clips (a project's models keep their skins).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.assets.importFiles",
+  "paths": [
+   "data/skinned.gltf",
+   "data/skinned.fgraph"
+  ],
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 1500
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-as=\"reload\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "fileExists": [
+   "Assets/skinned.gltf",
+   "Assets/skinned.fgraph"
+  ],
+  "probe": {
+   "assetsStale": true
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-as=\"reload\"]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.wait",
+  "frames": 6000,
+  "cook": true
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "cookStages": [
+   "done"
+  ],
+  "sceneOpen": "Scenes/Main.fpak",
+  "sceneSwitches": 1,
+  "fileExists": [
+   "Scenes/Main.fpak",
+   "Scenes/Main.fvt"
+  ],
+  "fileMissing": [
+   "Cache/Cook/Scenes_Main.fpak",
+   "Cache/Cook/Scenes_Main.fvt"
+  ]
+ },
+ {
+  "type": "test.exit"
+ }
+]

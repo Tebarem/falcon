@@ -1,0 +1,42 @@
+{
+  "format": 1,
+  "name": "Concrete Wall 003",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "roughnessMin": 0.6,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    3.0,
+    3.0
+  ],
+  "parallax": 0.006,
+  "textures": {
+    "baseColor": "@falcon/Concrete/Textures/Concrete Wall 003/color.jpg",
+    "normal": "@falcon/Concrete/Textures/Concrete Wall 003/normal.jpg",
+    "metallicRoughness": "@falcon/Concrete/Textures/Concrete Wall 003/arm.jpg",
+    "occlusion": "@falcon/Concrete/Textures/Concrete Wall 003/arm.jpg",
+    "height": "@falcon/Concrete/Textures/Concrete Wall 003/height.jpg"
+  },
+  "acoustic": {
+    "preset": "concrete"
+  },
+  "surface": {
+    "preset": "concrete"
+  }
+}

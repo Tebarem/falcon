@@ -1,0 +1,32 @@
+// Editor test (VFX Test project): a flipbook sprite. A 4x4 sheet (flipbook_4x4.png: discs growing,
+// their hue turning) imported and made a material (alpha blend); "Smoke" draws it with a Sheet,
+// each particle on a frame of its own. Saved: the scene needs a cook for the texture, which
+// editor_particles_textured_reload gets (cooked first) and draws.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.assets.importFiles", "paths": ["samples/flipbook_4x4.png"], "folder": "Assets"},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.expect", "fileExists": "Assets/flipbook_4x4.png"},
+  {"type": "editor.assets.newMaterial", "folder": "Assets", "name": "Flip"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.key", "key": "Escape"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "fileExists": "Assets/Flip.fmat"},
+  {"type": "editor.material.set", "path": "Assets/Flip.fmat", "values": {"baseColor": [1, 1, 1, 1], "alpha": "blend",
+   "textures": {"baseColor": "Assets/flipbook_4x4.png"}}},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Smoke"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "editor.transform.set", "id": "Smoke", "position": [0, 2, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Smoke", "component": "ParticleEffect"},
+  {"type": "editor.component.add", "id": "Smoke", "component": "ParticleSphereEmitter"},
+  {"type": "editor.component.add", "id": "Smoke", "component": "ParticleSpriteRenderer"},
+  {"type": "editor.vfx.set", "id": "Smoke", "component": "particleEffect",
+    "fields": {"lifetime": 100, "sheet": true, "sequenceSpeed": 0, "sequenceTime": {"mode": "range", "a": 0, "b": 1}, "initialScale": 0.7}},
+  {"type": "editor.vfx.set", "id": "Smoke", "component": "particleSphereEmitter", "fields": {"burst": 40, "rate": 0, "radius": 1.3, "loop": false, "duration": 100}},
+  {"type": "editor.vfx.set", "id": "Smoke", "component": "particleSprite", "fields": {"material": "Assets/Flip.fmat", "columns": 4, "rows": 4, "depthFeather": 0}},
+  {"type": "test.expect", "entity": {"name": "Smoke", "vfx": {"particleSprite": {"material": "Assets/Flip.fmat", "columns": 4}}}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.exit"}
+]

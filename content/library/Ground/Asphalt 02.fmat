@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Asphalt 02",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    3.0,
+    3.0
+  ],
+  "parallax": 0.006,
+  "textures": {
+    "baseColor": "@falcon/Ground/Textures/Asphalt 02/color.jpg",
+    "normal": "@falcon/Ground/Textures/Asphalt 02/normal.jpg",
+    "metallicRoughness": "@falcon/Ground/Textures/Asphalt 02/arm.jpg",
+    "occlusion": "@falcon/Ground/Textures/Asphalt 02/arm.jpg",
+    "height": "@falcon/Ground/Textures/Asphalt 02/height.jpg"
+  },
+  "acoustic": {
+    "preset": "concrete"
+  },
+  "surface": {
+    "preset": "concrete"
+  }
+}

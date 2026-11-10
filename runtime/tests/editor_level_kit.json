@@ -1,0 +1,28 @@
+// The starter kit: Help/Make Starter Kit saves door, double door, window and vent prefabs (openings
+// with frames) and deletes its bench wall; the window dropped on a wall goes into it, framed, and
+// cuts it.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "Kit"},
+  {"type": "editor.project.openScene", "scene": "Scenes/Kit.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.tools.run", "menu": "Help/Make Starter Kit"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.expect", "entity": {"name": "Kit Bench", "alive": false}},
+  {"type": "editor.level.wall.create", "points": [[0, 0], [8, 0]], "height": 3, "thickness": 0.25, "name": "Hall"},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "Hall", "levelDrawnTriangles": 12}},
+  {"type": "editor.frame", "id": "Hall"},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "action": "move"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.asset.place", "prefab": "Assets/Kit/Kit Window.fprefab", "atMouse": true},
+  {"type": "test.wait", "frames": 20, "ms": 500},
+  {"type": "test.expect", "entity": {"name": "Hall", "children>": 0, "levelDrawnTriangles>": 12}},
+  {"type": "test.capture", "path": "level_kit.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

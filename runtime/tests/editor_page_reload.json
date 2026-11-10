@@ -1,0 +1,16 @@
+// Editor test: live reload of the editor's own page. A file written into its bundle (a copy, given
+// with --ui) makes the page load again, and the reloaded page gets the editor's state (its
+// settings among it); the file removed, it loads once more.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "pageLoads": 1},
+  {"type": "test.writeFile", "bundle": true, "path": "live-reload-test.txt", "text": "changed"},
+  {"type": "test.wait", "frames": 30, "ms": 2500},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "pageLoads": 2, "probe": {"giIntensity": 1}},
+  {"type": "test.writeFile", "bundle": true, "path": "live-reload-test.txt", "remove": true},
+  {"type": "test.wait", "frames": 30, "ms": 2500},
+  {"type": "test.expect", "pageLoads": 3},
+  {"type": "test.exit"}
+]

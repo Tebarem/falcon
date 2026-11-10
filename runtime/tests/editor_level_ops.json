@@ -1,0 +1,505 @@
+// Level operations: the level tools' own commands on a level box: extrude (E, typed 1), inset (I, .2),
+// delete (X) and undo; Shift+L the ring of an edge and Alt+R a loop cut across it; Alt+N in the object
+// mode; a cylinder drawn from the command palette (two corners on the ground, then its height).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Ops"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Ops.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "move"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "A"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "A",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1200
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "face"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "E"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true,
+   "hint": "Extrude"
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "1"
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  },
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 20,
+   "levelExtent>": 1.99
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "I"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "."
+ },
+ {
+  "type": "test.key",
+  "key": "2"
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 28
+  }
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "X"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 26
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 28
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 12,
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "edge"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.34,
+  "fy": 0.544
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "edge",
+   "count": 1
+  }
+ },
+ // Bevel it round: the wheel 3 notches (4 segments), 10 cm typed: the strip's 4 faces, the ends round.
+ {"type": "test.key", "key": "B"},
+ {"type": "test.wait", "frames": 5, "ms": 100},
+ {"type": "test.expect", "viewport": {"captured": true, "hint": "Bevel"}},
+ {"type": "test.wheel", "at": "#viewport", "y": 3},
+ {"type": "test.wait", "frames": 5, "ms": 100},
+ {"type": "test.expect", "viewport": {"hint": "4 segments round"}},
+ {"type": "test.key", "key": "."},
+ {"type": "test.key", "key": "1"},
+ {"type": "test.key", "key": "Return"},
+ {"type": "test.wait", "frames": 5, "ms": 100},
+ {"type": "test.expect", "viewport": {"captured": false}, "entity": {"name": "A", "levelTriangles": 28}},
+ {"type": "editor.undo"},
+ {"type": "test.wait", "frames": 3},
+ {"type": "test.expect", "entity": {"name": "A", "levelTriangles": 12}},
+ {"type": "test.mouse", "at": "#viewport", "fx": 0.34, "fy": 0.544},
+ {"type": "test.wait", "frames": 5, "ms": 100},
+ {"type": "test.expect", "elements": {"mode": "edge", "count": 1}},
+ {
+  "type": "test.key",
+  "key": "L",
+  "shift": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "edge",
+   "count": 4
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "R",
+  "alt": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 20
+  }
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "edge",
+   "count": 4
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "object"
+ },
+ {
+  "type": "editor.select",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.key",
+  "key": "N",
+  "alt": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "F3"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 200
+ },
+ {
+  "type": "test.type",
+  "text": "cylinder"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true,
+   "hint": "Cylinder"
+  }
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.3,
+  "fy": 0.7,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.3,
+  "fy": 0.7
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.78,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.78
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.45,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.45
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Level Mesh 3",
+   "levelTriangles": 60,
+   "levelHeight>": 0.2
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_ops.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Level Mesh 3",
+   "alive": false
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

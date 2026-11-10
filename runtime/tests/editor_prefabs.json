@@ -1,0 +1,75 @@
+// Linked prefabs (the project the material tests left):
+//   "Crate" (an empty) with Lid (a cube, 1 m up) and Spike (a cone), saved as Assets/Crate.fprefab:
+//   Crate becomes an instance of it. A second instance placed, "Crate (1)", moved to x = -26.
+//   Lid moved in Crate (an override); Apply: Crate (1)'s Lid follows. Spike moved in Crate (1),
+//   Revert: back. Spike moved again (kept: an override of Crate (1)); Lid moved and applied again:
+//   Crate (1)'s Lid follows, its Spike stays. A linked child cannot be deleted (Unpack first).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Crate"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "editor.transform.set", "id": "Crate", "position": [-30, 8, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "parent": "Crate", "name": "Lid"},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cone", "parent": "Crate", "name": "Spike"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "editor.transform.set", "id": "Crate/Lid", "position": [0, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "editor.prefab.create", "id": "Crate", "folder": "Assets"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "fileExists": "Assets/Crate.fprefab", "entity": {"name": "Crate", "prefab": "Assets/Crate.fprefab"}},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "prefab": "Assets/Crate.fprefab", "overridden": false, "position": [-30, 9, 0]}},
+
+  {"type": "editor.asset.place", "prefab": "Assets/Crate.fprefab"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.transform.set", "id": "Crate (1)", "position": [-26, 8, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Lid", "prefab": "Assets/Crate.fprefab", "position": [-26, 9, 0]}},
+
+  {"type": "editor.transform.set", "id": "Crate/Lid", "position": [0, 2, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "overridden": true}},
+  {"type": "editor.prefab.apply", "id": "Crate/Lid"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "overridden": false}},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Lid", "overridden": false, "position": [-26, 10, 0]}},
+
+  {"type": "editor.transform.set", "id": "Crate (1)/Spike", "position": [1, 0, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Spike", "overridden": true, "position": [-25, 8, 0]}},
+  {"type": "editor.prefab.revert", "id": "Crate (1)"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Spike", "overridden": false, "position": [-26, 8, 0]}},
+
+  {"type": "editor.transform.set", "id": "Crate (1)/Spike", "position": [1, 0, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.transform.set", "id": "Crate/Lid", "position": [0, 3, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 2},
+  {"type": "editor.prefab.apply", "id": "Crate"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Lid", "position": [-26, 11, 0]}},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Spike", "overridden": true, "position": [-25, 8, 0]}},
+
+  {"type": "editor.entity.delete", "id": "Crate/Lid"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "alive": false}},  // (a removal from this instance)
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "entity": {"name": "Crate/Lid", "alive": true}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.probe", "rects": [".as-search input"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": ".as-search input"},
+  {"type": "test.wait", "frames": 2, "ms": 100},
+  {"type": "test.type", "text": "Crate"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.wait", "frames": 6000, "previews": true, "ms": 500},
+  {"type": "test.wait", "frames": 10, "ms": 500},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"assetsCount": 1, "assetsPreviews>": 0}},
+  {"type": "editor.select", "id": "Crate (1)/Spike"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.capture", "path": "prefabs.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

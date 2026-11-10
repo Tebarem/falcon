@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Forest Ground 01",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.0,
+    2.0
+  ],
+  "parallax": 0.03,
+  "textures": {
+    "baseColor": "@falcon/Ground/Textures/Forest Ground 01/color.jpg",
+    "normal": "@falcon/Ground/Textures/Forest Ground 01/normal.jpg",
+    "metallicRoughness": "@falcon/Ground/Textures/Forest Ground 01/arm.jpg",
+    "occlusion": "@falcon/Ground/Textures/Forest Ground 01/arm.jpg",
+    "height": "@falcon/Ground/Textures/Forest Ground 01/height.jpg"
+  },
+  "acoustic": {
+    "preset": "dirt"
+  },
+  "surface": {
+    "preset": "dirt"
+  }
+}

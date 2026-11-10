@@ -1,0 +1,42 @@
+{
+  "format": 1,
+  "name": "Red Brick 03",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "roughnessMin": 0.7,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.0,
+    1.0
+  ],
+  "parallax": 0.025,
+  "textures": {
+    "baseColor": "@falcon/Brick/Textures/Red Brick 03/color.jpg",
+    "normal": "@falcon/Brick/Textures/Red Brick 03/normal.jpg",
+    "metallicRoughness": "@falcon/Brick/Textures/Red Brick 03/arm.jpg",
+    "occlusion": "@falcon/Brick/Textures/Red Brick 03/arm.jpg",
+    "height": "@falcon/Brick/Textures/Red Brick 03/height.jpg"
+  },
+  "acoustic": {
+    "preset": "brick"
+  },
+  "surface": {
+    "preset": "brick"
+  }
+}

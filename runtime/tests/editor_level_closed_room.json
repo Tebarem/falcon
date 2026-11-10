@@ -1,0 +1,49 @@
+// No light leaks into a closed level room: walls a quarter of a metre thick with a floor and a
+// ceiling (far thinner than the GI probes' 1 m spacing: a cell of probes reaches through them),
+// the sun on them outside. Inside, the indirect light (debug view 12) alone is black, its sky part
+// alone and its bounce part alone (editor_level_closed_room_sky / _bounce compare them with both
+// off). (The voxel GI the probes replaced leaked the sky through the walls and ceiling, and a
+// wall's sunlit outside lit the room.) Outside, the sky part is not black (the GI is on:
+// editor_level_closed_room_open). The room's triangles are in the BVH the probes' rays trace.
+// Then a lamp inside: its light bounces round the room (editor_level_closed_room_lamp: the
+// indirect light not black), the probes relit when it was made.
+[
+ {"type": "test.wait", "frames": 20, "ms": 800},
+ {"type": "test.newScene", "name": "Closed"},
+ {"type": "editor.project.openScene", "scene": "Scenes/Closed.fpak"},
+ {"type": "test.wait", "frames": 60, "ms": 1500},
+ {"type": "test.wait", "frames": 100000, "build": true},
+ {"type": "editor.entity.create", "kind": "level", "shape": "plane", "name": "Ground"},
+ {"type": "editor.transform.set", "id": "Ground", "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": [4, 1, 4]},
+ {"type": "editor.level.wall.create", "points": [[-3, -3], [3, -3], [3, 3], [-3, 3]], "closed": true, "floor": true,
+  "ceiling": true, "height": 3, "thickness": 0.25, "name": "Room"},
+ {"type": "editor.select", "ids": []},
+ {"type": "editor.settings.set", "key": "debugView", "value": 12},
+ {"type": "test.view", "position": [1.5, 1.6, 1.5], "target": [-3, 1, -3]},
+ {"type": "test.wait", "frames": 90, "ms": 2500},
+ {"type": "test.expect", "live": {"bvhTriangles>": 0}},
+ {"type": "editor.settings.set", "key": "giIntensity", "value": 0},
+ {"type": "test.wait", "frames": 20, "ms": 500},
+ {"type": "test.capture", "path": "level_closed_sky.png", "viewport": true},
+ {"type": "editor.settings.set", "key": "giIntensity", "value": 1},
+ {"type": "editor.settings.set", "key": "skyIntensity", "value": 0},
+ {"type": "test.wait", "frames": 20, "ms": 500},
+ {"type": "test.capture", "path": "level_closed_bounce.png", "viewport": true},
+ {"type": "editor.settings.set", "key": "giIntensity", "value": 0},
+ {"type": "test.wait", "frames": 20, "ms": 500},
+ {"type": "test.capture", "path": "level_closed_black.png", "viewport": true},
+ {"type": "editor.settings.set", "key": "giIntensity", "value": 1},
+ {"type": "editor.settings.set", "key": "skyIntensity", "value": 1},
+ {"type": "test.view", "position": [9, 4, 9], "target": [0, 1, 0]},
+ {"type": "test.wait", "frames": 30, "ms": 800},
+ {"type": "test.capture", "path": "level_closed_outside.png", "viewport": true},
+ {"type": "editor.entity.create", "kind": "light", "light": "point", "name": "Lamp"},
+ {"type": "editor.transform.set", "id": "Lamp", "position": [0, 2, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+ {"type": "editor.light.set", "id": "Lamp", "color": [1, 0.8, 0.6], "intensity": 20, "range": 8},
+ {"type": "editor.select", "ids": []},
+ {"type": "test.view", "position": [1.5, 1.6, 1.5], "target": [-3, 1, -3]},
+ {"type": "test.wait", "frames": 1500, "gi": true},
+ {"type": "test.capture", "path": "level_closed_lamp.png", "viewport": true},
+ {"type": "editor.settings.set", "key": "debugView", "value": 0},
+ {"type": "test.exit"}
+]

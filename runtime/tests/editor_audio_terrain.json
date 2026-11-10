@@ -1,0 +1,25 @@
+// Editor test (after editor_audio: Beep.fsound loops): the terrain in the acoustics. A flat terrain
+// with a sand layer; "Buried", previewed 6 m under the ground, is blocked from the view above,
+// letting through sand's share; the layer set to sound like foliage lets most of it through.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.terrain.create", "tiles": 1, "spacing": 0.5, "heightMin": -50, "heightMax": 100, "hills": 0, "height": 0},
+  {"type": "test.expect", "terrain": {"exists": true}},
+  {"type": "editor.terrain.layer.add", "generated": "sand"},
+  {"type": "test.view", "position": [10, 4, 10], "target": [10, -6, 6]},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Buried"},
+  {"type": "editor.transform.set", "id": "Buried", "position": [10, -6, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Buried", "component": "AudioSource"},
+  {"type": "editor.audio.source.set", "id": "Buried", "sound": "Assets/Beep.fsound"},
+  {"type": "editor.audio.play", "id": "Buried"},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.expect", "audio": {"source": {"name": "Buried", "occlusionBelow": 0.05, "transmissionBelow": 0.01}}},
+  {"type": "editor.terrain.layer.set", "index": 0, "acoustic": "foliage"},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.expect", "audio": {"source": {"name": "Buried", "occlusionBelow": 0.05, "transmissionAbove": 0.5}}},
+  {"type": "editor.transform.set", "id": "Buried", "position": [10, 3, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.expect", "audio": {"source": {"name": "Buried", "occlusionAbove": 0.95}}},
+  {"type": "editor.audio.stop"},
+  {"type": "test.exit"}
+]

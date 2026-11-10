@@ -1,0 +1,38 @@
+// Nav agents: two cubes with a NavAgent each (Falcon.Level.NavAgent) on either side of a long wall,
+// each heading for the other's side: while playing they walk round the wall's end (and past each
+// other) to their destinations; Stop puts them back.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "Agents"},
+  {"type": "editor.project.openScene", "scene": "Scenes/Agents.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "AgentFloor"},
+  {"type": "editor.transform.set", "id": "AgentFloor", "position": [0, -0.5, 0], "rotation": [0, 0, 0], "scale": [30, 1, 30]},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "AgentWall"},
+  {"type": "editor.transform.set", "id": "AgentWall", "position": [0, 1.5, -2], "rotation": [0, 0, 0], "scale": [0.4, 3, 26]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "WalkerA"},
+  {"type": "editor.transform.set", "id": "WalkerA", "position": [-5, 0, 0], "rotation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "WalkerB"},
+  {"type": "editor.transform.set", "id": "WalkerB", "position": [5, 0, 1], "rotation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+  {"type": "editor.component.add", "id": "WalkerA", "component": "Script:Falcon.Level.NavAgent"},
+  {"type": "editor.script.set", "id": "WalkerA", "class": "Falcon.Level.NavAgent", "values": {"Destination": [5, 0, -1], "Speed": 8}},
+  {"type": "editor.component.add", "id": "WalkerB", "component": "Script:Falcon.Level.NavAgent"},
+  {"type": "editor.script.set", "id": "WalkerB", "class": "Falcon.Level.NavAgent", "values": {"Destination": [-5, 0, 1], "Speed": 8}},
+  {"type": "editor.frame", "id": "AgentFloor"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "editor.nav.bake"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "navPolys>": 4},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 60, "ms": 9000},
+  {"type": "test.expect", "entity": {"name": "WalkerA", "at": [5, 0, -1], "within": 0.8}},
+  {"type": "test.expect", "entity": {"name": "WalkerB", "at": [-5, 0, 1], "within": 0.8}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 20, "ms": 500},
+  {"type": "test.expect", "entity": {"name": "WalkerA", "at": [-5, 0, 0]}},
+  {"type": "test.exit"}
+]

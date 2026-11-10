@@ -1,0 +1,12 @@
+// Editor test: editor_audio_occlusion's scene reopened. The wall keeps its acoustics (wood, its
+// own) and still occludes the speaker, letting through wood's share.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.view", "position": [0, 1.5, 0], "target": [0, 1.5, -10]},
+  {"type": "test.expect", "entity": {"name": "Wall", "has": ["AcousticSurface"]}},
+  {"type": "editor.audio.play", "id": "Speaker"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "audio": {"source": {"name": "Speaker", "occlusionBelow": 0.05, "transmissionAbove": 0.01, "transmissionBelow": 0.02}}},
+  {"type": "editor.audio.stop"},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,296 @@
+// Editor test (Script Test project): script components (API v20). A Spinner (C#: a Falcon.Component with
+// [Property] members, registered by the source generator) added to an entity in the Inspector, its
+// properties set (an Entity by name, an enum, a string), removed and brought back by undo, saved in a
+// prefab; Play makes it (and the spawned prefab's: OnAwake, OnStart, OnFixedUpdate, OnUpdate); a hot
+// reload while playing keeps its properties (and the game's OnStart, run again, spawns another);
+// Stop puts the scene back.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\npublic enum Axis { X, Y, Z }\n\n// A script component (API v20): set up in the Inspector, saved with the scene, run while playing.\npublic sealed class Spinner : Component\n{\n    [Property, Range(0, 720)] public float Speed = 90f;\n    [Property] public Axis Around = Axis.Y;\n    [Property] public Entity Target;\n    [Property] public Vector3 Lift = new(0, 1, 0);\n    [Property] public string Label = \"spinner\";\n\n    public static int Awakes, Starts, Destroys, Fixed, Updates;\n\n    public override void OnAwake() => ++Awakes;\n    public override void OnStart() => ++Starts;\n    public override void OnFixedUpdate(float dt) => ++Fixed;\n    public override void OnDestroy() => ++Destroys;\n\n    public override void OnUpdate(float dt)\n    {\n        ++Updates;\n        Entity.Position += Lift * dt;  // (rises while playing; Stop puts it back)\n    }\n}\n\n// The test's report: what the components did, on the HUD (VERSION changes with a hot reload).\npublic sealed class ComponentsGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<ComponentsGame>();\n\n    private Entity _spawned;\n\n    public override void OnStart() => _spawned = Prefab.Spawn(\"Assets/Spinny.fprefab\", new Vector3(0, 5, 5));\n\n    public override void OnUpdate(float dt)\n    {\n        Spinner? s = Entity.Find(\"Spinny\").GetComponent<Spinner>();\n        Spinner? spawned = _spawned.GetComponent<Spinner>();\n        string props = s == null ? \"none\" :\n            $\"speed {s.Speed} around {s.Around} target {(s.Target == Entity.Find(\"Goal\") ? \"ok\" : \"BAD\")} lift {s.Lift.Y} label {s.Label}\";\n        Hud.Show($\"VERSION 1 awakes {Spinner.Awakes} starts {Spinner.Starts} fixed {(Spinner.Fixed > 0 ? \"yes\" : \"no\")} \" +\n                 $\"updates {(Spinner.Updates > 0 ? \"yes\" : \"no\")} spawned {(spawned != null ? \"yes\" : \"no\")} {props}\");\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "playing": false
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Spinny",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Spinny",
+  "position": [
+   0,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Goal"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Goal",
+  "position": [
+   3,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Spinny",
+  "component": "Script:ScriptTest.Spinner"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scripts": [
+    "ScriptTest.Spinner"
+   ]
+  }
+ },
+ {
+  "type": "editor.script.set",
+  "id": "Spinny",
+  "class": "ScriptTest.Spinner",
+  "values": {
+   "Speed": 180,
+   "Around": "X",
+   "Target": "Goal",
+   "Label": "spun"
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scriptProps": {
+    "ScriptTest.Spinner": {
+     "Speed": 180,
+     "Around": "X",
+     "Label": "spun"
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.component.remove",
+  "id": "Spinny",
+  "component": "Script:ScriptTest.Spinner"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scripts": []
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scripts": [
+    "ScriptTest.Spinner"
+   ],
+   "scriptProps": {
+    "ScriptTest.Spinner": {
+     "Speed": 180,
+     "Label": "spun"
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.prefab.create",
+  "id": "Spinny"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Assets/Spinny.fprefab": "ScriptTest.Spinner"
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "scripts": [
+    "ScriptTest.Spinner"
+   ],
+   "scriptProps": {
+    "ScriptTest.Spinner": {
+     "Speed": 180
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "VERSION 1 awakes 2 starts 2 fixed yes updates yes spawned yes speed 180 around X target ok lift 1 label spun"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "yAbove": 1.05
+  }
+ },
+ {
+  "type": "test.editFile",
+  "path": "Scripts/Game.cs",
+  "find": "VERSION 1",
+  "replace": "VERSION 2"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 400
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "VERSION 2 awakes 3 starts 3 fixed yes updates yes spawned yes speed 180 around X target ok lift 1 label spun"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "game": {
+   "running": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Spinny",
+   "position": [
+    0,
+    1,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

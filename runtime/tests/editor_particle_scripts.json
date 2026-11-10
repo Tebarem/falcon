@@ -1,0 +1,152 @@
+// Editor test (VFX Test project): script API v15. A test game registers a ParticleController
+// ("Lift": its particles rise; it counts the new ones), named by "Lifted"'s Particle Script; makes a
+// prefab of a particle burst in OnStart (Prefab.Spawn, counted by Particles.Count); and counts the
+// hits of editor_particles' "Rain" on its shelf (Particles.Hits). Stop ends it all.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Assets/Burst.fprefab",
+  "text": "{\n  \"format\": 1,\n  \"name\": \"Burst\",\n  \"entities\": [\n    {\n      \"id\": \"0\",\n      \"name\": \"Burst\",\n      \"kind\": \"empty\",\n      \"particleEffect\": {\n        \"lifetime\": 30\n      },\n      \"particleSphereEmitter\": {\n        \"burst\": 12,\n        \"loop\": false,\n        \"duration\": 30\n      }\n    }\n  ]\n}\n"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace VfxTest;\n\n// Lifts its effect's particles (a Particle Script names it) and counts what it sees.\npublic sealed class Lift : ParticleController\n{\n    public static int Created, Steps;\n\n    public override void OnParticleCreated(ref Particle p)\n    {\n        Created++;\n        p.User.X = 1f;\n    }\n\n    public override void OnParticleStep(ref Particle p, float dt)\n    {\n        Steps++;\n        p.Velocity = new Vector3(0f, 2f, 0f);\n    }\n}\n\n// Test game: a prefab made in OnStart (Prefab.Spawn), the hits of the \"Rain\" effect falling on its\n// shelf (Particles.Hits), and the Lift controller at work, on the HUD.\npublic sealed class VfxGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register()\n    {\n        Register<VfxGame>();\n        Particles.Register<Lift>();\n    }\n\n    private Entity _spawned;\n    private int _hits;\n\n    public override void OnStart()\n    {\n        _spawned = Prefab.Spawn(\"Assets/Burst.fprefab\", new Vector3(-10f, 3f, 0f), Prefab.Facing(Vector3.UnitY));\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        Entity rain = Entity.Find(\"Rain\");\n        Span<ParticleHit> hits = stackalloc ParticleHit[64];\n        if (rain.IsValid)\n            _hits += Particles.Hits(rain, hits);\n        bool alive = _spawned.IsValid && _spawned.IsAlive;\n        Hud.Show($\"lift {(Lift.Created > 0 ? \"created\" : \"none\")} {(Lift.Steps > 0 ? \"stepped\" : \"still\")}, spawned {(alive ? \"yes\" : \"no\")} {Particles.Count(_spawned)}, rain {(_hits > 0 ? \"hit\" : \"none\")}\");\n    }\n}\n"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Lifted"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Lifted",
+  "position": [
+   -5,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Lifted",
+  "component": "ParticleEffect"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Lifted",
+  "component": "ParticleSphereEmitter"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Lifted",
+  "component": "ParticleScript"
+ },
+ {
+  "type": "editor.vfx.set",
+  "id": "Lifted",
+  "component": "particleEffect",
+  "fields": {
+   "lifetime": 30
+  }
+ },
+ {
+  "type": "editor.vfx.set",
+  "id": "Lifted",
+  "component": "particleSphereEmitter",
+  "fields": {
+   "burst": 10,
+   "radius": 0.2,
+   "loop": false,
+   "duration": 30
+  }
+ },
+ {
+  "type": "editor.vfx.set",
+  "id": "Lifted",
+  "component": "particleScript",
+  "fields": {
+   "class": "Lift"
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Lifted",
+   "vfx": {
+    "particleScript": {
+     "class": "Lift"
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 90,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "lift created stepped, spawned yes 12, rain hit",
+  "entity": {
+   "name": "Lifted",
+   "particles": 10,
+   "particleMinY>": 1.8
+  }
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "entity": {
+   "name": "Lifted",
+   "alive": true
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.exit"
+ }
+]

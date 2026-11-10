@@ -1,0 +1,23 @@
+// Editor test (VFX Test project): opened after editor_decals, cooked first. The decal draws its
+// crater on the floor (decals_on), deeper with parallax than flat (decals_flat: parallax depth 0),
+// and goes with its component (decals_off). Compared by editor_decals_drawn and _parallax.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "entity": {"name": "Hole", "vfx": {"decal": {"material": "Assets/Hole.fmat", "parallaxDepth": 0.4}}}},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.view", "position": [0, -16.5, 3.5], "target": [0, -19.5, 0]},
+  {"type": "test.wait", "frames": 90, "ms": 1500},
+  {"type": "test.capture", "path": "decals_on.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.vfx.set", "id": "Hole", "component": "decal", "fields": {"parallaxDepth": 0}},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 20, "ms": 300},
+  {"type": "test.capture", "path": "decals_flat.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.component.remove", "id": "Hole", "component": "Decal"},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 20, "ms": 300},
+  {"type": "test.capture", "path": "decals_off.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,92 @@
+// Editor test on the project launcher_create made (its empty Main scene): a flat terrain at 7.5 m,
+// saved with the scene; a new scene (Scenes/Second.fpak added to project.falcon, cooked in the
+// background; opened in the same process). editor_project_reload then
+// finds the terrain again: a scene that never came from a file saves and loads.
+[
+ {
+  "type": "test.expect",
+  "terrain": {
+   "exists": false
+  }
+ },
+ {
+  "type": "editor.terrain.create",
+  "tiles": 1,
+  "spacing": 0.5,
+  "heightMin": -50,
+  "heightMax": 100,
+  "hills": 0,
+  "height": 7.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 5
+ },
+ {
+  "type": "test.expect",
+  "terrain": {
+   "exists": true,
+   "x": 10,
+   "z": -10,
+   "height": 7.5,
+   "tolerance": 0.02
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5
+ },
+ {
+  "type": "test.expect",
+  "projectScenes": 1
+ },
+ {
+  "type": "editor.project.newScene",
+  "name": "Second"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5
+ },
+ {
+  "type": "test.expect",
+  "projectScenes": 2
+ },
+ {
+  "type": "test.wait",
+  "frames": 3000,
+  "cook": true
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "fileExists": [
+   "Scenes/Second.fpak",
+   "Scenes/Second.fvt"
+  ],
+  "fileMissing": [
+   "Cache/Stamps/Scenes_Second.fpak.cooking",
+   "Cache/Cook/Scenes_Second.fpak",
+   "Cache/Cook/Scenes_Second.fvt"
+  ],
+  "sceneOpen": "Scenes/Second.fpak",
+  "sceneSwitches": 1
+ },
+ {
+  "type": "editor.project.openLauncher"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "launched": "--launcher"
+ },
+ {
+  "type": "test.exit"
+ }
+]

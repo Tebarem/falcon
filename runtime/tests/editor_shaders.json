@@ -1,0 +1,97 @@
+// Project shaders (R2): Shaders/Grey.slang compiled by the editor in the background into
+// Cache/Shaders (its uniform block reflected, a pipeline made from it); a syntax error reported
+// with its line; fixed with a field renamed, compiled again.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Grey.slang",
+  "text": "// A test effect: grey by Strength, tinted.\nstruct Params  // (16-byte rows: the same layout for SPIR-V and DXIL)\n{\n    float Strength;\n    float Gain;\n    float2 Offset;\n    float4 Tint;\n};\n\n[[vk::binding(0, 0)]] Sampler2D<float4> source : register(t0, space0) : register(s0, space0);\n[[vk::binding(0, 1)]] [format(\"rgba16f\")] RWTexture2D<float4> target : register(u0, space1);\n[[vk::binding(0, 2)]] ConstantBuffer<Params> params : register(b0, space2);\n\n[shader(\"compute\")]\n[numthreads(8, 8, 1)]\nvoid main(uint3 id : SV_DispatchThreadID)\n{\n    uint w, h;\n    target.GetDimensions(w, h);\n    if (id.x >= w || id.y >= h)\n        return;\n    const float4 c = source.SampleLevel((float2(id.xy) + 0.5) / float2(w, h), 0.0);\n    const float grey = dot(c.rgb, float3(0.2126, 0.7152, 0.0722));\n    target[id.xy] = float4(lerp(c.rgb, grey.xxx * params.Tint.rgb * params.Gain, params.Strength), c.a);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Grey.slang",
+   "compiled": true,
+   "entries": 1,
+   "uniforms": [
+    "Strength",
+    "Gain",
+    "Offset",
+    "Tint"
+   ],
+   "loads": true
+  },
+  "fileExists": "Cache/Shaders/Shaders_Grey.fshader"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Grey.slang",
+  "text": "// A test effect: grey by Strength, tinted.\nstruct Params  // (16-byte rows: the same layout for SPIR-V and DXIL)\n{\n    float Strength;\n    float Gain;\n    float2 Offset;\n    float4 Tint;\n};\n\n[[vk::binding(0, 0)]] Sampler2D<float4> source : register(t0, space0) : register(s0, space0);\n[[vk::binding(0, 1)]] [format(\"rgba16f\")] RWTexture2D<float4> target : register(u0, space1);\n[[vk::binding(0, 2)]] ConstantBuffer<Params> params : register(b0, space2);\n\n[shader(\"compute\")]\n[numthreads(8, 8, 1)]\nvoid main(uint3 id : SV_DispatchThreadID)\n{\n    uint w, h;\n    target.GetDimensions(w, h) oops;\n    if (id.x >= w || id.y >= h)\n        return;\n    const float4 c = source.SampleLevel((float2(id.xy) + 0.5) / float2(w, h), 0.0);\n    const float grey = dot(c.rgb, float3(0.2126, 0.7152, 0.0722));\n    target[id.xy] = float4(lerp(c.rgb, grey.xxx * params.Tint.rgb * params.Gain, params.Strength), c.a);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Grey.slang",
+   "compiled": false,
+   "error": "Grey.slang:19"
+  }
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Shaders/Grey.slang",
+  "text": "// A test effect: grey by Amount, tinted.\nstruct Params  // (16-byte rows: the same layout for SPIR-V and DXIL)\n{\n    float Amount;\n    float Gain;\n    float2 Offset;\n    float4 Tint;\n};\n\n[[vk::binding(0, 0)]] Sampler2D<float4> source : register(t0, space0) : register(s0, space0);\n[[vk::binding(0, 1)]] [format(\"rgba16f\")] RWTexture2D<float4> target : register(u0, space1);\n[[vk::binding(0, 2)]] ConstantBuffer<Params> params : register(b0, space2);\n\n[shader(\"compute\")]\n[numthreads(8, 8, 1)]\nvoid main(uint3 id : SV_DispatchThreadID)\n{\n    uint w, h;\n    target.GetDimensions(w, h);\n    if (id.x >= w || id.y >= h)\n        return;\n    const float4 c = source.SampleLevel((float2(id.xy) + 0.5) / float2(w, h), 0.0);\n    const float grey = dot(c.rgb, float3(0.2126, 0.7152, 0.0722));\n    target[id.xy] = float4(lerp(c.rgb, grey.xxx * params.Tint.rgb * params.Gain, params.Amount), c.a);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "shaders": true
+ },
+ {
+  "type": "test.expect",
+  "shader": {
+   "path": "Shaders/Grey.slang",
+   "compiled": true,
+   "uniforms": [
+    "Amount",
+    "Gain",
+    "Offset",
+    "Tint"
+   ],
+   "loads": true,
+   "revisionAtLeast": 2
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

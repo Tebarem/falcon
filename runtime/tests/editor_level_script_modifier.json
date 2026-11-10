@@ -1,0 +1,40 @@
+// A C# modifier (a Falcon.Level.MeshModifier class in the project's scripts): built, on a level box's
+// stack from its class (copies side by side), a setting of it changed (one undo step) and undone;
+// the class taken out of the code: the box as it is again once the code is loaded.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "ScriptModifier"},
+  {"type": "editor.project.openScene", "scene": "Scenes/ScriptModifier.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.writeFile", "path": "Scripts/LevelModifiers.cs",
+   "text": "using System;\nusing System.Numerics;\nusing Falcon;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_script_modifier: copies of the mesh side by side, Gap metres apart.\npublic sealed class SideBySide : MeshModifier\n{\n    [Property] public int Count = 2;\n    [Property] public float Gap = 0.5f;\n\n    public override PolyMesh Apply(PolyMesh mesh)\n    {\n        var result = new PolyMesh();\n        result.Materials.Clear();\n        result.Materials.AddRange(mesh.Materials);\n        float lo = float.MaxValue, hi = float.MinValue;\n        foreach (Vector3 p in mesh.Positions)\n        {\n            lo = MathF.Min(lo, p.X);\n            hi = MathF.Max(hi, p.X);\n        }\n        for (int c = 0; c < Count; ++c)\n        {\n            int first = result.Positions.Count;\n            foreach (Vector3 p in mesh.Positions)\n                result.Positions.Add(p + new Vector3(c * (hi - lo + Gap), 0, 0));\n            foreach (Face face in mesh.Faces)\n            {\n                var loop = new int[face.Count];\n                for (int k = 0; k < face.Count; ++k)\n                    loop[k] = first + mesh.Corners[face.First + k];\n                result.AddFace(loop, face.Material, face.Smoothing);\n            }\n        }\n        return result;\n    }\n}\n"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "A"},
+  {"type": "editor.transform.set", "id": "A", "position": [0, 0.5, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.frame", "id": "A"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+
+  {"type": "editor.level.modifier", "op": "add", "kind": "script", "class": "ScriptTest.SideBySide"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "A", "modifierTitles": ["SideBySide"], "levelTriangles": 12, "levelDrawnTriangles": 24}},
+  {"type": "test.probe", "rects": ["[data-modifier=\"0\"]"], "reveal": true},
+  {"type": "editor.level.modifier", "op": "set", "index": 0, "settings": {"Count": 3}},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "A", "levelDrawnTriangles": 36}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "A", "levelDrawnTriangles": 24}},
+
+  {"type": "editor.level.modifier", "op": "add", "kind": "deform", "deform": "twist"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "A", "modifierTitles": ["SideBySide", "Twist"]}},
+  {"type": "editor.undo"},
+
+  {"type": "test.writeFile", "path": "Scripts/LevelModifiers.cs", "remove": true},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 20, "ms": 500},
+  {"type": "test.expect", "entity": {"name": "A", "modifierTitles": ["SideBySide"], "levelDrawnTriangles": 12}},
+  {"type": "test.exit"}
+]

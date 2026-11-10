@@ -1,0 +1,18 @@
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "scripts": "ready", "game": {"running": false}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "scripts": "ready", "playing": true, "game": {"running": true, "entities": 3, "bodies": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "game": {"running": false, "entities": 0, "bodies": 0}},
+  {"type": "test.expect", "entity": {"name": "Crate (1)/Spike", "position": [-25, 8, 0]}},
+  {"type": "test.writeFile", "path": "Cache/Scripts/bin/Falcon.Engine.dll", "text": "another engine"},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "scripts": "ready", "playing": true, "game": {"running": true, "entities": 3}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.exit"}
+]

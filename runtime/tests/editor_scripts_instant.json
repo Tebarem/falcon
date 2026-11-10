@@ -1,0 +1,37 @@
+// Editor test (after editor_scripts_reload left another engine's Falcon.Engine.dll in the build):
+// the scripts built in the background as they change, so Play has nothing to build. Opened, the
+// build is rebuilt at once and Play starts within two frames; a saved change is built without
+// Play (seen building), then played within two frames on the new code; a compile error keeps
+// Play from starting without building again; the test game is put back.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.expect", "scripts": "ready", "playing": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "scripts": "ready", "playing": true, "game": {"running": true, "entities": 3, "bodies": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "game": {"running": false, "entities": 0, "bodies": 0}},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace LauncherTest;\n\n[Component(\"LauncherTest.Marker\")]\npublic struct Marker\n{\n    public float Age;\n}\n\n// Test game: three entities of its own component, a sphere, and every root mesh rising.\npublic sealed class LauncherTestGame : Game\n{\n    private Query? _movers, _markers;\n\n    [ModuleInitializer]\n    internal static void Register() => Register<LauncherTestGame>();\n\n    public override void OnStart()\n    {\n        _movers = new Query(Query.InOut<WorldTransform>(), Query.In<MeshInstance>(), Query.Not<Parent>(), Query.Not<RigidBody>());\n        _markers = new Query(Query.InOut<Marker>());\n        for (int i = 0; i < 5; ++i)\n            Ecs.Set(Ecs.Create(), new Marker());\n        Physics.Spawn(BodyShape.Sphere, new Vector3(0, 30, 0), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        PerformanceHud.Update(dt);\n        foreach (Chunk c in _movers!)\n        {\n            Span<WorldTransform> t = c.Write<WorldTransform>(0);\n            for (int i = 0; i < c.Count; ++i)\n            {\n                Vector3 p = t[i].Position;\n                p.Y += 0.5f;\n                t[i].Position = p;\n            }\n        }\n        foreach (Chunk c in _markers!)\n        {\n            Span<Marker> m = c.Write<Marker>(0);\n            for (int i = 0; i < c.Count; ++i)\n                m[i].Age += dt;\n        }\n    }\n}\n"},
+  {"type": "test.wait", "frames": 1, "ms": 700},
+  {"type": "test.expect", "scripts": "building", "playing": false},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.expect", "scripts": "ready", "playing": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "scripts": "ready", "playing": true, "game": {"running": true, "entities": 5, "bodies": 1}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 5},
+  {"type": "test.expect", "game": {"running": false, "entities": 0, "bodies": 0}},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace LauncherTest;\n\n[Component(\"LauncherTest.Marker\")]\npublic struct Marker\n{\n    public float Age;\n}\n\n// Test game: three entities of its own component, a sphere, and every root mesh rising.\npublic sealed class LauncherTestGame : Game\n{\n    private Query? _movers, _markers;\n\n    [ModuleInitializer]\n    internal static void Register() => Register<LauncherTestGame>();\n\n    public override void OnStart()\n    {\n        _movers = new Query(Query.InOut<WorldTransform>(), Query.In<MeshInstance>(), Query.Not<Parent>(), Query.Not<RigidBody>());\n        _markers = new Query(Query.InOut<Marker>());\n        for (int i = 0; i < 3; ++i)\n            Ecs.Set(Ecs.Create(), new Marker());\n        Physics.Spawn(BodyShape.Sphere, new Vector3(0, 30, 0), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        PerformanceHud.Update(dt);\n        foreach (Chunk c in _movers!)\n        {\n            Span<WorldTransform> t = c.Write<WorldTransform>(0);\n            for (int i = 0; i < c.Count; ++i)\n            {\n                Vector3 p = t[i].Position;\n                p.Y += \"broken\";\n                t[i].Position = p;\n            }\n        }\n        foreach (Chunk c in _markers!)\n        {\n            Span<Marker> m = c.Write<Marker>(0);\n            for (int i = 0; i < c.Count; ++i)\n                m[i].Age += dt;\n        }\n    }\n}\n"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.expect", "scripts": "failed", "playing": false},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 2},
+  {"type": "test.expect", "scripts": "failed", "playing": false},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace LauncherTest;\n\n[Component(\"LauncherTest.Marker\")]\npublic struct Marker\n{\n    public float Age;\n}\n\n// Test game: three entities of its own component, a sphere, and every root mesh rising.\npublic sealed class LauncherTestGame : Game\n{\n    private Query? _movers, _markers;\n\n    [ModuleInitializer]\n    internal static void Register() => Register<LauncherTestGame>();\n\n    public override void OnStart()\n    {\n        _movers = new Query(Query.InOut<WorldTransform>(), Query.In<MeshInstance>(), Query.Not<Parent>(), Query.Not<RigidBody>());\n        _markers = new Query(Query.InOut<Marker>());\n        for (int i = 0; i < 3; ++i)\n            Ecs.Set(Ecs.Create(), new Marker());\n        Physics.Spawn(BodyShape.Sphere, new Vector3(0, 30, 0), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        PerformanceHud.Update(dt);\n        foreach (Chunk c in _movers!)\n        {\n            Span<WorldTransform> t = c.Write<WorldTransform>(0);\n            for (int i = 0; i < c.Count; ++i)\n            {\n                Vector3 p = t[i].Position;\n                p.Y += 0.5f;\n                t[i].Position = p;\n            }\n        }\n        foreach (Chunk c in _markers!)\n        {\n            Span<Marker> m = c.Write<Marker>(0);\n            for (int i = 0; i < c.Count; ++i)\n                m[i].Age += dt;\n        }\n    }\n}\n"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.expect", "scripts": "ready", "playing": false},
+  {"type": "test.exit"}
+]

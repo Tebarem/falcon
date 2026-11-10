@@ -1,0 +1,27 @@
+// Editor test: point and spot lights created, edited (colour, intensity, range, cone) and moved
+// between frames, then the scene view captured (light_capture.png in the working directory, at
+// a fixed exposure). Run with and
+// without the shadow page cache: the captures must match, so moved shadowed lights re-render
+// their cached shadow pages.
+[
+  {"type": "editor.settings.set", "key": "manualExposure", "value": 1.0},
+  {"type": "editor.entity.create", "kind": "light", "light": "spot", "name": "Key"},
+  {"type": "test.expect", "selectedName": "Key"},
+  {"type": "editor.transform.set", "id": "Key", "position": [0, 3, 0], "rotation": [-90, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.light.set", "id": "Key", "color": [1, 0.6, 0.3], "intensity": 40, "range": 12, "outer": 35, "inner": 25},
+  {"type": "test.wait", "frames": 20},
+  {"type": "editor.transform.set", "id": "Key", "position": [2, 3, 1], "rotation": [-70, 20, 0], "scale": [1, 1, 1]},
+  {"type": "test.wait", "frames": 20},
+  {"type": "editor.entity.create", "kind": "light", "light": "point", "name": "Fill"},
+  {"type": "test.expect", "selectedName": "Fill"},
+  {"type": "editor.transform.set", "id": "Fill", "position": [-3, 1.5, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.light.set", "id": "Fill", "color": [0.3, 0.6, 1], "intensity": 20, "range": 8},
+  {"type": "test.wait", "frames": 20},
+  {"type": "editor.transform.set", "id": "Fill", "position": [-2, 1.2, 1], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.light.set", "id": "Key", "outer": 25, "inner": 15},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.wait", "frames": 40},
+  {"type": "test.capture", "path": "light_capture.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

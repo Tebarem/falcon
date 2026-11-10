@@ -1,0 +1,29 @@
+// Editor test: the Profiler tab. Play (physics runs on the workers), open the tab (Ctrl+7), check
+// that frames stream in with CPU zones, named worker threads, GPU marks and counters, then select a
+// frame on a chart (real mouse input) and look at it in the Hierarchy.
+[
+  {"type": "test.wait", "ms": 1000},
+  {"type": "editor.play"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.key", "key": "7", "ctrl": true},
+  {"type": "test.wait", "ms": 1500},
+  {"type": "test.probe"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "probe": {"profSubscribed": true, "profFrames>": 20, "profDetail>": 0, "profZones>": 20,
+                                    "profThreadNames>": 1, "profGpuMarks>": 20, "profCounters>": 30, "profView": "timeline"}},
+
+  {"type": "test.probe", "rects": [".pchart canvas"]},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.mouse", "at": ".pchart canvas", "fx": 0.9, "fy": 0.5},
+  {"type": "test.wait", "ms": 400},
+  {"type": "test.probe", "rects": [".ptab[data-view=\"hierarchy\"]"]},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "probe": {"profFollow": false, "profDetail>": 0}},
+  {"type": "test.mouse", "at": ".ptab[data-view=\"hierarchy\"]"},
+  {"type": "test.wait", "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "ms": 300},
+  {"type": "test.expect", "probe": {"profView": "hierarchy", "profHierRows>": 5}},
+  {"type": "editor.stop"},
+  {"type": "test.exit"}
+]

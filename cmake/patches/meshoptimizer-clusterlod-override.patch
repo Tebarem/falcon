@@ -1,0 +1,34 @@
+diff --git a/demo/clusterlod.h b/demo/clusterlod.h
+index fd83f71..b2d2194 100644
+--- a/demo/clusterlod.h
++++ b/demo/clusterlod.h
+@@ -68,6 +68,12 @@ struct clodConfig
+ 	// should clodCluster::bounds be computed based on the geometry of each cluster
+ 	bool optimize_bounds;
+ 
++	// optional replacement for the simplifier (e.g. pruning whole disconnected parts of foliage): called for every merged group
++	// with its index_count indices and the depth of the clusters being merged; writes at most index_count indices (which may refer
++	// to any vertex of the mesh) into lod, sets lod_count and the absolute error; output above simplify_threshold is "stuck"
++	void (*simplify_override)(void* context, const unsigned int* indices, size_t index_count, size_t target_count, int depth, unsigned int* lod, size_t* lod_count, float* error);
++	void* simplify_override_context;
++
+ 	// should clodCluster::indices be optimized for locality; helps with rasterization performance and ray tracing performance in fast-build modes
+ 	bool optimize_clusters;
+ 	int optimize_clusters_level;
+@@ -824,7 +830,15 @@ void clodBuild(clodConfig config, clodMesh mesh, void* output_context, clodOutpu
+ 			clodBounds bounds = boundsMerge(&group[0].bounds, group_size, sizeof(Cluster));
+ 
+ 			float error = 0.f;
+-			simplify(simplified, config, mesh, merged, locks, target_size, &error);
++			if (config.simplify_override)
++			{
++				size_t lod_count = 0;
++				simplified.resize(merged.size());
++				config.simplify_override(config.simplify_override_context, merged.data(), merged.size(), target_size, depth, simplified.data(), &lod_count, &error);
++				simplified.resize(lod_count);
++			}
++			else
++				simplify(simplified, config, mesh, merged, locks, target_size, &error);
+ 			if (simplified.size() > merged.size() * config.simplify_threshold)
+ 			{
+ 				bounds.error = FLT_MAX; // terminal group, won't simplify further

@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Corrugated Iron",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 1,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.12,
+    1.12
+  ],
+  "parallax": 0.01,
+  "textures": {
+    "baseColor": "@falcon/Metal/Textures/Corrugated Iron/color.jpg",
+    "normal": "@falcon/Metal/Textures/Corrugated Iron/normal.jpg",
+    "metallicRoughness": "@falcon/Metal/Textures/Corrugated Iron/arm.jpg",
+    "occlusion": "@falcon/Metal/Textures/Corrugated Iron/arm.jpg",
+    "height": "@falcon/Metal/Textures/Corrugated Iron/height.jpg"
+  },
+  "acoustic": {
+    "preset": "metal"
+  },
+  "surface": {
+    "preset": "metal"
+  }
+}

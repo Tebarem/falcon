@@ -1,0 +1,270 @@
+// Layered surfaces: a level box given a surface material (red: the Surface section's Add material), its
+// mask filled (the layer over the whole mesh: the view changes, editor_level_layers_drawn), undone,
+// then vertex colours tinting it (editor_level_layers_tinted).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Layers"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Layers.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.assets.newMaterial",
+  "folder": "Assets",
+  "name": "Red"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "editor.material.set",
+  "path": "Assets/Red.fmat",
+  "values": {
+   "baseColor": [
+    0.9,
+    0.05,
+    0.05,
+    1
+   ],
+   "roughness": 0.6
+  }
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "move"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "A"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "A",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#inspector [data-surface-add]"
+  ],
+  "reveal": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#inspector [data-surface-add]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   ".menu [data-value=\"Assets/Red.fmat\"]"
+  ],
+  "reveal": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": ".menu [data-value=\"Assets/Red.fmat\"]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 400
+ },
+ {
+  "type": "test.probe",
+  "rects": []
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "surfaceLayers": "Red",
+   "surfaceUses": "paint"
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_layers_surface.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.level.op",
+  "op": "layers",
+  "args": {
+   "blend": 0.2
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelLayered": true,
+   "levelMask": false
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_layers_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.level.mask",
+  "op": "fill",
+  "channel": 0,
+  "value": 1
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelMask": true
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_layers_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelMask": false
+  }
+ },
+ {
+  "type": "editor.level.op",
+  "op": "vertexColor",
+  "args": {
+   "color": [
+    0.1,
+    0.2,
+    1,
+    1
+   ]
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "test.capture",
+  "path": "level_layers_tinted.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

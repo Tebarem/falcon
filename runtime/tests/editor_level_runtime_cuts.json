@@ -1,0 +1,33 @@
+// Cutting while the game runs: a script (with NetworkedCuts beside it, no session: it cuts here)
+// blows a damage hole in a level wall; the level's geometry hash changes; the cuts cleared and the
+// same one made again gives the same hash. Stop: the wall whole again.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "RuntimeCuts"},
+  {"type": "editor.project.openScene", "scene": "Scenes/RuntimeCuts.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.writeFile", "path": "Scripts/Demolisher.cs",
+   "text": "using System.Numerics;\nusing Falcon;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_runtime_cuts: a hole blown in the wall while playing, its geometry hash checked.\npublic sealed class Demolisher : Component\n{\n    private int _frame;\n    private ulong _before, _after, _again;\n\n    public override void OnUpdate(float dt)\n    {\n        ++_frame;\n        NetworkedCuts cuts = Entity.GetComponent<NetworkedCuts>()!;\n        CutOp hole = CutOp.Damage(new Vector3(0, 1.5f, 0), 1.2f, 7);\n        if (_frame == 10)\n        {\n            _before = Cuts.GeometryHash();\n            cuts.Cut(hole);\n        }\n        if (_frame == 20)\n        {\n            _after = Cuts.GeometryHash();\n            cuts.Clear();\n        }\n        if (_frame == 30)\n            cuts.Cut(hole);\n        if (_frame == 40)\n            _again = Cuts.GeometryHash();\n        if (_frame >= 40)  // (every frame: the HUD is shown while it is set)\n        {\n            Hud.Show($\"cuts {cuts.Ops.Count} changed {(_after != _before ? \"yes\" : \"no\")} same {(_again == _after ? \"yes\" : \"no\")}\");\n        }\n    }\n}\n"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "RtWall"},
+  {"type": "editor.transform.set", "id": "RtWall", "position": [0, 1.5, 0], "rotation": [0, 0, 0], "scale": [4, 3, 0.3]},
+  {"type": "editor.entity.create", "kind": "empty", "name": "Demo"},
+  {"type": "editor.component.add", "id": "Demo", "component": "Script:Falcon.Level.NetworkedCuts"},
+  {"type": "editor.component.add", "id": "Demo", "component": "Script:ScriptTest.Demolisher"},
+  {"type": "editor.frame", "id": "RtWall"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "entity": {"name": "RtWall", "levelDrawnTriangles": 12}},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 90, "ms": 1500},
+  {"type": "test.expect", "hud": "cuts 1 changed yes same yes"},
+  {"type": "test.expect", "entity": {"name": "RtWall", "levelDrawnTriangles>": 12}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 30, "ms": 600},
+  {"type": "test.expect", "entity": {"name": "RtWall", "levelDrawnTriangles": 12}},
+  {"type": "test.writeFile", "path": "Scripts/Demolisher.cs", "remove": true},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.exit"}
+]

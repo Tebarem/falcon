@@ -1,0 +1,30 @@
+// Editor test: camera objects. The first camera is the main one; Play and the Game tab look
+// through it and Stop gives the view back; making another camera main clears the first.
+[
+  {"type": "editor.entity.create", "kind": "camera", "name": "Cam A"},
+  {"type": "test.expect", "selectedName": "Cam A"},
+  {"type": "editor.transform.set", "id": "Cam A", "position": [1, 2, 3], "rotation": [-10, 30, 0], "scale": [1, 1, 1]},
+  {"type": "editor.camera.set", "id": "Cam A", "fov": 45},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "viewPosition": [1, 2, 3]},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.tool.set", "gameView": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "viewPosition": [1, 2, 3]},
+  {"type": "editor.tool.set", "gameView": false},
+  {"type": "editor.entity.create", "kind": "camera", "name": "Cam B"},
+  {"type": "editor.transform.set", "id": "Cam B", "position": [-4, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.camera.set", "id": "Cam B", "main": true},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "viewPosition": [-4, 1, 0]},
+  {"type": "editor.stop"},
+  {"type": "editor.undo"},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "viewPosition": [1, 2, 3]},
+  {"type": "editor.stop"},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,216 @@
+// Live cuts on imported art: a cut sphere over a created cube (a mesh instance): drawn as a cut copy,
+// a click on it selecting the cube; the cut moved away and back, the cube deleted (gone, copy too) and back.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "CutArt"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/CutArt.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Crate"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Crate",
+  "position": [
+   0,
+   0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "Crate"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 0
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "sphere",
+  "name": "Bite"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Bite",
+  "position": [
+   0,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1.4,
+   1.4,
+   1.4
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 1
+ },
+ {
+  "type": "test.capture",
+  "path": "level_cut_art.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.select",
+  "id": ""
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.62
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "selection": [
+   "Crate"
+  ]
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Bite",
+  "position": [
+   20,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1.4,
+   1.4,
+   1.4
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 0
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 1
+ },
+ {
+  "type": "editor.entity.delete",
+  "id": "Crate"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 0
+ },
+ {
+  "type": "test.capture",
+  "path": "level_cut_art_deleted.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "cutCopies": 1
+ },
+ {
+  "type": "test.exit"
+ }
+]

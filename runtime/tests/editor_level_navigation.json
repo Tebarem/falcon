@@ -1,0 +1,57 @@
+// Navigation: a navigation mesh baked over a floor cut by a long wall (a path round its end); the
+// wall moved away and back (baked again by itself each time: the path straight, then round again);
+// a C# component's Navigation queries (its [Button]); saved and opened again (read from the
+// scene's .nav); cleared.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "Navigation"},
+  {"type": "editor.project.openScene", "scene": "Scenes/Navigation.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.writeFile", "path": "Scripts/NavProbe.cs",
+   "text": "using System.Collections.Generic;\nusing System.Numerics;\nusing Falcon;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_navigation: the scene's navigation mesh asked for a path and a straight walk.\npublic sealed class NavProbe : Component\n{\n    [Property] public Vector3 From;\n    [Property] public Vector3 To;\n    [Property] public bool Found;\n    [Property] public bool HitWall;\n    [Property] public int Corners;\n\n    [Button]\n    public void Probe()\n    {\n        var path = new List<Vector3>();\n        Found = Navigation.FindPath(From, To, path);\n        Corners = path.Count;\n        HitWall = Navigation.Raycast(From, To, out _);\n    }\n}\n"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "NavFloor"},
+  {"type": "editor.transform.set", "id": "NavFloor", "position": [0, -0.5, 0], "rotation": [0, 0, 0], "scale": [30, 1, 30]},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "NavWall"},
+  {"type": "editor.transform.set", "id": "NavWall", "position": [0, 1.5, -2], "rotation": [0, 0, 0], "scale": [0.4, 3, 26]},
+  {"type": "editor.frame", "id": "NavFloor"},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+
+  {"type": "editor.nav.bake"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "navPolys>": 4, "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": true, "length>": 25}},
+  {"type": "editor.nav.show", "on": true},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.capture", "path": "level_navigation.png", "viewport": false},
+  {"type": "test.wait", "frames": 3},
+
+  {"type": "editor.transform.set", "id": "NavWall", "position": [0, 1.5, 40], "rotation": [0, 0, 0], "scale": [0.4, 3, 26]},
+  {"type": "test.wait", "frames": 120, "ms": 1500},
+  {"type": "test.expect", "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": true, "length<": 11}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 120, "ms": 1500},
+  {"type": "test.expect", "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": true, "length>": 25}},
+
+  {"type": "editor.entity.create", "kind": "empty", "name": "Probe"},
+  {"type": "editor.component.add", "id": "Probe", "component": "Script:ScriptTest.NavProbe"},
+  {"type": "editor.script.set", "id": "Probe", "class": "ScriptTest.NavProbe", "values": {"From": [-5, 0, 0], "To": [5, 0, 0]}},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "editor.script.button", "id": "Probe", "class": "ScriptTest.NavProbe", "method": "Probe"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "entity": {"name": "Probe", "scriptProps": {"ScriptTest.NavProbe": {"Found": true, "HitWall": true}}}},
+
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 30, "ms": 800},
+  {"type": "editor.project.openScene", "scene": "Scenes/Navigation.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.expect", "navPolys>": 4, "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": true, "length>": 25}},
+  {"type": "editor.nav.clear"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": false}},
+
+  {"type": "test.writeFile", "path": "Scripts/NavProbe.cs", "remove": true},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.exit"}
+]

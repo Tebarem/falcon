@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Blue Metal Plate",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.5,
+    2.5
+  ],
+  "parallax": 0.003,
+  "textures": {
+    "baseColor": "@falcon/Metal/Textures/Blue Metal Plate/color.jpg",
+    "normal": "@falcon/Metal/Textures/Blue Metal Plate/normal.jpg",
+    "metallicRoughness": "@falcon/Metal/Textures/Blue Metal Plate/arm.jpg",
+    "occlusion": "@falcon/Metal/Textures/Blue Metal Plate/arm.jpg",
+    "height": "@falcon/Metal/Textures/Blue Metal Plate/height.jpg"
+  },
+  "acoustic": {
+    "preset": "metal"
+  },
+  "surface": {
+    "preset": "metal"
+  }
+}

@@ -1,0 +1,12 @@
+// Opened after editor_node_anim: the placed model's entities still know their nodes (saved in
+// the edits), so Play turns the box again.
+[
+  {"type": "test.wait", "frames": 20},
+  {"type": "test.expect", "entity": {"name": "Box", "position": [2, 0, 0]}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 5, "ms": 1400},
+  {"type": "test.expect", "entity": {"name": "Box", "position": [0, 0, -2]}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

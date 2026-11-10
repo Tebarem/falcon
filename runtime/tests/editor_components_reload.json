@@ -1,0 +1,17 @@
+// Editor test (after editor_components): the components added in the Inspector are back from the
+// edits file: the spot Light on the cube Lamp (without the camera removed from it), the camera on
+// the empty Rig; Lamp's Rigidbody and Mesh Collider, Rig's Sphere Collider. Removing Lamp's
+// Light now works the same.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.expect", "entity": {"name": "Lamp", "alive": true, "has": ["Light", "MeshInstance"], "lacks": ["CameraComponent"],
+   "lightType": "spot", "lightColor": [1, 0.5, 0.2]}},
+  {"type": "test.expect", "entity": {"name": "Rig", "alive": true, "has": ["CameraComponent"], "lacks": ["Light"]}},
+  {"type": "test.expect", "entity": {"name": "Lamp", "has": ["PhysicsBody", "Collider"], "mass": 5, "collider": "mesh"}},
+  {"type": "test.expect", "entity": {"name": "Rig", "lacks": ["PhysicsBody"], "collider": "sphere"}},
+  {"type": "editor.component.remove", "id": "Lamp", "component": "Light"},
+  {"type": "test.expect", "entity": {"name": "Lamp", "lacks": ["Light"]}},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "entity": {"name": "Lamp", "has": ["Light"], "lightType": "spot"}},
+  {"type": "test.exit"}
+]

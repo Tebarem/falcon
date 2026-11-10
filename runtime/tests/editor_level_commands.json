@@ -1,0 +1,453 @@
+// Level commands: editor code's [EditorMenu(Key, Modes, Icon, Wheel)] run by its key in a face mode, a
+// modal operation (typed amount, Enter, Esc), Shift+R again, the keymap rebinding it, its level
+// toolbar button and the command palette.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Editor/LevelCommands.cs",
+  "text": "using System.Collections.Generic;\nusing System.Numerics;\nusing Falcon;\nusing Falcon.Editor;\nusing Falcon.Level;\n\nnamespace ScriptTest;\n\n// editor_level_commands: a command bound to J in face mode (on the level toolbar and the Alt+Q\n// wheel), starting a modal operation that pushes the chosen faces along their normals.\npublic static class LevelCommands\n{\n    [EditorMenu(\"Tools/Level/Push Faces\", Key = \"J\", Modes = \"face\", Icon = \"face\", Wheel = \"ops\",\n                Help = \"Push the chosen faces along their normals\")]\n    public static void Push()\n    {\n        var items = new List<ulong>();\n        ElementMode mode = Elements.Get(out Entity entity, items);\n        PolyMesh? mesh = entity.Id != 0 ? LevelMeshes.Get(entity) : null;\n        if (mesh == null || mode != ElementMode.Face || items.Count == 0)\n            return;\n        ModalOperation.Begin(new PushFaces(entity, mesh, items));\n    }\n}\n\nsealed class PushFaces : ModalOperation\n{\n    private readonly Entity _entity;\n    private readonly PolyMesh _before;\n    private readonly List<ulong> _faces;\n\n    public PushFaces(Entity entity, PolyMesh before, List<ulong> faces)\n    {\n        _entity = entity;\n        _before = before;\n        _faces = faces;\n    }\n\n    public override string Name => \"Push\";\n\n    private PolyMesh Pushed(float amount)\n    {\n        PolyMesh m = _before.Clone();\n        Vector3 normal = Vector3.Zero;\n        foreach (ulong f in _faces)\n            normal += _before.FaceNormal((int)f);\n        Vector3 dir = Direction(Vector3.Normalize(normal));\n        foreach (int v in Elements.Vertices(_before, ElementMode.Face, _faces))\n            m.Positions[v] = _before.Positions[v] + dir * amount;\n        return m;\n    }\n\n    protected override void Apply(float amount) => LevelMeshes.SetLive(_entity, Pushed(amount));\n    protected override void OnConfirm(float amount) => LevelMeshes.Commit(_entity, _before);\n    protected override void OnCancel() => LevelMeshes.SetLive(_entity, _before);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.newScene",
+  "name": "Commands"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Commands.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "action": "move"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "A"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "A",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1200
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "face"
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "J"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true,
+   "hint": "Push"
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "1"
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  },
+  "entity": {
+   "name": "A",
+   "levelExtent>": 1.99,
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelExtent>": 0.99
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "J"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "3"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  },
+  "entity": {
+   "name": "A",
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "test.expect",
+  "selection": [
+   "A"
+  ],
+  "elements": {
+   "mode": "face",
+   "count": 1
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "R",
+  "shift": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.prefs.set",
+  "key": "keymap",
+  "value": {
+   "Tools/Level/Push Faces": "K"
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "J"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "K"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.prefs.set",
+  "key": "keymap",
+  "value": {}
+ },
+ {
+  "type": "test.key",
+  "key": "l",
+  "ctrl": true,
+  "shift": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.capture",
+  "path": "level_commands_bar.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-command=\"Tools/Level/Push Faces\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-command=\"Tools/Level/Push Faces\"]",
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 700
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-command=\"Tools/Level/Push Faces\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "hoverName": "Push Faces",
+   "hoverKey": "J",
+   "hoverHelp": true,
+   "levelWindowX>": 0,
+   "levelWindowRows>": 0
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_commands_hover.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.mouse",
+  "at": "[data-command=\"Tools/Level/Push Faces\"]"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "F3"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 200
+ },
+ {
+  "type": "test.type",
+  "text": "pushf"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 100
+ },
+ {
+  "type": "test.key",
+  "key": "Return"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": true
+  }
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "viewport": {
+   "captured": false
+  },
+  "entity": {
+   "name": "A",
+   "levelHeight": 1
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_commands.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.tool.set",
+  "element": "object"
+ },
+ {
+  "type": "test.exit"
+ }
+]

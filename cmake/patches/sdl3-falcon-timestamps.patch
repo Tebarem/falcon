@@ -1,0 +1,522 @@
+diff --git a/SDL/include/SDL3/SDL_falcon_timestamps.h b/SDL/include/SDL3/SDL_falcon_timestamps.h
+new file mode 100644
+index 0000000..1e2b505
+--- /dev/null
++++ b/SDL/include/SDL3/SDL_falcon_timestamps.h
+@@ -0,0 +1,55 @@
++/*
++  Falcon GPU timestamp queries for SDL_GPU (Direct3D 12 and Vulkan).
++
++  SDL_GPU has no query API. This private extension lets an application time GPU
++  work: create a set of timestamps, reset it at the start of a command buffer,
++  write timestamps between passes, resolve it before submitting, and read the
++  ticks once the command buffer's fence has signaled. Other backends report a
++  period of 0 and every call is a no-op.
++*/
++
++#ifndef SDL_falcon_timestamps_h_
++#define SDL_falcon_timestamps_h_
++
++#include <SDL3/SDL_gpu.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define SDL_FALCON_TIMESTAMPS_REVISION 1u
++
++#if defined(SDL_FALCON_TIMESTAMPS_BUILD) && defined(_WIN32)
++#define SDL_FALCON_TIMESTAMPS_API __declspec(dllexport)
++#elif defined(_WIN32)
++#define SDL_FALCON_TIMESTAMPS_API __declspec(dllimport)
++#elif defined(__GNUC__)
++#define SDL_FALCON_TIMESTAMPS_API __attribute__((visibility("default")))
++#else
++#define SDL_FALCON_TIMESTAMPS_API
++#endif
++
++typedef struct SDL_FalconTimestamps SDL_FalconTimestamps;
++
++/* Nanoseconds per tick, or 0 when the device cannot write timestamps. */
++extern SDL_FALCON_TIMESTAMPS_API double SDLCALL SDL_FalconTimestampPeriodNs(SDL_GPUDevice *device);
++
++/* A set of `count` timestamps. NULL (with an error) when unsupported. */
++extern SDL_FALCON_TIMESTAMPS_API SDL_FalconTimestamps *SDLCALL SDL_FalconCreateTimestamps(SDL_GPUDevice *device, Uint32 count);
++/* Only once no submitted command buffer uses the set any more. */
++extern SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconReleaseTimestamps(SDL_GPUDevice *device, SDL_FalconTimestamps *timestamps);
++
++/* Outside passes, before the first write of a command buffer. */
++extern SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconResetTimestamps(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps);
++/* The time all preceding GPU work in the command buffer finished. */
++extern SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconWriteTimestamp(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps, Uint32 index);
++/* Outside passes, after the last write: makes timestamps [0, count) readable. */
++extern SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconResolveTimestamps(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps, Uint32 count);
++/* After the command buffer's fence signaled: ticks of timestamps [0, count), all written. */
++extern SDL_FALCON_TIMESTAMPS_API bool SDLCALL SDL_FalconReadTimestamps(SDL_GPUDevice *device, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* SDL_falcon_timestamps_h_ */
+diff --git a/SDL/src/gpu/SDL_falcon_timestamps.c b/SDL/src/gpu/SDL_falcon_timestamps.c
+new file mode 100644
+index 0000000..7f8ddea
+--- /dev/null
++++ b/SDL/src/gpu/SDL_falcon_timestamps.c
+@@ -0,0 +1,91 @@
++/* Falcon GPU timestamp queries (see SDL_falcon_timestamps.h). Local patch for Falcon Engine,
++   not an SDL contribution. */
++
++#define SDL_FALCON_TIMESTAMPS_BUILD 1
++
++#include "SDL_internal.h"
++#include "SDL_sysgpu.h"
++
++#define FALCON_CB_DEVICE(cb) (((CommandBufferCommonHeader *)(cb))->device)
++
++static bool FalconOutsidePasses(SDL_GPUCommandBuffer *cb)
++{
++    const CommandBufferCommonHeader *h = (const CommandBufferCommonHeader *)cb;
++    if (h->render_pass.in_progress || h->compute_pass.in_progress || h->copy_pass.in_progress) {
++        SDL_SetError("Timestamp reset / resolve must be recorded outside passes");
++        return false;
++    }
++    return true;
++}
++
++SDL_FALCON_TIMESTAMPS_API double SDLCALL SDL_FalconTimestampPeriodNs(SDL_GPUDevice *device)
++{
++    if (device == NULL || device->FalconTimestampPeriodNs == NULL) {
++        return 0.0;
++    }
++    return device->FalconTimestampPeriodNs(device->driverData);
++}
++
++SDL_FALCON_TIMESTAMPS_API SDL_FalconTimestamps *SDLCALL SDL_FalconCreateTimestamps(SDL_GPUDevice *device, Uint32 count)
++{
++    if (device == NULL || count == 0) {
++        SDL_InvalidParamError("device / count");
++        return NULL;
++    }
++    if (device->FalconCreateTimestamps == NULL || SDL_FalconTimestampPeriodNs(device) <= 0.0) {
++        SDL_SetError("The selected SDL_GPU backend cannot write timestamps");
++        return NULL;
++    }
++    return device->FalconCreateTimestamps(device->driverData, count);
++}
++
++SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconReleaseTimestamps(SDL_GPUDevice *device, SDL_FalconTimestamps *timestamps)
++{
++    if (device != NULL && timestamps != NULL && device->FalconReleaseTimestamps != NULL) {
++        device->FalconReleaseTimestamps(device->driverData, timestamps);
++    }
++}
++
++SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconResetTimestamps(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps)
++{
++    if (command_buffer == NULL || timestamps == NULL || !FalconOutsidePasses(command_buffer)) {
++        return;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconResetTimestamps != NULL) {
++        device->FalconResetTimestamps(command_buffer, timestamps);
++    }
++}
++
++SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconWriteTimestamp(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps, Uint32 index)
++{
++    if (command_buffer == NULL || timestamps == NULL) {
++        return;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconWriteTimestamp != NULL) {
++        device->FalconWriteTimestamp(command_buffer, timestamps, index);
++    }
++}
++
++SDL_FALCON_TIMESTAMPS_API void SDLCALL SDL_FalconResolveTimestamps(SDL_GPUCommandBuffer *command_buffer, SDL_FalconTimestamps *timestamps, Uint32 count)
++{
++    if (command_buffer == NULL || timestamps == NULL || count == 0 || !FalconOutsidePasses(command_buffer)) {
++        return;
++    }
++    SDL_GPUDevice *device = FALCON_CB_DEVICE(command_buffer);
++    if (device->FalconResolveTimestamps != NULL) {
++        device->FalconResolveTimestamps(command_buffer, timestamps, count);
++    }
++}
++
++SDL_FALCON_TIMESTAMPS_API bool SDLCALL SDL_FalconReadTimestamps(SDL_GPUDevice *device, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks)
++{
++    if (device == NULL || timestamps == NULL || ticks == NULL || count == 0) {
++        return SDL_InvalidParamError("device / timestamps / ticks / count");
++    }
++    if (device->FalconReadTimestamps == NULL) {
++        return SDL_SetError("The selected SDL_GPU backend cannot read timestamps");
++    }
++    return device->FalconReadTimestamps(device->driverData, timestamps, count, ticks);
++}
+diff --git a/SDL/src/gpu/SDL_sysgpu.h b/SDL/src/gpu/SDL_sysgpu.h
+index 52d8e94..f4fe878 100644
+--- a/SDL/src/gpu/SDL_sysgpu.h
++++ b/SDL/src/gpu/SDL_sysgpu.h
+@@ -21,6 +21,7 @@
+ #include "../video/SDL_sysvideo.h"
+ #include "SDL_internal.h"
+ #include <SDL3/SDL_falcon_gpu.h>
++#include <SDL3/SDL_falcon_timestamps.h>
+ 
+ #ifndef SDL_GPU_DRIVER_H
+ #define SDL_GPU_DRIVER_H
+@@ -1108,6 +1109,16 @@ struct SDL_GPUDevice
+     bool validate_feature_anisotropy_disabled;
+     Uint32 max_viewport_width;
+     Uint32 max_viewport_height;
++
++    // Falcon timestamp queries (SDL_falcon_timestamps.h): set by the D3D12 and Vulkan
++    // backends after ASSIGN_DRIVER, NULL elsewhere.
++    double (*FalconTimestampPeriodNs)(SDL_GPURenderer *driverData);
++    SDL_FalconTimestamps *(*FalconCreateTimestamps)(SDL_GPURenderer *driverData, Uint32 count);
++    void (*FalconReleaseTimestamps)(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps);
++    void (*FalconResetTimestamps)(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps);
++    void (*FalconWriteTimestamp)(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 index);
++    void (*FalconResolveTimestamps)(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 count);
++    bool (*FalconReadTimestamps)(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks);
+ };
+ 
+ #define ASSIGN_DRIVER_FUNC(func, name) \
+diff --git a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+index 14b67c3..f6cacfc 100644
+--- a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
++++ b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+@@ -170,6 +170,7 @@ static const IID D3D_IID_ID3D12CommandAllocator = { 0x6102dee4, 0xaf59, 0x4b09,
+ static const IID D3D_IID_ID3D12CommandList = { 0x7116d91c, 0xe7e4, 0x47ce, { 0xb8, 0xc6, 0xec, 0x81, 0x68, 0xf4, 0x37, 0xe5 } };
+ static const IID D3D_IID_ID3D12GraphicsCommandList = { 0x5b160d0f, 0xac1b, 0x4185, { 0x8b, 0xa8, 0xb3, 0xae, 0x42, 0xa5, 0xa4, 0x55 } };
+ static const IID D3D_IID_ID3D12Fence = { 0x0a753dcf, 0xc4d8, 0x4b91, { 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76 } };
++static const IID D3D_IID_ID3D12QueryHeap = { 0x0d9658ae, 0xed45, 0x469e, { 0xa6, 0x1d, 0x97, 0x0e, 0xc5, 0x83, 0xca, 0xb4 } };
+ static const IID D3D_IID_ID3D12RootSignature = { 0xc54a6b66, 0x72df, 0x4ee8, { 0x8b, 0xe5, 0xa9, 0x46, 0xa1, 0x42, 0x92, 0x14 } };
+ static const IID D3D_IID_ID3D12CommandSignature = { 0xc36a797c, 0xec80, 0x4f0a, { 0x89, 0x85, 0xa7, 0xb2, 0x47, 0x50, 0x82, 0xd1 } };
+ static const IID D3D_IID_ID3D12PipelineState = { 0x765a30f3, 0xf624, 0x4c6f, { 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45 } };
+@@ -9149,6 +9150,140 @@ static void D3D12_INTERNAL_DrainInfoQueueMessages(D3D12Renderer *renderer)
+ }
+ #endif
+ 
++// Falcon timestamp queries (SDL_falcon_timestamps.h): a timestamp query heap resolved into a
++// readback buffer that stays in COPY_DEST, so no barriers are needed.
++
++typedef struct D3D12FalconTimestamps
++{
++    ID3D12QueryHeap *heap;
++    ID3D12Resource *readback;
++    Uint32 count;
++} D3D12FalconTimestamps;
++
++static double D3D12_FalconTimestampPeriodNs(SDL_GPURenderer *driverData)
++{
++    D3D12Renderer *renderer = (D3D12Renderer *)driverData;
++    UINT64 frequency = 0;
++    if (FAILED(ID3D12CommandQueue_GetTimestampFrequency(renderer->commandQueue, &frequency)) || frequency == 0) {
++        return 0.0;
++    }
++    return 1e9 / (double)frequency;
++}
++
++static void D3D12_FalconReleaseTimestamps(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps)
++{
++    D3D12FalconTimestamps *t = (D3D12FalconTimestamps *)timestamps;
++    (void)driverData;
++    if (t->heap) {
++        ID3D12QueryHeap_Release(t->heap);
++    }
++    if (t->readback) {
++        ID3D12Resource_Release(t->readback);
++    }
++    SDL_free(t);
++}
++
++static SDL_FalconTimestamps *D3D12_FalconCreateTimestamps(SDL_GPURenderer *driverData, Uint32 count)
++{
++    D3D12Renderer *renderer = (D3D12Renderer *)driverData;
++    D3D12FalconTimestamps *t = (D3D12FalconTimestamps *)SDL_calloc(1, sizeof(D3D12FalconTimestamps));
++    D3D12_QUERY_HEAP_DESC heapDesc;
++    D3D12_HEAP_PROPERTIES heapProperties;
++    D3D12_RESOURCE_DESC desc;
++    HRESULT res;
++
++    if (!t) {
++        return NULL;
++    }
++    t->count = count;
++    heapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
++    heapDesc.Count = count;
++    heapDesc.NodeMask = 0;
++    res = ID3D12Device_CreateQueryHeap(renderer->device, &heapDesc, D3D_GUID(D3D_IID_ID3D12QueryHeap), (void **)&t->heap);
++    if (FAILED(res)) {
++        D3D12_INTERNAL_SetError(renderer, "Could not create timestamp query heap!", res);
++        D3D12_FalconReleaseTimestamps(driverData, (SDL_FalconTimestamps *)t);
++        return NULL;
++    }
++
++    heapProperties.Type = D3D12_HEAP_TYPE_READBACK;
++    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
++    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
++    heapProperties.CreationNodeMask = 0;
++    heapProperties.VisibleNodeMask = 0;
++    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
++    desc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
++    desc.Width = (UINT64)count * sizeof(Uint64);
++    desc.Height = 1;
++    desc.DepthOrArraySize = 1;
++    desc.MipLevels = 1;
++    desc.Format = DXGI_FORMAT_UNKNOWN;
++    desc.SampleDesc.Count = 1;
++    desc.SampleDesc.Quality = 0;
++    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
++    desc.Flags = D3D12_RESOURCE_FLAG_NONE;
++    res = ID3D12Device_CreateCommittedResource(
++        renderer->device,
++        &heapProperties,
++        D3D12_HEAP_FLAG_NONE,
++        &desc,
++        D3D12_RESOURCE_STATE_COPY_DEST,
++        NULL,
++        D3D_GUID(D3D_IID_ID3D12Resource),
++        (void **)&t->readback);
++    if (FAILED(res)) {
++        D3D12_INTERNAL_SetError(renderer, "Could not create timestamp readback buffer!", res);
++        D3D12_FalconReleaseTimestamps(driverData, (SDL_FalconTimestamps *)t);
++        return NULL;
++    }
++    return (SDL_FalconTimestamps *)t;
++}
++
++static void D3D12_FalconResetTimestamps(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps)
++{
++    (void)commandBuffer; // timestamp heaps need no reset
++    (void)timestamps;
++}
++
++static void D3D12_FalconWriteTimestamp(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 index)
++{
++    D3D12CommandBuffer *d3d12CommandBuffer = (D3D12CommandBuffer *)commandBuffer;
++    D3D12FalconTimestamps *t = (D3D12FalconTimestamps *)timestamps;
++    if (index < t->count) {
++        ID3D12GraphicsCommandList_EndQuery(d3d12CommandBuffer->graphicsCommandList, t->heap, D3D12_QUERY_TYPE_TIMESTAMP, index);
++    }
++}
++
++static void D3D12_FalconResolveTimestamps(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 count)
++{
++    D3D12CommandBuffer *d3d12CommandBuffer = (D3D12CommandBuffer *)commandBuffer;
++    D3D12FalconTimestamps *t = (D3D12FalconTimestamps *)timestamps;
++    ID3D12GraphicsCommandList_ResolveQueryData(
++        d3d12CommandBuffer->graphicsCommandList, t->heap, D3D12_QUERY_TYPE_TIMESTAMP, 0, SDL_min(count, t->count), t->readback, 0);
++}
++
++static bool D3D12_FalconReadTimestamps(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks)
++{
++    D3D12Renderer *renderer = (D3D12Renderer *)driverData;
++    D3D12FalconTimestamps *t = (D3D12FalconTimestamps *)timestamps;
++    D3D12_RANGE range;
++    D3D12_RANGE written = { 0, 0 };
++    void *data = NULL;
++    HRESULT res;
++
++    count = SDL_min(count, t->count);
++    range.Begin = 0;
++    range.End = (SIZE_T)count * sizeof(Uint64);
++    res = ID3D12Resource_Map(t->readback, 0, &range, &data);
++    if (FAILED(res)) {
++        D3D12_INTERNAL_SetError(renderer, "Could not map timestamp readback buffer!", res);
++        return false;
++    }
++    SDL_memcpy(ticks, data, (size_t)count * sizeof(Uint64));
++    ID3D12Resource_Unmap(t->readback, 0, &written);
++    return true;
++}
++
+ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SDL_PropertiesID props)
+ {
+     SDL_GPUDevice *result;
+@@ -9810,6 +9945,13 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
+     }
+ 
+     ASSIGN_DRIVER(D3D12)
++    result->FalconTimestampPeriodNs = D3D12_FalconTimestampPeriodNs;
++    result->FalconCreateTimestamps = D3D12_FalconCreateTimestamps;
++    result->FalconReleaseTimestamps = D3D12_FalconReleaseTimestamps;
++    result->FalconResetTimestamps = D3D12_FalconResetTimestamps;
++    result->FalconWriteTimestamp = D3D12_FalconWriteTimestamp;
++    result->FalconResolveTimestamps = D3D12_FalconResolveTimestamps;
++    result->FalconReadTimestamps = D3D12_FalconReadTimestamps;
+     result->driverData = (SDL_GPURenderer *)renderer;
+     result->shader_formats = shaderFormats;
+     result->debug_mode = debugMode;
+diff --git a/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c b/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
+index 4a1f6b6..d1a8668 100644
+--- a/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
++++ b/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
+@@ -12790,6 +12790,112 @@ static bool VULKAN_PrepareDriver(SDL_VideoDevice *_this, SDL_PropertiesID props)
+     return result;
+ }
+ 
++// Falcon timestamp queries (SDL_falcon_timestamps.h): a timestamp query pool, reset in the
++// command buffer and read with vkGetQueryPoolResults once its fence signaled.
++
++typedef struct VulkanFalconTimestamps
++{
++    VkQueryPool pool;
++    Uint32 count;
++} VulkanFalconTimestamps;
++
++static double VULKAN_FalconTimestampPeriodNs(SDL_GPURenderer *driverData)
++{
++    VulkanRenderer *renderer = (VulkanRenderer *)driverData;
++    Uint32 familyCount = 0;
++    VkQueueFamilyProperties *families;
++    Uint32 validBits = 0;
++
++    renderer->vkGetPhysicalDeviceQueueFamilyProperties(renderer->physicalDevice, &familyCount, NULL);
++    families = (VkQueueFamilyProperties *)SDL_malloc(sizeof(VkQueueFamilyProperties) * familyCount);
++    if (!families) {
++        return 0.0;
++    }
++    renderer->vkGetPhysicalDeviceQueueFamilyProperties(renderer->physicalDevice, &familyCount, families);
++    if (renderer->queueFamilyIndex < familyCount) {
++        validBits = families[renderer->queueFamilyIndex].timestampValidBits;
++    }
++    SDL_free(families);
++    if (validBits == 0) {
++        return 0.0;
++    }
++    return (double)renderer->physicalDeviceProperties.properties.limits.timestampPeriod;
++}
++
++static void VULKAN_FalconReleaseTimestamps(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps)
++{
++    VulkanRenderer *renderer = (VulkanRenderer *)driverData;
++    VulkanFalconTimestamps *t = (VulkanFalconTimestamps *)timestamps;
++    if (t->pool != VK_NULL_HANDLE) {
++        renderer->vkDestroyQueryPool(renderer->logicalDevice, t->pool, NULL);
++    }
++    SDL_free(t);
++}
++
++static SDL_FalconTimestamps *VULKAN_FalconCreateTimestamps(SDL_GPURenderer *driverData, Uint32 count)
++{
++    VulkanRenderer *renderer = (VulkanRenderer *)driverData;
++    VulkanFalconTimestamps *t = (VulkanFalconTimestamps *)SDL_calloc(1, sizeof(VulkanFalconTimestamps));
++    VkQueryPoolCreateInfo createInfo;
++    VkResult vulkanResult;
++
++    if (!t) {
++        return NULL;
++    }
++    SDL_zero(createInfo);
++    createInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
++    createInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
++    createInfo.queryCount = count;
++    vulkanResult = renderer->vkCreateQueryPool(renderer->logicalDevice, &createInfo, NULL, &t->pool);
++    if (vulkanResult != VK_SUCCESS) {
++        SDL_free(t);
++        CHECK_VULKAN_ERROR_AND_RETURN(vulkanResult, vkCreateQueryPool, NULL);
++    }
++    t->count = count;
++    return (SDL_FalconTimestamps *)t;
++}
++
++static void VULKAN_FalconResetTimestamps(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps)
++{
++    VulkanCommandBuffer *vulkanCommandBuffer = (VulkanCommandBuffer *)commandBuffer;
++    VulkanFalconTimestamps *t = (VulkanFalconTimestamps *)timestamps;
++    vulkanCommandBuffer->renderer->vkCmdResetQueryPool(vulkanCommandBuffer->commandBuffer, t->pool, 0, t->count);
++}
++
++static void VULKAN_FalconWriteTimestamp(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 index)
++{
++    VulkanCommandBuffer *vulkanCommandBuffer = (VulkanCommandBuffer *)commandBuffer;
++    VulkanFalconTimestamps *t = (VulkanFalconTimestamps *)timestamps;
++    if (index < t->count) {
++        vulkanCommandBuffer->renderer->vkCmdWriteTimestamp(
++            vulkanCommandBuffer->commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, t->pool, index);
++    }
++}
++
++static void VULKAN_FalconResolveTimestamps(SDL_GPUCommandBuffer *commandBuffer, SDL_FalconTimestamps *timestamps, Uint32 count)
++{
++    (void)commandBuffer; // read straight from the pool
++    (void)timestamps;
++    (void)count;
++}
++
++static bool VULKAN_FalconReadTimestamps(SDL_GPURenderer *driverData, SDL_FalconTimestamps *timestamps, Uint32 count, Uint64 *ticks)
++{
++    VulkanRenderer *renderer = (VulkanRenderer *)driverData;
++    VulkanFalconTimestamps *t = (VulkanFalconTimestamps *)timestamps;
++    VkResult vulkanResult;
++
++    count = SDL_min(count, t->count);
++    vulkanResult = renderer->vkGetQueryPoolResults(
++        renderer->logicalDevice, t->pool, 0, count, (size_t)count * sizeof(Uint64), ticks, sizeof(Uint64),
++        VK_QUERY_RESULT_64_BIT);
++    if (vulkanResult == VK_NOT_READY) {
++        return SDL_SetError("Timestamps are not available yet");
++    }
++    CHECK_VULKAN_ERROR_AND_RETURN(vulkanResult, vkGetQueryPoolResults, false);
++    return true;
++}
++
+ static SDL_GPUDevice *VULKAN_CreateDevice(bool debugMode, bool preferLowPower, SDL_PropertiesID props)
+ {
+     VulkanRenderer *renderer;
+@@ -12935,6 +13041,13 @@ static SDL_GPUDevice *VULKAN_CreateDevice(bool debugMode, bool preferLowPower, S
+     // FIXME: just move this into this function
+     result = (SDL_GPUDevice *)SDL_calloc(1, sizeof(SDL_GPUDevice));
+     ASSIGN_DRIVER(VULKAN)
++    result->FalconTimestampPeriodNs = VULKAN_FalconTimestampPeriodNs;
++    result->FalconCreateTimestamps = VULKAN_FalconCreateTimestamps;
++    result->FalconReleaseTimestamps = VULKAN_FalconReleaseTimestamps;
++    result->FalconResetTimestamps = VULKAN_FalconResetTimestamps;
++    result->FalconWriteTimestamp = VULKAN_FalconWriteTimestamp;
++    result->FalconResolveTimestamps = VULKAN_FalconResolveTimestamps;
++    result->FalconReadTimestamps = VULKAN_FalconReadTimestamps;
+ 
+     result->driverData = (SDL_GPURenderer *)renderer;
+     result->shader_formats = SDL_GPU_SHADERFORMAT_SPIRV;
+diff --git a/SDL/src/gpu/vulkan/SDL_gpu_vulkan_vkfuncs.h b/SDL/src/gpu/vulkan/SDL_gpu_vulkan_vkfuncs.h
+index a56beff..92e1577 100644
+--- a/SDL/src/gpu/vulkan/SDL_gpu_vulkan_vkfuncs.h
++++ b/SDL/src/gpu/vulkan/SDL_gpu_vulkan_vkfuncs.h
+@@ -90,6 +90,8 @@ VULKAN_DEVICE_FUNCTION(vkCmdBindDescriptorSets)
+ VULKAN_DEVICE_FUNCTION(vkCmdBindIndexBuffer)
+ VULKAN_DEVICE_FUNCTION(vkCmdBindPipeline)
+ VULKAN_DEVICE_FUNCTION(vkCmdBindVertexBuffers)
++VULKAN_DEVICE_FUNCTION(vkCmdResetQueryPool)
++VULKAN_DEVICE_FUNCTION(vkCmdWriteTimestamp)
+ VULKAN_DEVICE_FUNCTION(vkCmdBlitImage)
+ VULKAN_DEVICE_FUNCTION(vkCmdClearAttachments)
+ VULKAN_DEVICE_FUNCTION(vkCmdClearColorImage)
+@@ -118,6 +120,7 @@ VULKAN_DEVICE_FUNCTION(vkCreateDescriptorPool)
+ VULKAN_DEVICE_FUNCTION(vkCreateDescriptorSetLayout)
+ VULKAN_DEVICE_FUNCTION(vkCreateFence)
+ VULKAN_DEVICE_FUNCTION(vkCreateFramebuffer)
++VULKAN_DEVICE_FUNCTION(vkCreateQueryPool)
+ VULKAN_DEVICE_FUNCTION(vkCreateComputePipelines)
+ VULKAN_DEVICE_FUNCTION(vkCreateGraphicsPipelines)
+ VULKAN_DEVICE_FUNCTION(vkCreateImage)
+@@ -138,6 +141,7 @@ VULKAN_DEVICE_FUNCTION(vkDestroyFramebuffer)
+ VULKAN_DEVICE_FUNCTION(vkDestroyImage)
+ VULKAN_DEVICE_FUNCTION(vkDestroyImageView)
+ VULKAN_DEVICE_FUNCTION(vkDestroyPipeline)
++VULKAN_DEVICE_FUNCTION(vkDestroyQueryPool)
+ VULKAN_DEVICE_FUNCTION(vkDestroyPipelineCache)
+ VULKAN_DEVICE_FUNCTION(vkDestroyPipelineLayout)
+ VULKAN_DEVICE_FUNCTION(vkDestroyRenderPass)
+@@ -151,6 +155,7 @@ VULKAN_DEVICE_FUNCTION(vkFreeMemory)
+ VULKAN_DEVICE_FUNCTION(vkGetDeviceQueue)
+ VULKAN_DEVICE_FUNCTION(vkGetPipelineCacheData)
+ VULKAN_DEVICE_FUNCTION(vkGetFenceStatus)
++VULKAN_DEVICE_FUNCTION(vkGetQueryPoolResults)
+ VULKAN_DEVICE_FUNCTION(vkGetBufferMemoryRequirements)
+ VULKAN_DEVICE_FUNCTION(vkGetImageMemoryRequirements)
+ VULKAN_DEVICE_FUNCTION(vkMapMemory)

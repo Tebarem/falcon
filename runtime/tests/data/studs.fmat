@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "name": "Studs",
+  "baseColor": [0.75, 0.62, 0.5, 1],
+  "roughness": 0.6,
+  "displacement": 0.12,
+  "heightCenter": 0,
+  "displacementDetail": 0.02,
+  "textures": {
+    "height": "height_studs.png"
+  }
+}

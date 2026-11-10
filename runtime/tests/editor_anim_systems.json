@@ -1,0 +1,177 @@
+// Script API v25 (S7): animation read back (parameters, the state machine's state), a clip over the
+// graph (played, held at rate 0, faded out), no terrain or water here, a particle component's
+// fields as JSON.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace AnimTest;\n\n// Script API v25: a character's parameters read back, its state machine's state, a clip played\n// over its graph (looping, then faded out), its rate held at 0; no terrain or water in this scene;\n// a particle component added, a field set and read back as JSON, removed.\npublic sealed class AnimTestGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<AnimTestGame>();\n\n    private bool _played, _nope = true, _frozen;\n    private float _heldAt = -1f;\n    private int _held;\n    private string _vfx = \"\";\n\n    public override void OnUpdate(float dt)\n    {\n        Entity bar = Entity.Find(\"skinned\");\n        Character ch = Character.Of(bar);\n        if (!ch.IsValid)\n        {\n            Hud.Show(\"character: none\");\n            return;\n        }\n        bool w = Input.IsDown(Key.W);\n        Animation.SetFloat(ch, \"Speed\", 2.5f);\n        Animation.SetBool(ch, Animation.Parameter(ch, \"Bent\"), w);\n        if (Input.Pressed(Key.P))\n        {\n            _played = Animation.Play(ch, \"Bend\", 1f, 0.1f, loop: true);\n            _nope = Animation.Play(ch, \"NoSuchClip\");\n        }\n        if (Input.Pressed(Key.O))\n            Animation.StopClip(ch, 0.1f);\n        if (Input.Pressed(Key.R))\n        {\n            Animation.SetRate(ch, 0f);\n            _heldAt = Animation.ClipTime(ch);\n            _held = 0;\n        }\n        if (_heldAt >= 0f && ++_held == 20)\n            _frozen = Animation.ClipTime(ch) == _heldAt;\n        if (Input.Pressed(Key.T))\n            Animation.SetRate(ch, 1f);\n        if (Input.Pressed(Key.V))\n        {\n            bool added = Particles.AddComponent(bar, \"ParticleEffect\");\n            bool set = Particles.SetField(bar, \"particleEffect\", \"timeScale\", 0.5f);\n            bool bad = Particles.SetField(bar, \"ParticleEffect\", \"noSuchField\", 1f);\n            _vfx = $\"vfx {added} {set} {bad} {Particles.GetField(bar, \"ParticleEffect\", \"timeScale\")} {Particles.GetFloat(bar, \"ParticleEffect\", \"maxParticles\")}\";\n            Particles.RemoveComponent(bar, \"ParticleEffect\");\n            _vfx += $\" gone {!Particles.HasComponent(bar, \"ParticleEffect\")}\";\n        }\n        string state = Animation.StateName(ch);\n        bool inState = state.Length > 0 && Animation.InState(ch, state) && !Animation.InState(ch, \"NoSuchState\");\n        (Vector3 t, Quaternion r) = Animation.RootMotion(ch);\n        bool world = float.IsNaN(Terrain.HeightAt(0f, 0f)) && !Terrain.Sample(Vector3.Zero, out _) && Water.BodyOf(bar) == -1 &&\n                     !Water.NearestSurface(0, Vector3.Zero, out _) && !Ui.HasKeyboard && float.IsFinite(t.X) && float.IsFinite(r.W);\n        Hud.Show($\"speed {Animation.GetFloat(ch, \"Speed\"):0.0}, bent {Animation.GetBool(ch, \"Bent\")}, state {state} {inState}, \" +\n                 $\"clip {Animation.IsPlayingClip(ch)} {_played} {_nope}, rate {Animation.GetRate(ch):0} frozen {_frozen}, world {world}, {_vfx}\");\n    }\n}\n"
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 400
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "speed 2.5, bent False, state Straight True, clip False False True, rate 1 frozen False, world True"
+ },
+ {
+  "type": "test.hold",
+  "key": "W"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "hud": "bent True, state Bent True"
+ },
+ {
+  "type": "test.hold",
+  "key": "W",
+  "down": false
+ },
+ {
+  "type": "test.hold",
+  "key": "P"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 50
+ },
+ {
+  "type": "test.hold",
+  "key": "P",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "hud": "clip True True False, rate 1"
+ },
+ {
+  "type": "test.hold",
+  "key": "R"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 50
+ },
+ {
+  "type": "test.hold",
+  "key": "R",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 40,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "hud": "clip True True False, rate 0 frozen True"
+ },
+ {
+  "type": "test.hold",
+  "key": "T"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 50
+ },
+ {
+  "type": "test.hold",
+  "key": "T",
+  "down": false
+ },
+ {
+  "type": "test.hold",
+  "key": "O"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 50
+ },
+ {
+  "type": "test.hold",
+  "key": "O",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "hud": "clip False True False, rate 1"
+ },
+ {
+  "type": "test.hold",
+  "key": "V"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3,
+  "ms": 50
+ },
+ {
+  "type": "test.hold",
+  "key": "V",
+  "down": false
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "test.expect",
+  "hud": "vfx True True False 0.5 "
+ },
+ {
+  "type": "test.expect",
+  "hud": " gone True"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "hud": ""
+ },
+ {
+  "type": "test.exit"
+ }
+]

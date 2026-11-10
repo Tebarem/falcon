@@ -1,0 +1,21 @@
+// The navigation mesh over a terrain: a flat terrain with a 20 m level wall standing on it, baked;
+// the path from one side of the wall to the other goes round its end, over the terrain.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.newScene", "name": "NavTerrain"},
+  {"type": "editor.project.openScene", "scene": "Scenes/NavTerrain.fpak"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "editor.terrain.create", "tiles": 1, "spacing": 0.5, "heightMin": -50, "heightMax": 100, "hills": 0, "height": 0},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "Fence"},
+  {"type": "editor.transform.set", "id": "Fence", "position": [0, 1.5, 0], "rotation": [0, 0, 0], "scale": [0.4, 3, 20]},
+  {"type": "test.wait", "frames": 10, "ms": 200},
+  {"type": "editor.nav.bake"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "navPolys>": 4},
+  {"type": "test.expect", "navPath": {"from": [-5, 0, 0], "to": [5, 0, 0], "found": true, "length>": 20, "length<": 30}},
+  {"type": "test.exit"}
+]

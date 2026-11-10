@@ -1,0 +1,148 @@
+// Runtime material parameters (R1, API v29): two cubes with the same material asset; Play turns it
+// red and one cube's own copy blue (captures differ); Stop puts every material back (the capture
+// after matches the one before).
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Painted"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "primitive": "cube",
+  "name": "Plain"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Painted",
+  "position": [
+   -0.7,
+   0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Plain",
+  "position": [
+   0.7,
+   0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Painted",
+  "material": "Assets/New Material.fmat"
+ },
+ {
+  "type": "editor.entity.material",
+  "id": "Plain",
+  "material": "Assets/New Material.fmat"
+ },
+ {
+  "type": "editor.frame",
+  "id": "Painted"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_material (API v29): the material both cubes share turned red; Plain's own copy\n// (MaterialInstance) turned blue, the shared one left red; values read back.\npublic sealed class MaterialGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<MaterialGame>();\n\n    private string _report = \"\";\n\n    public override void OnStart()\n    {\n        Material shared = Material.Find(\"Assets/New Material.fmat\");\n        bool found = shared.IsValid;\n        shared.BaseColor = new Vector4(1f, 0.05f, 0.05f, 1f);\n        shared.Roughness = 0.9f;\n        Material own = Renderer.MaterialInstance(Entity.Find(\"Plain\"));\n        own.BaseColor = new Vector4(0.05f, 0.1f, 1f, 1f);\n        bool apart = own.IsValid && own.Index != shared.Index;\n        bool read = shared.BaseColor.X > 0.99f && shared.BaseColor.Y < 0.06f && MathF.Abs(shared.Roughness - 0.9f) < 1e-5f &&\n                    own.BaseColor.Z > 0.99f && own.Roughness > 0.89f;  // (the copy took the shared one's values)\n        bool refused = !Material.Find(\"Assets/NoSuch.fmat\").IsValid && !shared.Set(\"noSuchParameter\", Vector4.One);\n        _report = $\"material found {found} apart {apart} read {read} refused {refused}\";\n    }\n\n    public override void OnUpdate(float dt) => Hud.Show(_report);\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.capture",
+  "path": "material_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "material found True apart True read True refused True"
+ },
+ {
+  "type": "test.capture",
+  "path": "material_playing.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.capture",
+  "path": "material_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.exit"
+ }
+]

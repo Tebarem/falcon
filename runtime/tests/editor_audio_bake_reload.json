@@ -1,0 +1,11 @@
+// Editor test (after audio_bake_cli): the bake made headless is read back with the scene, up to date
+// (the editor and the game fingerprint the scene alike); Clear removes the baked files.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "test.wait", "frames": 30, "ms": 1000},
+  {"type": "test.expect", "audio": {"bake": {"state": "baked", "probesAbove": 10, "pathing": true}}},
+  {"type": "editor.audio.bake.clear"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "audio": {"bake": {"state": "none"}}, "fileExists": ["Scenes/Main.audio/bake.json"], "fileMissing": ["Scenes/Main.audio/probes.bin", "Scenes/Main.audio/probes.pos"]},
+  {"type": "test.exit"}
+]

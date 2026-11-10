@@ -1,0 +1,44 @@
+// Editor test: right-drag flying takes WASD by their key events, even when SDL's keyboard state
+// says the keys are up (test.key pushes events only, as on a PC where the state never saw them),
+// and even with a page field focused (the keys fly; they are not typed into it). Then two million
+// metres out, where a frame's 5 mm step is under half a float's spacing (25 cm): it still moves.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.probe", "rects": ["#viewport", "#cam-speed"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.view", "position": [0, 2, 10], "target": [0, 2, 0]},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "down"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.key", "key": "w", "action": "down"},
+  {"type": "test.wait", "frames": 20, "ms": 300},
+  {"type": "test.key", "key": "w", "action": "up"},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "up"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.expect", "viewMoved": {"from": [0, 2, 10], "along": [0, 0, -1]}},
+
+  {"type": "test.mouse", "at": "#cam-speed"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.view", "position": [0, 2, 10], "target": [10, 2, 10]},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "down"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.key", "key": "w", "action": "down"},
+  {"type": "test.wait", "frames": 20, "ms": 300},
+  {"type": "test.key", "key": "w", "action": "up"},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "up"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.expect", "viewMoved": {"from": [0, 2, 10], "along": [1, 0, 0]}},
+
+  {"type": "test.view", "position": [2000000, 2, 0], "target": [1999990, 2, 0]},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "down"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.key", "key": "w", "action": "down"},
+  {"type": "test.wait", "frames": 20, "ms": 300},
+  {"type": "test.key", "key": "w", "action": "up"},
+  {"type": "test.mouse", "at": "#viewport", "fx": 0.5, "fy": 0.5, "button": "right", "action": "up"},
+  {"type": "test.wait", "frames": 2, "ms": 50},
+  {"type": "test.expect", "viewMoved": {"from": [2000000, 2, 0], "along": [-1, 0, 0]}},
+  {"type": "test.exit"}
+]

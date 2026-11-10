@@ -1,0 +1,243 @@
+// Live cuts: a cut box through a level wall (a door): the wall drawn cut, its own mesh unchanged; moved
+// away and back (undo), deleted and back, saved and opened again.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Cuts"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Cuts.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Wall"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Wall",
+  "position": [
+   0,
+   1.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   4,
+   3,
+   0.2
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "Wall"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles": 12
+  }
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "box",
+  "name": "Door"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Door",
+  "position": [
+   0,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   2.2,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "cut": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelTriangles": 12,
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_cut.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Door",
+  "position": [
+   20,
+   1.0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   2.2,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles": 12
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "editor.entity.delete",
+  "id": "Door"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles": 12
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Cuts.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Door",
+   "cut": true
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Wall",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

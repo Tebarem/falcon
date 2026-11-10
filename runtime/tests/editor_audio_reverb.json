@@ -1,0 +1,51 @@
+// Editor test (after editor_audio: Beep.fsound loops): reverb from the scene. In the open (an empty
+// scene) the listener's reverb is next to nothing. Six cube walls make a closed 8 x 4 x 8 m room
+// around the view: concrete rings (a long reverb time), carpet hardly at all. A source in the room
+// plays (previewed) and gets reflections of its own.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.settings.set", "key": "audioReflections", "value": 2},
+  {"type": "test.view", "position": [40, 2, 40], "target": [40, 2, 36]},
+  {"type": "test.wait", "frames": 30, "ms": 800},
+  {"type": "test.expect", "audio": {"reverbBelow": 0.2}},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Floor"},
+  {"type": "editor.transform.set", "id": "Floor", "position": [40, -0.25, 40], "rotation": [0, 0, 0], "scale": [8.5, 0.5, 8.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Ceiling"},
+  {"type": "editor.transform.set", "id": "Ceiling", "position": [40, 4.25, 40], "rotation": [0, 0, 0], "scale": [8.5, 0.5, 8.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "North"},
+  {"type": "editor.transform.set", "id": "North", "position": [40, 2, 35.75], "rotation": [0, 0, 0], "scale": [8.5, 4.5, 0.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "South"},
+  {"type": "editor.transform.set", "id": "South", "position": [40, 2, 44.25], "rotation": [0, 0, 0], "scale": [8.5, 4.5, 0.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "West"},
+  {"type": "editor.transform.set", "id": "West", "position": [35.75, 2, 40], "rotation": [0, 0, 0], "scale": [0.5, 4.5, 8.5]},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "East"},
+  {"type": "editor.transform.set", "id": "East", "position": [44.25, 2, 40], "rotation": [0, 0, 0], "scale": [0.5, 4.5, 8.5]},
+  {"type": "editor.audio.surface.set", "id": "Floor", "mode": "own", "preset": "concrete"},
+  {"type": "editor.audio.surface.set", "id": "Ceiling", "mode": "own", "preset": "concrete"},
+  {"type": "editor.audio.surface.set", "id": "North", "mode": "own", "preset": "concrete"},
+  {"type": "editor.audio.surface.set", "id": "South", "mode": "own", "preset": "concrete"},
+  {"type": "editor.audio.surface.set", "id": "West", "mode": "own", "preset": "concrete"},
+  {"type": "editor.audio.surface.set", "id": "East", "mode": "own", "preset": "concrete"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.expect", "audio": {"reverbAbove": 0.8}},
+
+  {"type": "editor.entity.create", "kind": "empty", "name": "Radio"},
+  {"type": "editor.transform.set", "id": "Radio", "position": [42, 1, 38], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Radio", "component": "AudioSource"},
+  {"type": "editor.audio.source.set", "id": "Radio", "sound": "Assets/Beep.fsound"},
+  {"type": "editor.audio.play", "id": "Radio"},
+  {"type": "test.wait", "frames": 30, "ms": 800},
+  {"type": "test.expect", "audio": {"previewing": true, "reflecting": 1, "source": {"name": "Radio", "occlusionAbove": 0.95}}},
+  {"type": "editor.audio.stop"},
+
+  {"type": "editor.audio.surface.set", "id": "Floor", "mode": "own", "preset": "carpet"},
+  {"type": "editor.audio.surface.set", "id": "Ceiling", "mode": "own", "preset": "carpet"},
+  {"type": "editor.audio.surface.set", "id": "North", "mode": "own", "preset": "carpet"},
+  {"type": "editor.audio.surface.set", "id": "South", "mode": "own", "preset": "carpet"},
+  {"type": "editor.audio.surface.set", "id": "West", "mode": "own", "preset": "carpet"},
+  {"type": "editor.audio.surface.set", "id": "East", "mode": "own", "preset": "carpet"},
+  {"type": "test.wait", "frames": 60, "ms": 1500},
+  {"type": "test.expect", "audio": {"reverbBelow": 0.4}},
+  {"type": "test.exit"}
+]

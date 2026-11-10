@@ -1,0 +1,14 @@
+// Reopened: the rig's graph (Assets/LegsIk.fgraph, saved by the Animator tab) has foot IK, a look
+// and a reach; its Animator binds LookTarget, HandTarget and AimHold (saved by key, found again):
+// the head looks at "Look Target", the left hand reaches "Hand Target". Then, for
+// editor_anim_ik_legacy, the saved Animator is rewritten as an older scene wrote it (its own Foot
+// IK and targets: look, leftHand) on a graph without IK (Assets/LegsPlain.fgraph), not saved again.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "fileContains": {"Assets/LegsIk.fgraph": "\"look\""}, "anim": {"entity": "legs", "footIk": true, "ownIk": false, "bound": ["LookTarget", "HandTarget", "AimHold"], "entities": {"LookTarget": "Look Target", "AimHold": "Hold Target"}, "looking": {"bone": "head", "at": [3.5, 2.2, 2.5], "within": 2}, "bonesAt": [{"bone": "hand_l", "at": [5.35, 1.2, 0.35], "within": 0.01}]}},
+  {"type": "test.writeFile", "path": "Assets/LegsPlain.fgraph", "text": "{\n  \"version\": 2,\n  \"name\": \"LegsPlain\",\n  \"skeleton\": \"Assets/legs.gltf\",\n  \"parameters\": {},\n  \"root\": {\"type\": \"clip\", \"clip\": \"Idle\"},\n  \"nodes\": {}\n}\n"},
+  {"type": "test.editFile", "path": "Scenes/Main.edits.json", "find": "\"animator\":\\s*\\{\\s*\"graph\":\\s*\"Assets/LegsIk.fgraph\",\\s*\"entities\":\\s*\\{\\s*\"LookTarget\":\\s*\"([^\"]*)\",\\s*\"HandTarget\":\\s*\"([^\"]*)\",\\s*\"AimHold\":\\s*\"([^\"]*)\"\\s*\\},\\s*\"params\":\\s*\\{\\s*\\}\\s*\\}", "replace": "\"animator\":{\"graph\":\"Assets/LegsPlain.fgraph\",\"footIk\":true,\"footReach\":0.45,\"targets\":{\"look\":\"$1\",\"leftHand\":\"$2\"},\"params\":{}}"},
+  {"type": "test.expect", "fileContains": {"Scenes/Main.edits.json": "\"footIk\":true"}},
+  {"type": "test.exit"}
+]

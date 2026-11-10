@@ -1,0 +1,27 @@
+/build/
+/out/
+/.vs/
+/.vscode/
+*.user
+CMakeUserPresets.json
+/captures/
+samples/_src/
+samples/cooked/
+
+# dotnet build outputs
+managed/**/bin/
+managed/**/obj/
+
+# AMD FSR SDK pieces fetched by scripts/fetch-fsr.ps1
+/external/fidelityfx/
+
+# Steam Audio SDK pieces fetched by scripts/fetch-steamaudio.ps1
+/external/steamaudio/
+# NVIDIA DLSS SDK pieces fetched by scripts/fetch-dlss.ps1 (NVIDIA's licence: not committed)
+/external/dlss/
+
+# MsQuic pieces fetched by scripts/fetch-msquic.ps1
+/external/msquic/
+
+# Steamworks SDK pieces unpacked by scripts/fetch-steamworks.ps1
+/external/steamworks/

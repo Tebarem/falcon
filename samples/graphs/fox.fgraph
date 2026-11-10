@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "name": "FoxLocomotion",
+  "skeleton": 0,
+  "parameters": {
+    "Speed": { "type": "float", "default": 0.0 }
+  },
+  "root": "@locomotion",
+  "nodes": {
+    "locomotion": {
+      "type": "stateMachine",
+      "default": "Idle",
+      "states": {
+        "Idle": {
+          "pose": "@survey",
+          "transitions": [ { "id": "startMoving", "to": "Move", "when": "@moving", "duration": 0.35, "easing": "smooth" } ],
+          "editor": { "pos": [0, 0] }
+        },
+        "Move": {
+          "pose": "@runFaster",
+          "transitions": [ { "id": "stopMoving", "to": "Idle", "when": "@stopped", "duration": 0.45, "easing": "smooth" } ],
+          "editor": { "pos": [260, 0] }
+        }
+      },
+      "editor": { "pos": [0, 0] }
+    },
+    "survey": { "type": "clip", "clip": "Survey", "editor": { "pos": [-240, -80] } },
+    "moving": { "type": "compare", "input": "$Speed", "op": ">", "value": 0.1, "editor": { "pos": [-240, 0] } },
+    "stopped": { "type": "compare", "input": "$Speed", "op": "<=", "value": 0.1, "editor": { "pos": [-240, 80] } },
+    "runFaster": { "type": "speedScale", "input": "@runRate", "pose": "@walkRun", "editor": { "pos": [0, 0] } },
+    "runRate": { "type": "math", "a": "@atLeastRun", "op": "div", "b": 4.0, "editor": { "pos": [-240, -60] } },
+    "atLeastRun": { "type": "clamp", "input": "$Speed", "min": 4.0, "max": 100.0, "editor": { "pos": [-480, -60] } },
+    "walkRun": {
+      "type": "blend1d",
+      "input": "$Speed",
+      "sources": [
+        { "value": 1.0, "pose": "@walk" },
+        { "value": 4.0, "pose": "@run" }
+      ],
+      "editor": { "pos": [-240, 60] }
+    },
+    "walk": { "type": "clip", "clip": "Walk", "editor": { "pos": [-480, 40] } },
+    "run": { "type": "clip", "clip": "Run", "editor": { "pos": [-480, 120] } }
+  },
+  "editor": { "view": { "pan": [0, 0], "zoom": 1 } }
+}

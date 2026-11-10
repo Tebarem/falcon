@@ -1,0 +1,598 @@
+// The damage brush: lumpy holes cut along a stroke into a level box (drawn, one undo step), a
+// chipped edge and a broken corner, kept through a save; heaps of rubble under the holes in its sides
+// (gone with them on undo). The cuts' gizmos only with the box selected. Damage over the selection:
+// chips along all of the box's edges (one undo step), set further apart (24), then from the Level
+// window's Damage Selection with its settings (randomness, half the density: fewer); holes over a
+// face, chips along a spline.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Damage"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Damage.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.5,
+  "action": "move"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "A"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "A",
+  "position": [
+   0,
+   0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelDrawnTriangles": 12
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_damage_before.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.tool.set",
+  "tool": "paint",
+  "paintMode": 6,
+  "paintDamage": 0,
+  "paintRadius": 0.12,
+  "paintStrength": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.42,
+  "fy": 0.55,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.42,
+  "fy": 0.55,
+  "action": "down"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.5,
+  "fy": 0.55,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.58,
+  "fy": 0.55,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.58,
+  "fy": 0.55,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "damage": 3,
+  "rubble": 3
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "level_damage_after.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "damage": 0,
+  "rubble": 0
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelDrawnTriangles": 12
+  }
+ },
+ {
+  "type": "editor.tool.set",
+  "paintDamage": 1,
+  "paintRadius": 0.1
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.4,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.4,
+  "action": "down"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.45,
+  "fy": 0.4,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "damage": 1
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "editor.tool.set",
+  "paintDamage": 2
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.4,
+  "fy": 0.35,
+  "action": "move"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.4,
+  "fy": 0.35,
+  "action": "down"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "test.mouse",
+  "at": "#viewport",
+  "fx": 0.4,
+  "fy": 0.35,
+  "action": "up"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "damage": 2,
+  "rubble": 2
+ },
+ {
+  "type": "test.key",
+  "key": "Escape"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 100
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Damage.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "damage": 2,
+  "rubble": 2
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "A",
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "editor.select",
+  "ids": []
+ },
+ {
+  "type": "test.wait",
+  "frames": 5
+ },
+ {
+  "type": "test.expect",
+  "damageShown": 0
+ },
+ {
+  "type": "editor.select",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5
+ },
+ {
+  "type": "test.expect",
+  "damageShown": 2
+ },
+ {
+  "type": "editor.frame",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "editor.tool.set",
+  "paintRadius": 0.25,
+  "paintRubble": false,
+  "paintDamage": 1
+ },
+ {
+  "type": "editor.level.damage"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "damage": 38,
+  "rubble": 2
+ },
+ {
+  "type": "test.capture",
+  "path": "level_damage_edges.png",
+  "viewport": true
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10
+ },
+ {
+  "type": "test.expect",
+  "damage": 2
+ },
+ {
+  "type": "editor.tool.set",
+  "damageSpacing": 0.5
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 300
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "option:Paint/Damage Selection/Spacing": 0.5,
+   "option:Paint/Damage Selection/Density": 100
+  }
+ },
+ {
+  "type": "editor.level.damage"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "damage": 26
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10
+ },
+ {
+  "type": "test.expect",
+  "damage": 2
+ },
+ {
+  "type": "editor.tools.option",
+  "menu": "Paint/Damage Selection",
+  "name": "Spacing",
+  "value": 0.25
+ },
+ {
+  "type": "editor.tools.option",
+  "menu": "Paint/Damage Selection",
+  "name": "Randomness",
+  "value": 100
+ },
+ {
+  "type": "editor.tools.option",
+  "menu": "Paint/Damage Selection",
+  "name": "Density",
+  "value": 50
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "editor.tools.run",
+  "menu": "Paint/Damage Selection"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "damage>": 12,
+  "damage<": 42
+ },
+ {
+  "type": "test.capture",
+  "path": "level_damage_scattered.png",
+  "viewport": true
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10
+ },
+ {
+  "type": "test.expect",
+  "damage": 2
+ },
+ {
+  "type": "editor.tool.set",
+  "damageSpacing": 0,
+  "damageRandomness": 0,
+  "damageDensity": 1
+ },
+ {
+  "type": "editor.tool.set",
+  "paintRadius": 0.2
+ },
+ {
+  "type": "editor.level.damage",
+  "faces": [
+   0
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "damage": 6
+ },
+ {
+  "type": "editor.level.spline.create",
+  "name": "Crack",
+  "points": [
+   [
+    -0.5,
+    1,
+    0.5
+   ],
+   [
+    0.5,
+    1,
+    0.5
+   ]
+  ]
+ },
+ {
+  "type": "editor.level.damage"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "cuts": true
+ },
+ {
+  "type": "test.expect",
+  "damage": 10,
+  "damageShown": 0
+ },
+ {
+  "type": "editor.select",
+  "id": "A"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 600
+ },
+ {
+  "type": "test.expect",
+  "damageShown": 10
+ },
+ {
+  "type": "test.capture",
+  "path": "level_damage_selection.png",
+  "viewport": true
+ },
+ {
+  "type": "test.exit"
+ }
+]

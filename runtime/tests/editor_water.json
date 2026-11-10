@@ -1,0 +1,39 @@
+// Editor test (the project fixture): water bodies created, sized, their material's fields
+// overridden live and committed (undo / redo), the look saved as a .fwater that another body
+// then uses, one deleted, a river made from points and deleted, the scene saved
+// (editor_water_reload finds them again) and the view captured with water in it.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.entity.create", "kind": "water", "primitive": "pool", "name": "Pool"},
+  {"type": "test.expect", "selectedName": "Pool"},
+  {"type": "test.expect", "water": {"name": "Pool", "shape": "rect", "material": "builtin:pool", "count": 1}},
+  {"type": "editor.transform.set", "id": "Pool", "position": [0, 0.5, 0], "rotation": [0, 30, 0], "scale": [1, 1, 1]},
+  {"type": "editor.water.set", "id": "Pool", "width": 12, "length": 6, "depth": 2},
+  {"type": "editor.water.set", "id": "Pool", "field": "clarity", "value": 3},
+  {"type": "editor.water.preview", "id": "Pool", "field": "deepColor", "value": [0.1, 0.3, 0.2]},
+  {"type": "editor.water.set", "id": "Pool", "field": "deepColor", "value": [0.1, 0.3, 0.2]},
+  {"type": "test.expect", "water": {"name": "Pool", "width": 12, "field": {"clarity": 3, "deepColor": [0.1, 0.3, 0.2], "roughness": 0.02}}},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "water": {"name": "Pool", "field": {"clarity": 3, "deepColor": [0.0, 0.2, 0.35]}}},
+  {"type": "editor.redo"},
+  {"type": "test.expect", "water": {"name": "Pool", "field": {"deepColor": [0.1, 0.3, 0.2]}}},
+  {"type": "editor.water.saveAsset", "id": "Pool", "path": "Assets/Water/Teal.fwater"},
+  {"type": "test.expect", "fileExists": "Assets/Water/Teal.fwater",
+   "water": {"name": "Pool", "material": "Assets/Water/Teal.fwater", "field": {"clarity": 3, "deepColor": [0.1, 0.3, 0.2]}}},
+  {"type": "editor.entity.create", "kind": "water", "primitive": "pond", "name": "Pond"},
+  {"type": "editor.water.set", "id": "Pond", "material": "Assets/Water/Teal.fwater"},
+  {"type": "test.expect", "water": {"name": "Pond", "shape": "circle", "field": {"clarity": 3}, "count": 2}},
+  {"type": "editor.entity.delete", "id": "Pond"},
+  {"type": "test.expect", "entity": {"name": "Pond", "alive": false}},
+  {"type": "editor.entity.create", "kind": "water", "primitive": "river", "name": "Stream"},
+  {"type": "editor.water.set", "id": "Stream", "width": 3, "points": [-8, 0, 0, 2, 8, 0], "heights": [0.4, 0.2, 0]},
+  {"type": "test.expect", "water": {"name": "Stream", "shape": "river", "material": "builtin:river", "width": 3, "count": 3}},
+  {"type": "editor.entity.delete", "id": "Stream"},
+  {"type": "editor.select", "id": 0},
+  {"type": "test.view", "position": [-9, 5, 9], "target": [0, 0, 0]},
+  {"type": "test.wait", "frames": 40, "ms": 1000},
+  {"type": "test.capture", "path": "water_editor.png", "viewport": true},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.exit"}
+]

@@ -1,0 +1,18 @@
+{
+  "clips": {
+    "Walk": {
+      "sync": [ { "id": "LeftDown", "at": 0.0 }, { "id": "RightDown", "at": 0.5 } ],
+      "events": [
+        { "id": "Step", "at": 0.02, "type": "foot", "foot": "left" },
+        { "id": "Step", "at": 0.52, "type": "foot", "foot": "right" }
+      ]
+    },
+    "Run": {
+      "sync": [ { "id": "LeftDown", "at": 0.0 }, { "id": "RightDown", "at": 0.5 } ],
+      "events": [
+        { "id": "Step", "at": 0.05, "type": "foot", "foot": "left" },
+        { "id": "Step", "at": 0.55, "type": "foot", "foot": "right" }
+      ]
+    }
+  }
+}

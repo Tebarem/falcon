@@ -1,0 +1,14 @@
+// Reopened: the skeleton is expanded again from the bar's "bones" and the empty is back under Tip
+// where it was; deleted, the skeleton collapses (and is saved so).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "entity": {"name": "Skeleton", "parent": "skinned", "alive": true}},
+  {"type": "test.expect", "entity": {"name": "On Tip", "parent": "Tip", "position": [-0.99996, 1.0, -1.50004]}},
+  {"type": "editor.entity.delete", "id": "On Tip"},
+  {"type": "editor.entity.bones", "id": "skinned", "expand": false},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "entity": {"name": "Skeleton", "alive": false}},
+  {"type": "editor.scene.save"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.exit"}
+]

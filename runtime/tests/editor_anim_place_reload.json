@@ -1,0 +1,14 @@
+// Reopened: the Animator is back with its graph and values (the bar bent), and a game (no editor)
+// would bind it the same way (engine.cpp binds the edits' Animators at load).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.expect", "anim": {"entity": "skinned", "graph": "Assets/skinned.fgraph", "meshes": 1, "maxCharacters": 4, "state": "Bent",
+                                   "params": {"Bent": true, "Speed": 2}}},
+  {"type": "editor.component.remove", "id": "skinned", "component": "Animator"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "graph": "(no animator)"}},
+  {"type": "editor.undo"},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "anim": {"entity": "skinned", "graph": "Assets/skinned.fgraph", "state": "Bent"}},
+  {"type": "test.exit"}
+]

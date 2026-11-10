@@ -1,0 +1,307 @@
+// Clipping open meshes: a level plane (open: one-sided) with a cut sphere through it is clipped (a
+// hole, no caps), badged in the Hierarchy and the Inspector; a closed box beside it is capped as
+// usual (no badge). The cut moved off the plane: whole, no badge. Saved and opened again: clipped
+// from the bake.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Clip"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Clip.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "plane",
+  "name": "Sheet"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Sheet",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Block"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Block",
+  "position": [
+   1.5,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Sheet",
+   "levelDrawnTriangles": 2,
+   "clipped": false
+  }
+ },
+ {
+  "type": "editor.level.cut.create",
+  "shape": "sphere",
+  "name": "Hole"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Hole",
+  "position": [
+   1,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1.6,
+   1.6,
+   1.6
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "cuts": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Sheet",
+   "clipped": true,
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Block",
+   "clipped": false,
+   "levelDrawnTriangles>": 12
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "Sheet"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 400
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "clipBadges": 1,
+   "clippedNote": true
+  }
+ },
+ {
+  "type": "editor.select",
+  "id": "Block"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 400
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "clipBadges": 1,
+   "clippedNote": false
+  }
+ },
+ {
+  "type": "editor.frame",
+  "id": "Sheet"
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.capture",
+  "path": "level_clip.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Clip.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "bakedCuts": 2,
+  "freshCuts": 0,
+  "entity": {
+   "name": "Sheet",
+   "clipped": true,
+   "levelDrawnTriangles>": 20
+  }
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Hole",
+  "position": [
+   0,
+   5,
+   20
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1.6,
+   1.6,
+   1.6
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 600,
+  "cuts": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Sheet",
+   "clipped": false,
+   "levelDrawnTriangles": 2
+  }
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "#viewport"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "probe": {
+   "clipBadges": 0
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

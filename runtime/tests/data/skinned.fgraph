@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "Bar",
+  "skeleton": "Assets/skinned.gltf",
+  "parameters": {
+    "Bent": { "type": "bool", "default": false },
+    "Speed": { "type": "float", "default": 1.0 }
+  },
+  "root": "@machine",
+  "nodes": {
+    "machine": {
+      "type": "stateMachine",
+      "default": "Straight",
+      "states": {
+        "Straight": {
+          "pose": { "type": "clip", "clip": "Straight" },
+          "transitions": [ { "to": "Bent", "when": "$Bent", "duration": 0.2 } ]
+        },
+        "Bent": {
+          "pose": { "type": "speedScale", "input": "$Speed", "pose": { "type": "clip", "clip": "Bend" } },
+          "transitions": [ { "to": "Straight", "when": { "type": "not", "input": "$Bent" }, "duration": 0.2 } ]
+        }
+      }
+    }
+  }
+}

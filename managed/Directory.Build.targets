@@ -1,0 +1,17 @@
+<Project>
+  <!-- Games (FalconGame=true) get the NativeAOT entry point compiled into their own assembly. -->
+  <!-- RPC calls routed by the generator's interceptors (Falcon.Generated). -->
+  <PropertyGroup Condition="'$(FalconGame)' == 'true'">
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Falcon.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(FalconGame)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Falcon.Engine/GameEntry/AotEntry.cs" Link="Generated/AotEntry.cs" />
+    <!-- Script components registered by the source generator. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Falcon.Engine.Generators/Falcon.Engine.Generators.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="PublishAot;IlcUseEnvironmentalTools;RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Falcon.Engine'">
+    <Compile Remove="GameEntry/**" />
+  </ItemGroup>
+</Project>

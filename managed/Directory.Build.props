@@ -1,0 +1,18 @@
+<Project>
+  <!-- Shared settings for Falcon's managed projects (engine API + games). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <!-- Games register themselves from a [ModuleInitializer] (Game.Register). -->
+    <NoWarn>$(NoWarn);CA2255</NoWarn>
+    <!-- NativeAOT builds (the Sandbox, benches): the editor JIT's instruction set (Falcon.Game.targets; x64). -->
+    <IlcInstructionSet Condition="'$(IlcInstructionSet)' == '' And $(RuntimeIdentifier.EndsWith('-x64'))">x86-64-v2</IlcInstructionSet>
+  </PropertyGroup>
+</Project>

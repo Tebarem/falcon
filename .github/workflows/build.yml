@@ -1,0 +1,385 @@
+# Builds Falcon and runs the tests that need no GPU (scripts/ci_tests.py: GitHub's hosted runners
+# have none). The full suite, with its render and editor tests, still runs on a machine with a GPU.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    # A v* tag also packages the three builds into a draft GitHub Release (the release job).
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Upload bin/ (no .pdb/.ilk) as an artifact, kept for one day
+        type: boolean
+        default: false
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Valve's Steamworks SDK needs a partner login, so it can't be in a public repository. With the
+  # STEAMWORKS_TOKEN secret (read access to STEAMWORKS_REPO, whose "deps" release holds the zip) CI
+  # fetches it on every run, outside the caches, which pull requests can read; without the secret
+  # (forks, pull requests) Falcon builds without Steam, as it does on any machine without the SDK.
+  STEAMWORKS_REPO: Tebarem/falcon-engine
+  HAS_STEAMWORKS: ${{ secrets.STEAMWORKS_TOKEN != '' }}
+  SLANG_VERSION: 2026.10.2
+  SLANG_SHA256_WINDOWS: f21fca4ba78bfb366ef3b282b4926e3efca61c2ffd72a482b024c9f8413331d0
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 180
+    # A compiler cache (sccache, kept in GitHub's Actions cache): a push rebuilds only what its
+    # changes reach. CMake takes the launcher from these variables, and FalconCompiler.cmake
+    # switches MSVC to debug info inside the objects (/Z7), which sccache can cache.
+    env:
+      SCCACHE_GHA_ENABLED: 'true'
+      CMAKE_C_COMPILER_LAUNCHER: sccache
+      CMAKE_CXX_COMPILER_LAUNCHER: sccache
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compiler cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Cache third-party SDKs
+        id: sdks
+        uses: actions/cache@v4
+        with:
+          path: |
+            external/fidelityfx
+            external/dlss
+            external/msquic
+            external/steamaudio
+            external/cef-lite/vendor/cef
+            !external/cef-lite/vendor/cef/RelWithDebInfo
+            !external/cef-lite/vendor/cef/MinSizeRel
+            ~/slang-${{ env.SLANG_VERSION }}-windows-x86_64
+          key: sdks-windows-3-slang${{ env.SLANG_VERSION }}-${{ hashFiles('scripts/fetch-*.ps1', 'external/cef-lite/scripts/fetch-cef.ps1') }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-windows-${{ hashFiles('managed/**/*.csproj', 'managed/*.props', 'managed/*.targets') }}
+          restore-keys: nuget-windows-
+
+      - name: Fetch third-party SDKs
+        if: steps.sdks.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $slang = Join-Path $HOME "slang-$env:SLANG_VERSION-windows-x86_64"
+          $zip = Join-Path $env:RUNNER_TEMP 'slang.zip'
+          curl.exe --fail --location --retry 3 --output $zip "https://github.com/shader-slang/slang/releases/download/v$env:SLANG_VERSION/slang-$env:SLANG_VERSION-windows-x86_64.zip"
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:SLANG_SHA256_WINDOWS) { throw 'Slang zip SHA-256 mismatch' }
+          Expand-Archive $zip -DestinationPath $slang -Force
+
+          ./scripts/fetch-fsr.ps1
+          ./scripts/fetch-dlss.ps1
+          ./scripts/fetch-msquic.ps1
+          ./scripts/fetch-steamaudio.ps1
+          ./external/cef-lite/scripts/fetch-cef.ps1
+          Remove-Item external/cef-lite/vendor/*.tar.bz2
+
+      - name: Steamworks SDK
+        if: env.HAS_STEAMWORKS == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.STEAMWORKS_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download deps --repo $env:STEAMWORKS_REPO --pattern steamworks_sdk_165.zip --dir $env:RUNNER_TEMP
+          ./scripts/fetch-steamworks.ps1 -Zip (Join-Path $env:RUNNER_TEMP 'steamworks_sdk_165.zip')
+
+      - name: Build
+        run: |
+          # MinGW and Strawberry Perl on the runner's PATH would hand CMake GNU ar/ld.
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notmatch 'mingw|strawberry' }) -join ';'
+          ./build.ps1 -Preset profile
+
+      - name: Compiler cache stats
+        if: always()
+        run: sccache --show-stats
+
+      - name: Tests (no GPU)
+        run: python scripts/ci_tests.py --build build/profile -- --output-on-failure --timeout 600
+
+      - name: Test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-log
+          path: build/profile/Testing/Temporary/LastTest.log
+          retention-days: 7
+
+      - name: Release package
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cmake -DBUILD=build/profile -DOUT=dist -DNAME="falcon-${{ github.ref_name }}-windows-x64" -P scripts/package.cmake
+
+      - name: Upload release package
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist/*.zip
+          retention-days: 3
+          compression-level: 0
+
+      - name: Package
+        if: github.event_name == 'workflow_dispatch' && inputs.package
+        uses: actions/upload-artifact@v4
+        with:
+          name: falcon-windows
+          path: |
+            build/profile/bin
+            !build/profile/bin/**/*.pdb
+            !build/profile/bin/**/*.ilk
+          retention-days: 1
+
+  # Linux: the tools, the engine (falcon --server, falcon cook, ...) and the C# scripts with gcc.
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    # The compiler cache, as on Windows.
+    env:
+      SCCACHE_GHA_ENABLED: 'true'
+      CMAKE_C_COMPILER_LAUNCHER: sccache
+      CMAKE_CXX_COMPILER_LAUNCHER: sccache
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compiler cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Packages
+        run: |
+          sudo apt-get update -q
+          # Ninja; what SDL builds its video, audio and input back ends against.
+          sudo apt-get install -y -q ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev             libxfixes-dev libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols             libdecor-0-dev libegl-dev libgl-dev libvulkan-dev libdrm-dev libgbm-dev libasound2-dev             libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev libibus-1.0-dev
+
+      - name: Cache Slang
+        uses: actions/cache@v4
+        with:
+          path: ~/slang-${{ env.SLANG_VERSION }}-linux-x86_64
+          key: slang-linux-${{ env.SLANG_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-linux-${{ hashFiles('managed/**/*.csproj', 'managed/*.props', 'managed/*.targets') }}
+          restore-keys: nuget-linux-
+
+      - name: Cache third-party SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            external/steamaudio
+            external/cef-lite/vendor/cef
+            !external/cef-lite/vendor/cef/RelWithDebInfo
+            !external/cef-lite/vendor/cef/MinSizeRel
+          key: sdks-linux-2-${{ hashFiles('scripts/fetch.cmake') }}
+
+      - name: Fetch third-party SDKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cmake -DDEP=steamaudio -P scripts/fetch.cmake
+          # The editor's browser (CEF, for cef-lite)
+          cmake -DDEP=cef -P scripts/fetch.cmake
+
+      - name: Steamworks SDK
+        if: env.HAS_STEAMWORKS == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.STEAMWORKS_TOKEN }}
+        run: |
+          gh release download deps --repo "$STEAMWORKS_REPO" --pattern steamworks_sdk_165.zip --dir "$RUNNER_TEMP"
+          cmake -DDEP=steamworks -DZIP="$RUNNER_TEMP/steamworks_sdk_165.zip" -P scripts/fetch.cmake
+
+      - name: Build
+        # (on a failure, once more past the first error: every error in one run)
+        run: ./build.sh || { cmake --build build/linux -- -k 0 2>&1 | grep -E "error:|FAILED" ; exit 1; }
+
+      - name: Compiler cache stats
+        if: always()
+        run: sccache --show-stats
+
+      - name: Tests (no GPU)
+        run: python3 scripts/ci_tests.py --build build/linux -- --output-on-failure --timeout 600 -j4
+
+      - name: Release package
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cmake -DBUILD=build/linux -DOUT=dist -DNAME="falcon-${{ github.ref_name }}-linux-x64" -P scripts/package.cmake
+
+      - name: Upload release package
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: dist/*.tar.gz
+          retention-days: 3
+          compression-level: 0
+
+      - name: Test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-test-log
+          path: build/linux/Testing/Temporary/LastTest.log
+          retention-days: 7
+
+  # macOS on Apple silicon: the same build with AppleClang, and every shader's MSL through Apple's
+  # Metal compiler (the language version and macOS the engine targets).
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Packages
+        run: command -v ninja >/dev/null || brew install ninja
+
+      - name: Cache Slang
+        uses: actions/cache@v4
+        with:
+          path: ~/slang-${{ env.SLANG_VERSION }}-macos-aarch64
+          key: slang-macos-${{ env.SLANG_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-macos-${{ hashFiles('managed/**/*.csproj', 'managed/*.props', 'managed/*.targets') }}
+          restore-keys: nuget-macos-
+
+      - name: Cache third-party SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            external/steamaudio
+            external/cef-lite/vendor/cef
+            !external/cef-lite/vendor/cef/RelWithDebInfo
+            !external/cef-lite/vendor/cef/MinSizeRel
+          key: sdks-macos-2-${{ hashFiles('scripts/fetch.cmake') }}
+
+      - name: Fetch third-party SDKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cmake -DDEP=steamaudio -P scripts/fetch.cmake
+          # The editor's browser (CEF, for cef-lite)
+          cmake -DDEP=cef -P scripts/fetch.cmake
+
+      - name: Steamworks SDK
+        if: env.HAS_STEAMWORKS == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.STEAMWORKS_TOKEN }}
+        run: |
+          gh release download deps --repo "$STEAMWORKS_REPO" --pattern steamworks_sdk_165.zip --dir "$RUNNER_TEMP"
+          cmake -DDEP=steamworks -DZIP="$RUNNER_TEMP/steamworks_sdk_165.zip" -P scripts/fetch.cmake
+
+      - name: Build
+        # (on a failure, once more past the first error: every error in one run)
+        run: ./build.sh || { cmake --build build/macos -- -k 0 2>&1 | grep -E "error:|FAILED" ; exit 1; }
+
+      - name: Compile the shaders with xcrun metal
+        if: always()
+        run: |
+          xcrun -sdk macosx -f metal >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk macosx metal --version | head -1
+          msl=build/macos/msl
+          mkdir -p air
+          # (one file per sh: macOS xargs -I can't take a command this long)
+          ls $msl/*.metal | xargs -n 1 -P "$(sysctl -n hw.ncpu)" sh -c             'n=$(basename "$1" .metal); xcrun -sdk macosx metal -std=metal3.0 -mmacosx-version-min=14.0 -c "$1" -o "air/$n.air" 2> "air/$n.log" || echo "$1" >> failed.txt' sh
+          count=$(ls $msl/*.metal | wc -l | tr -d ' ')
+          if [ -f failed.txt ]; then
+            for f in $(cat failed.txt); do echo "::error file=$f::$(basename "$f") does not compile"; cat "air/$(basename "$f" .metal).log"; done
+            echo "$(wc -l < failed.txt | tr -d ' ') of $count shaders failed"
+            exit 1
+          fi
+          echo "all $count shaders compile"
+
+      - name: Tests (no GPU)
+        run: python3 scripts/ci_tests.py --build build/macos -- --output-on-failure --timeout 600 -j4
+
+      - name: Release package
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.package)
+        run: |
+          cmake -DBUILD=build/macos -DOUT=dist -DNAME="falcon-${{ github.ref_name }}-macos-arm64" -DVERSION="${{ github.ref_name }}" -P scripts/package.cmake
+          # the package as a download unpacks it: its falcon starts (signatures, dyld) and runs
+          mkdir unpacked && ditto -x -k dist/*.zip unpacked
+          codesign --verify unpacked/Falcon.app
+          unpacked/Falcon.app/Contents/MacOS/falcon dmath-hash
+
+      - name: Upload release package
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.package)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: dist/*.zip
+          retention-days: 3
+          compression-level: 0
+
+      - name: Test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-test-log
+          path: build/macos/Testing/Temporary/LastTest.log
+          retention-days: 7
+
+  # v* tags: the three packages on a draft GitHub Release, its notes from the commits since the
+  # last release. Publishing it stays a person's call.
+  release:
+    needs: [windows, linux, macos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --draft             --title "Falcon ${{ github.ref_name }}" --generate-notes --verify-tag

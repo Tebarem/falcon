@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Sandstone Blocks 05",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    3.0,
+    3.0
+  ],
+  "parallax": 0.025,
+  "textures": {
+    "baseColor": "@falcon/Brick/Textures/Sandstone Blocks 05/color.jpg",
+    "normal": "@falcon/Brick/Textures/Sandstone Blocks 05/normal.jpg",
+    "metallicRoughness": "@falcon/Brick/Textures/Sandstone Blocks 05/arm.jpg",
+    "occlusion": "@falcon/Brick/Textures/Sandstone Blocks 05/arm.jpg",
+    "height": "@falcon/Brick/Textures/Sandstone Blocks 05/height.jpg"
+  },
+  "acoustic": {
+    "preset": "rock"
+  },
+  "surface": {
+    "preset": "rock"
+  }
+}

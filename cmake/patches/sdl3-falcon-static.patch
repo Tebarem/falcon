@@ -1,0 +1,30 @@
+diff --git a/SDL/include/SDL3/SDL_falcon_gpu.h b/SDL/include/SDL3/SDL_falcon_gpu.h
+index d62506a..59a40c3 100644
+--- a/SDL/include/SDL3/SDL_falcon_gpu.h
++++ b/SDL/include/SDL3/SDL_falcon_gpu.h
+@@ -19,7 +19,9 @@ extern "C" {
+ #define SDL_FALCON_EXTERNAL_TEXTURE_MAX_PLANES 4u
+ #define SDL_FALCON_GPU_PATCH_REVISION 2u
+ 
+-#if defined(SDL_FALCON_GPU_BUILD) && defined(_WIN32)
++#if defined(SDL_FALCON_STATIC) /* SDL linked into the executable: no DLL boundary */
++#define SDL_FALCON_GPU_API
++#elif defined(SDL_FALCON_GPU_BUILD) && defined(_WIN32)
+ #define SDL_FALCON_GPU_API __declspec(dllexport)
+ #elif defined(_WIN32)
+ #define SDL_FALCON_GPU_API __declspec(dllimport)
+diff --git a/SDL/include/SDL3/SDL_falcon_timestamps.h b/SDL/include/SDL3/SDL_falcon_timestamps.h
+index 1e2b505..b95f057 100644
+--- a/SDL/include/SDL3/SDL_falcon_timestamps.h
++++ b/SDL/include/SDL3/SDL_falcon_timestamps.h
+@@ -19,7 +19,9 @@ extern "C" {
+ 
+ #define SDL_FALCON_TIMESTAMPS_REVISION 1u
+ 
+-#if defined(SDL_FALCON_TIMESTAMPS_BUILD) && defined(_WIN32)
++#if defined(SDL_FALCON_STATIC) /* SDL linked into the executable: no DLL boundary */
++#define SDL_FALCON_TIMESTAMPS_API
++#elif defined(SDL_FALCON_TIMESTAMPS_BUILD) && defined(_WIN32)
+ #define SDL_FALCON_TIMESTAMPS_API __declspec(dllexport)
+ #elif defined(_WIN32)
+ #define SDL_FALCON_TIMESTAMPS_API __declspec(dllimport)

@@ -1,0 +1,178 @@
+<!doctype html>
+<!-- Falcon editor: a Unity 6 style shell over the engine-rendered scene. Engine side:
+     engine/editor/editor_bridge.cpp (state, commands) and engine/editor/scene_view.cpp (viewport). -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-src file:; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Falcon Editor</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+
+<body>
+  <header class="app-toolbar">
+    <nav class="menubar" id="menubar">
+      <span class="logo">F</span>
+      <button data-menu="file">File</button>
+      <button data-menu="edit">Edit</button>
+      <button data-menu="gameobject">GameObject</button>
+      <button data-menu="tools">Tools</button>
+      <button data-menu="window">Window</button>
+      <button data-menu="help">Help</button>
+    </nav>
+    <div class="transport">
+      <button id="btn-play" title="Play (Ctrl+P)" data-icon="play"></button>
+      <button id="btn-pause" title="Pause (Ctrl+Shift+P)" data-icon="pause"></button>
+      <button id="btn-step" title="Step (Ctrl+Alt+P)" data-icon="step"></button>
+      <select class="field play-net" id="play-clients" title="Client processes of this scene started with Play: the editor's game hosts, they connect (Project Settings > Network)">
+        <option value="0">Alone</option><option value="1">+1 client</option><option value="2">+2 clients</option><option value="3">+3 clients</option><option value="4">+4 clients</option>
+      </select>
+      <select class="field play-net" id="play-conditions" title="The network conditions the clients play under (each way: latency, jitter, loss)">
+        <option value="0">No lag</option><option value="1">LAN (5 ms)</option><option value="2">Internet (50 ms, 1% loss)</option><option value="3">Bad (125 ms, 5% loss)</option>
+      </select>
+    </div>
+    <div class="app-right">
+      <span class="pill scripts-pill" id="scripts-pill" role="button" hidden></span>
+      <span class="pill" id="mode-pill">Editing</span>
+      <span class="app-title"><span class="scene-title" id="scene-title">scene</span><span class="dirty-dot" id="dirty" hidden> ●</span></span>
+      <div class="window-buttons" id="window-buttons">
+        <button id="win-min" title="Minimize" data-icon="winMin"></button>
+        <button id="win-max" title="Maximize" data-icon="winMax"></button>
+        <button id="win-close" class="close" title="Close" data-icon="winClose"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace" id="workspace">
+    <div class="col-main">
+      <div class="row-top">
+        <section class="dock" id="dock-hierarchy" data-dock="hierarchy">
+          <div class="tabs"><button class="tab active" data-tab="hierarchy"><span data-icon="list"></span>Hierarchy</button></div>
+          <div class="dock-body" data-body="hierarchy">
+            <div class="toolbar">
+              <button class="tbtn" id="btn-create" title="Create (Ctrl+Shift+N: empty)"><span data-icon="plus"></span><span data-icon="chev" class="chev"></span></button>
+              <label class="search"><span data-icon="search"></span><input class="field" id="hier-search" placeholder="Search (Ctrl+F)" autocomplete="off"></label>
+            </div>
+            <div class="list"><div class="tree" id="tree" tabindex="0"><div class="tree-spacer" id="tree-spacer"></div></div></div>
+          </div>
+        </section>
+        <div class="splitter v" data-split="left"></div>
+        <section class="dock" id="dock-scene" data-dock="scene">
+          <div class="tabs">
+            <button class="tab active" data-tab="scene"><span data-icon="grid"></span>Scene</button>
+            <button class="tab" data-tab="game"><span data-icon="gamepad"></span>Game</button>
+            <button class="tab" data-tab="animator"><span data-icon="character"></span>Animator</button>
+            <span class="spacer"></span>
+            <button class="tab-tool" id="btn-maximize-scene" title="Maximize (Shift+Space)" data-icon="maximize"></button>
+          </div>
+          <div class="toolbar" id="scene-toolbar">
+            <button class="tbtn" id="btn-pivot" title="Pivot / Center (Z)"></button>
+            <button class="tbtn" id="btn-space" title="Global / Local (X)"></button>
+            <span class="divider"></span>
+            <button class="tbtn" id="btn-grid" title="Toggle grid" data-icon="grid"></button>
+            <button class="tbtn" id="btn-snap" title="Increment snapping (hold Ctrl while dragging)" data-icon="magnet"></button>
+            <input class="field snap" id="snap-move" title="Move snap (units)">
+            <input class="field snap" id="snap-rotate" title="Rotate snap (degrees)">
+            <span class="spacer"></span>
+            <button class="tbtn" id="btn-draw" title="Draw mode"></button>
+            <span class="divider"></span>
+            <span data-icon="camera" class="muted"></span>
+            <input class="field speed" id="cam-speed" title="Camera speed (mouse wheel while flying)">
+          </div>
+          <div class="toolbar" id="game-toolbar" hidden>
+            <button class="tbtn">Display 1</button>
+            <button class="tbtn">Free Aspect</button>
+            <span class="spacer"></span>
+            <button class="tbtn" id="btn-maxplay">Maximize On Play</button>
+            <button class="tbtn" id="btn-stats">Stats</button>
+          </div>
+          <div class="viewport" id="viewport">
+            <div class="overlay tools-overlay" id="tools-overlay">
+              <button class="tbtn" data-tool="view" title="View tool (Q): click to select" data-icon="hand"></button>
+              <button class="tbtn" data-tool="move" title="Move tool (W)" data-icon="move"></button>
+              <button class="tbtn" data-tool="rotate" title="Rotate tool (E)" data-icon="rotate"></button>
+              <button class="tbtn" data-tool="scale" title="Scale tool (R)" data-icon="scale"></button>
+              <button class="tbtn" data-tool="brush" title="Terrain brush (B): drag on the terrain. Shift inverts, Ctrl smooths, [ and ] resize" data-icon="brush"></button>
+            </div>
+            <!-- A level mesh's element modes (1-4, Tab's wheel) and what is chosen: shown while one is selected. -->
+            <div class="overlay mode-bar" id="mode-bar" hidden>
+              <button class="mode-btn" data-element="object" data-tip="Objects (1): click, Shift adds, Ctrl toggles, drag a box"><span data-icon="cube"></span>Object<kbd>1</kbd></button>
+              <button class="mode-btn" data-element="vertex" data-tip="Vertices (2) of the selected level mesh"><span data-icon="vertex"></span>Vertex<kbd>2</kbd></button>
+              <button class="mode-btn" data-element="edge" data-tip="Edges (3) of the selected level mesh"><span data-icon="edge"></span>Edge<kbd>3</kbd></button>
+              <button class="mode-btn" data-element="face" data-tip="Faces (4) of the selected level mesh"><span data-icon="face"></span>Face<kbd>4</kbd></button>
+              <span class="mode-count" id="mode-count"></span>
+            </div>
+            <div class="overlay brush-pill" id="brush-pill" hidden></div>
+            <div class="overlay stats-overlay" id="stats-overlay" hidden></div>
+            <pre class="game-hud" id="game-hud" hidden></pre>
+          </div>
+          <div class="animator" id="animator" hidden></div>
+        </section>
+      </div>
+      <div class="splitter h" data-split="bottom"></div>
+      <section class="dock" id="dock-bottom" data-dock="bottom">
+        <div class="tabs">
+          <button class="tab active" data-tab="project"><span data-icon="folder"></span>Project</button>
+          <button class="tab" data-tab="console"><span data-icon="console"></span>Console</button>
+          <button class="tab" data-tab="profiler"><span data-icon="chart"></span>Profiler</button>
+          <button class="tab" data-tab="network"><span data-icon="chart"></span>Network</button>
+        </div>
+        <div class="dock-body" data-body="project">
+          <div class="assets" id="assets" tabindex="0"></div>
+        </div>
+        <div class="dock-body" data-body="console" hidden>
+          <div class="toolbar">
+            <button class="tbtn" id="btn-clear">Clear</button>
+            <button class="tbtn" id="btn-collapse">Collapse</button>
+            <span class="divider"></span>
+            <label class="search"><span data-icon="search"></span><input class="field" id="log-search" placeholder="Search" autocomplete="off"></label>
+            <button class="tbtn on counter" id="flt-info" title="Messages"><span data-icon="info"></span><span>0</span></button>
+            <button class="tbtn on counter" id="flt-warning" title="Warnings"><span data-icon="warning"></span><span>0</span></button>
+            <button class="tbtn on counter" id="flt-error" title="Errors"><span data-icon="error"></span><span>0</span></button>
+          </div>
+          <div class="console">
+            <div class="log-list" id="log-list"></div>
+            <div class="log-detail" id="log-detail"></div>
+          </div>
+        </div>
+        <div class="dock-body" data-body="profiler" hidden>
+          <div class="prof" id="profiler"></div>
+        </div>
+        <div class="dock-body" data-body="network" hidden>
+          <div class="net" id="network"></div>
+        </div>
+      </section>
+    </div>
+    <div class="splitter v" data-split="right"></div>
+    <section class="dock" id="dock-inspector" data-dock="inspector">
+      <div class="tabs">
+        <button class="tab active" data-tab="inspector"><span data-icon="info"></span>Inspector</button>
+        <button class="tab" data-tab="lighting"><span data-icon="sun"></span>Lighting</button>
+        <button class="tab" data-tab="terrain"><span data-icon="mountain"></span>Terrain</button>
+        <button class="tab" data-tab="audio"><span data-icon="audio"></span>Audio</button>
+      </div>
+      <div class="dock-body" data-body="inspector"><div class="inspector" id="inspector"></div></div>
+      <div class="dock-body" data-body="lighting" hidden><div class="inspector" id="lighting"></div></div>
+      <div class="dock-body" data-body="terrain" hidden><div class="inspector" id="terrain"></div></div>
+      <div class="dock-body" data-body="audio" hidden><div class="inspector" id="audio"></div></div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span class="msg" id="status-msg"></span>
+    <span id="status-backend"></span>
+  </footer>
+
+  <script src="icons.js"></script>
+  <script src="profiler.js"></script>
+  <script src="network.js"></script>
+  <script src="assets.js"></script>
+  <script src="animgraph.js"></script>
+  <script src="particles.js"></script>
+  <script src="editor.js"></script>
+  <script src="leveltools.js"></script>
+</body>
+
+</html>

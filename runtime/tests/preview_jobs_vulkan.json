@@ -1,0 +1,8 @@
+// Asset previews (falcon --preview) of the empty render-test scene's meshes: rendered, framed and
+// scaled down by the preview session; compared run to run and across backends.
+{"scene": "empty.fpak", "edits": false, "terrain": false,
+ "jobs": [
+  {"kind": "mesh", "mesh": "rock_boulder_a", "out": "preview_rock_vulkan.png", "size": 256},
+  {"kind": "mesh", "mesh": "rock_arch", "out": "preview_arch_vulkan.png", "size": 256},
+  {"kind": "mesh", "mesh": "cube", "out": "preview_cube_vulkan.png", "size": 256}
+ ]}

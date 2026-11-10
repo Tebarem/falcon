@@ -1,0 +1,17 @@
+// Editor test (VFX Test project): opened after editor_particles_textured, cooked first with the
+// flipbook's material. "Smoke" draws its frames from the virtual texture (its pages asked for,
+// streamed in), captured; without its renderer, captured again (editor_particles_textured_drawn).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.view", "position": [0, 2, 6], "target": [0, 2, 0]},
+  {"type": "editor.vfx.restart", "id": "Smoke"},
+  {"type": "test.wait", "frames": 90, "ms": 1500},
+  {"type": "test.expect", "entity": {"name": "Smoke", "particles": 40}},
+  {"type": "test.capture", "path": "particles_textured.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.component.remove", "id": "Smoke", "component": "ParticleSpriteRenderer"},
+  {"type": "test.wait", "frames": 20, "ms": 500},
+  {"type": "test.capture", "path": "particles_textured_off.png", "viewport": true},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

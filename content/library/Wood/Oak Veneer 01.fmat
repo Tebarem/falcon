@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Oak Veneer 01",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.83,
+    1.83
+  ],
+  "parallax": 0.002,
+  "textures": {
+    "baseColor": "@falcon/Wood/Textures/Oak Veneer 01/color.jpg",
+    "normal": "@falcon/Wood/Textures/Oak Veneer 01/normal.jpg",
+    "metallicRoughness": "@falcon/Wood/Textures/Oak Veneer 01/arm.jpg",
+    "occlusion": "@falcon/Wood/Textures/Oak Veneer 01/arm.jpg",
+    "height": "@falcon/Wood/Textures/Oak Veneer 01/height.jpg"
+  },
+  "acoustic": {
+    "preset": "wood"
+  },
+  "surface": {
+    "preset": "wood"
+  }
+}

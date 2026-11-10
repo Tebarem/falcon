@@ -1,0 +1,471 @@
+// Editor test (Script Test project): script API v19. A floor, a wall, a 0.3 m step, a trigger zone, a body
+// that ignores layer 0 (it falls through the floor), a door, a collider that grows while playing, and two
+// characters; a test game checks a body's state, velocity and teleport, rays with layers and an ignored
+// entity, a sphere cast, an overlap, a hinge's motor, triggers, the character controller (it climbs the
+// step, stops at the wall) and a Collider set while playing (its body built again), on the HUD. Stop
+// puts the scene back.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_physics (API v19): bodies, queries with layers, triggers, a character, a hinge and a\n// collider changed while playing, each check \"ok\" or \"BAD\" on the HUD once it is known.\npublic sealed class PhysicsGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<PhysicsGame>();\n\n    private Entity _ball, _floor, _zone, _ghost, _door, _grow, _hero, _runner, _dropped;\n    private Joint _hinge;\n    private readonly CharacterController _controller = new();\n    private int _frame, _entered;\n    private double _started = -1;\n    private string _start = \"\", _later = \"\";\n    private Quaternion _doorStart;\n\n    private static string Ok(bool ok) => ok ? \"ok\" : \"BAD\";\n\n    public override void OnStart()\n    {\n        _ball = Entity.Find(\"Ball\");\n        _floor = Entity.Find(\"Floor\");\n        _zone = Entity.Find(\"Zone\");\n        _ghost = Entity.Find(\"Ghost\");\n        _door = Entity.Find(\"Door\");\n        _grow = Entity.Find(\"Grow\");\n        _hero = Entity.Find(\"Hero\");\n        _runner = Entity.Find(\"Runner\");\n\n        bool gravity = Vector3.Distance(Physics.Gravity, new Vector3(0, -9.81f, 0)) < 0.01f;\n        bool body = Physics.Body(_ball, out BodyInfo info) && info.Type == BodyType.Dynamic && MathF.Abs(info.Mass - 1f) < 0.01f;\n        Physics.SetVelocity(_ball, new Vector3(3, 0, 0));\n        bool velocity = Physics.Body(_ball, out info) && MathF.Abs(info.Velocity.X - 3f) < 1e-3f;\n        Physics.SetVelocity(_ball, Vector3.Zero);\n        bool teleport = Physics.Teleport(_ball, new Vector3(2, 5, 0));\n\n        bool ray = Physics.Raycast(new Vector3(-2, 10, -2), -Vector3.UnitY, out SurfaceHit hit, 50f, QueryFilter.All) &&\n                   hit.Entity == _floor && MathF.Abs(hit.Point.Y) < 0.01f;\n        bool layers = !Physics.Raycast(new Vector3(-2, 10, -2), -Vector3.UnitY, out _, 50f, QueryFilter.AllBut(0));\n        bool ignoring = !Physics.Raycast(new Vector3(-2, 10, -2), -Vector3.UnitY, out _, 50f, QueryFilter.All.Ignoring(_floor));\n        bool sphereCast = Physics.SphereCast(new Vector3(-2, 10, -2), 0.5f, -Vector3.UnitY, out hit) && MathF.Abs(hit.Distance - 9.5f) < 0.02f;\n        Span<Entity> found = stackalloc Entity[8];\n        int n = Physics.OverlapSphere(new Vector3(-2, 0, -2), 0.6f, found);\n        bool overlap = n >= 1 && found[..Math.Min(n, 8)].Contains(_floor);\n\n        _hinge = Physics.CreateJoint(JointType.Hinge, _door, default,\n                                     new JointSettings { Anchor = new Vector3(0, 1, -6.75f), Axis = Vector3.UnitY, Motor = true, MotorSpeed = 2f, MotorMax = 500f });\n        _doorStart = _door.Rotation;\n        _dropped = Physics.Spawn(BodyShape.Sphere, new Vector3(0, 4, 6), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n\n        _start = $\"gravity {Ok(gravity)} body {Ok(body)} velocity {Ok(velocity)} teleport {Ok(teleport)} ray {Ok(ray)} layers {Ok(layers)} \" +\n                 $\"ignoring {Ok(ignoring)} sphereCast {Ok(sphereCast)} overlap {Ok(overlap)} joint {Ok(_hinge.IsValid)}\";\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        ++_frame;\n        if (_started < 0)\n            _started = Time.Total;\n        foreach (TriggerEvent t in Physics.Triggers())\n            if (t.Entered && t.Trigger == _zone && t.Other == _dropped)\n                ++_entered;\n        // The hero walks +X onto a 0.3 m step; the runner into a wall. Both fall at 0.1 m a frame.\n        if (_frame <= 80)\n        {\n            _controller.Move(_hero, new Vector3(0.05f, -0.1f, 0));\n            _controller.Move(_runner, new Vector3(0.1f, -0.1f, 0));\n        }\n        if (_frame == 5)\n        {\n            Collider c = Ecs.Get<Collider>(_grow);\n            c.Size = new Vector3(3f, c.Size.Y, 3f);  // (its body is built again at the next step)\n            Ecs.Set(_grow, c);\n        }\n        // Two seconds of physics later (the editor's test frames are short), the rest.\n        if (_later.Length == 0 && _frame > 80 && Time.Total - _started >= 2.0)\n        {\n            Vector3 ball = _ball.Position;\n            bool teleported = MathF.Abs(ball.X - 2f) < 0.05f;  // (it fell from there: not back at x 0)\n            CharacterMove step = _controller.Move(_hero, new Vector3(0, -0.1f, 0));\n            bool climbed = step.Grounded && MathF.Abs(step.Position.Y - 0.3f) < 0.03f && _hero.Position.X > -5.5f;\n            CharacterMove wall = _controller.Move(_runner, new Vector3(0.1f, -0.1f, 0));\n            bool walled = wall.Grounded && wall.Blocked && MathF.Abs(_runner.Position.X - 4.2f) < 0.05f;\n            bool ghost = _ghost.Position.Y < -1f;\n            bool hinge = MathF.Abs(Quaternion.Dot(_door.Rotation, _doorStart)) < 0.95f;\n            Span<Entity> found = stackalloc Entity[8];\n            int n = Physics.OverlapSphere(new Vector3(-8, 1, 7.2f), 0.1f, found);\n            bool grown = n >= 1 && found[..Math.Min(n, 8)].Contains(_grow);\n            _later = $\"teleported {Ok(teleported)} climbed {Ok(climbed)} walled {Ok(walled)} ghost {Ok(ghost)} hinge {Ok(hinge)} \" +\n                     $\"grown {Ok(grown)} trigger {Ok(_entered == 1)}\";\n        }\n        Hud.Show(_later.Length > 0 ? $\"{_start} {_later}\" : _start);\n    }\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Floor",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   -0.5,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   20,
+   1,
+   20
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Floor",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Ball",
+  "primitive": "sphere"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Ball",
+  "position": [
+   0,
+   3,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ball",
+  "component": "SphereCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Wall",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Wall",
+  "position": [
+   5,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   2,
+   6
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Wall",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Step",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Step",
+  "position": [
+   -4.5,
+   0.15,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   0.3,
+   2
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Step",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Zone",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Zone",
+  "position": [
+   0,
+   1,
+   6
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Zone",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.collider.set",
+  "id": "Zone",
+  "trigger": true
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Ghost",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Ghost",
+  "position": [
+   8,
+   3,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ghost",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Ghost",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.collider.set",
+  "id": "Ghost",
+  "ignore": [
+   0
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Door",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Door",
+  "position": [
+   0,
+   1,
+   -6
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   0.2,
+   2,
+   1.5
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Door",
+  "component": "PhysicsBody"
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Door",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Grow",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Grow",
+  "position": [
+   -8,
+   1,
+   6
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Grow",
+  "component": "BoxCollider"
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Hero"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Hero",
+  "position": [
+   -8,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "empty",
+  "name": "Runner"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Runner",
+  "position": [
+   2,
+   0,
+   2
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Zone",
+   "has": [
+    "Collider"
+   ]
+  }
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "scripts": "ready",
+  "playing": false
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 120,
+  "ms": 2600
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "gravity ok body ok velocity ok teleport ok ray ok layers ok ignoring ok sphereCast ok overlap ok joint ok teleported ok climbed ok walled ok ghost ok hinge ok grown ok trigger ok"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false,
+  "game": {
+   "running": false
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ball",
+   "position": [
+    0,
+    3,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Hero",
+   "position": [
+    -8,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Ghost",
+   "position": [
+    8,
+    3,
+    0
+   ]
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

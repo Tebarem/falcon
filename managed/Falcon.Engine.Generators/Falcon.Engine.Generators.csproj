@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishAot;IlcUseEnvironmentalTools">
+  <!-- Roslyn source generator for games: registers every Falcon.Component subclass (a factory, its
+       [Property] schema, and JSON read / write without reflection), so components work under
+       NativeAOT and trimming. Games reference it as an analyzer (Directory.Build.targets). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- A NativeAOT publish of a game passes PublishAot down; an analyzer is never compiled ahead of time. -->
+    <PublishAot>false</PublishAot>
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

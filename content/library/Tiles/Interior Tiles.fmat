@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Interior Tiles",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.9,
+    1.9
+  ],
+  "parallax": 0.006,
+  "textures": {
+    "baseColor": "@falcon/Tiles/Textures/Interior Tiles/color.jpg",
+    "normal": "@falcon/Tiles/Textures/Interior Tiles/normal.jpg",
+    "metallicRoughness": "@falcon/Tiles/Textures/Interior Tiles/arm.jpg",
+    "occlusion": "@falcon/Tiles/Textures/Interior Tiles/arm.jpg",
+    "height": "@falcon/Tiles/Textures/Interior Tiles/height.jpg"
+  },
+  "acoustic": {
+    "preset": "ceramic"
+  },
+  "surface": {
+    "preset": "ceramic"
+  }
+}

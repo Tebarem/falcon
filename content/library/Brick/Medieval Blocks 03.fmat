@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Medieval Blocks 03",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    2.0,
+    2.0
+  ],
+  "parallax": 0.04,
+  "textures": {
+    "baseColor": "@falcon/Brick/Textures/Medieval Blocks 03/color.jpg",
+    "normal": "@falcon/Brick/Textures/Medieval Blocks 03/normal.jpg",
+    "metallicRoughness": "@falcon/Brick/Textures/Medieval Blocks 03/arm.jpg",
+    "occlusion": "@falcon/Brick/Textures/Medieval Blocks 03/arm.jpg",
+    "height": "@falcon/Brick/Textures/Medieval Blocks 03/height.jpg"
+  },
+  "acoustic": {
+    "preset": "rock"
+  },
+  "surface": {
+    "preset": "rock"
+  }
+}

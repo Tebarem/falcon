@@ -1,0 +1,30 @@
+// Editor test (the project fixture, after editor_audio): the scripts' audio API (v7). A game plays
+// a sound at a point and stops it, a clip on a ball it drops onto a concrete floor (following it),
+// turns the effects bus down, and shows on the HUD whether each plays, what the ball hit and what
+// is under a point. Stop silences it all; the game editor_scripts left is put back and built.
+[
+  {"type": "test.wait", "frames": 30, "ms": 1500},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "ScriptFloor"},
+  {"type": "editor.transform.set", "id": "ScriptFloor", "position": [-80, 149.75, -80], "rotation": [0, 0, 0], "scale": [8, 0.5, 8]},
+  {"type": "editor.component.add", "id": "ScriptFloor", "component": "BoxCollider"},
+  {"type": "editor.audio.surface.set", "id": "ScriptFloor", "surface": "concrete"},
+  {"type": "editor.transform.set", "id": "Ears", "position": [-80, 152, -74], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.settings.set", "key": "audioWaterSounds", "value": false},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace LauncherTest;\n\n// Audio test game: a sound at a point (stopped after 3 s), a clip on a falling ball (it\n// follows it), the effects bus turned down, the ball's hits and what they sounded like, and the\n// surface under a point. All of it on the HUD.\npublic sealed class LauncherTestGame : Game\n{\n    private SoundHandle _beep, _onBall;\n    private Entity _ball;\n    private float _time;\n    private string _hit = \"nothing\", _under = \"nothing\";\n\n    [ModuleInitializer]\n    internal static void Register() => Register<LauncherTestGame>();\n\n    public override void OnStart()\n    {\n        _beep = Audio.Play(\"Assets/Beep.fsound\", new Vector3(-80, 152, -80), 0.5f);\n        _ball = Physics.Spawn(BodyShape.Sphere, new Vector3(-80, 155, -80), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n        _onBall = Audio.PlayOn(_ball, \"Assets/beep.wav\", 0.3f, 1.5f, loop: true);\n        Audio.SetBusVolume(Bus.Effects, 0.8f);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        float before = _time;\n        _time += dt;\n        if (before < 3f && _time >= 3f)\n            _beep.Stop();\n        if (before < 3.5f && _time >= 3.5f)\n            _onBall.SetPitch(0.75f);\n        foreach (Contact c in Physics.Contacts())\n            if (c.A == _ball || c.B == _ball)\n                _hit = (c.A == _ball ? c.SurfaceB : c.SurfaceA).ToString();\n        if (Physics.SurfaceAt(new Vector3(-80, 152, -80), out SurfaceHit h, 10f))\n            _under = $\"{h.Surface} {h.Distance:F2}\";\n        Hud.Show($\"beep {(_beep.IsPlaying ? \"on\" : \"off\")}, ball {(_onBall.IsPlaying ? \"on\" : \"off\")}, hit {_hit}, under {_under}\");\n    }\n}\n"},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.wait", "frames": 20, "ms": 400},
+  {"type": "test.expect", "scripts": "ready", "playing": true, "hud": "beep on, ball on"},
+  {"type": "test.expect", "hud": "under Concrete 2.00"},
+  {"type": "test.wait", "frames": 120, "ms": 4000},
+  {"type": "test.expect", "hud": "beep off, ball on, hit Concrete"},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "playing": false, "hud": "", "audio": {"voices": 0}},
+  {"type": "editor.settings.set", "key": "audioWaterSounds", "value": true},
+  {"type": "test.writeFile", "path": "Scripts/Game.cs", "text": "using System;\nusing System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace LauncherTest;\n\n[Component(\"LauncherTest.Marker\")]\npublic struct Marker\n{\n    public float Age;\n}\n\n// Test game: three entities of its own component, a sphere, and every root mesh rising.\npublic sealed class LauncherTestGame : Game\n{\n    private Query? _movers, _markers;\n\n    [ModuleInitializer]\n    internal static void Register() => Register<LauncherTestGame>();\n\n    public override void OnStart()\n    {\n        _movers = new Query(Query.InOut<WorldTransform>(), Query.In<MeshInstance>(), Query.Not<Parent>(), Query.Not<RigidBody>());\n        _markers = new Query(Query.InOut<Marker>());\n        for (int i = 0; i < 3; ++i)\n            Ecs.Set(Ecs.Create(), new Marker());\n        Physics.Spawn(BodyShape.Sphere, new Vector3(0, 30, 0), new Vector3(0.3f, 0, 0), Vector3.Zero, Vector3.One);\n    }\n\n    public override void OnUpdate(float dt)\n    {\n        PerformanceHud.Update(dt);\n        foreach (Chunk c in _movers!)\n        {\n            Span<WorldTransform> t = c.Write<WorldTransform>(0);\n            for (int i = 0; i < c.Count; ++i)\n            {\n                Vector3 p = t[i].Position;\n                p.Y += 0.5f;\n                t[i].Position = p;\n            }\n        }\n        foreach (Chunk c in _markers!)\n        {\n            Span<Marker> m = c.Write<Marker>(0);\n            for (int i = 0; i < c.Count; ++i)\n                m[i].Age += dt;\n        }\n    }\n}\n"},
+  {"type": "editor.scripts.build"},
+  {"type": "test.wait", "frames": 100000, "build": true},
+  {"type": "test.expect", "scripts": "ready", "playing": false},
+  {"type": "test.exit"}
+]

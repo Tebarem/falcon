@@ -1,0 +1,60 @@
+// Editor test: physics components. A flat cube "Platform" with a Box Collider (static) at y 5;
+// a cube "Crate" above it with a Rigidbody and a Box Collider, carrying a child "Tag" 1 m up; a
+// sphere "Ball" beside the platform with a Rigidbody and a Sphere Collider (a second collider is
+// refused). The Rigidbody's mass is edited (undo / redo). Play: Crate falls onto the platform
+// (Tag with it), Ball past it onto Sponza (its cooked colliders). Stop: all back where they were.
+// Without its Rigidbody Crate stays put under Play (its collider alone is static).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Platform"},
+  {"type": "editor.transform.set", "id": "Platform", "position": [0, 5, 0], "rotation": [0, 0, 0], "scale": [4, 0.5, 4]},
+  {"type": "editor.component.add", "id": "Platform", "component": "BoxCollider"},
+  {"type": "test.expect", "entity": {"name": "Platform", "has": ["Collider"], "lacks": ["PhysicsBody"], "collider": "box"}},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Crate"},
+  {"type": "editor.transform.set", "id": "Crate", "position": [0, 8, 0], "rotation": [0, 20, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Crate", "component": "PhysicsBody"},
+  {"type": "editor.component.add", "id": "Crate", "component": "BoxCollider"},
+  {"type": "test.expect", "entity": {"name": "Crate", "has": ["PhysicsBody", "Collider"], "mass": 1, "collider": "box"}},
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "cube", "name": "Tag", "parent": "Crate"},
+  {"type": "editor.transform.set", "id": "Crate/Tag", "position": [0, 1, 0], "rotation": [0, 0, 0], "scale": [0.3, 0.3, 0.3]},
+  {"type": "test.expect", "entity": {"name": "Tag", "parent": "Crate", "position": [0, 9, 0]}},
+
+  {"type": "editor.entity.create", "kind": "primitive", "primitive": "sphere", "name": "Ball"},
+  {"type": "editor.transform.set", "id": "Ball", "position": [3.5, 8, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+  {"type": "editor.component.add", "id": "Ball", "component": "Rigidbody"},
+  {"type": "editor.component.add", "id": "Ball", "component": "SphereCollider"},
+  {"type": "editor.component.add", "id": "Ball", "component": "BoxCollider"},
+  {"type": "test.expect", "entity": {"name": "Ball", "has": ["PhysicsBody", "Collider"], "collider": "sphere"}},
+
+  {"type": "editor.body.set", "id": "Crate", "mass": 5},
+  {"type": "test.expect", "entity": {"name": "Crate", "mass": 5}},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "entity": {"name": "Crate", "mass": 1}},
+  {"type": "editor.redo"},
+  {"type": "test.expect", "entity": {"name": "Crate", "mass": 5}},
+
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 150, "ms": 2500},
+  {"type": "test.expect", "playing": true, "entity": {"name": "Crate", "yAbove": 5.6, "yBelow": 5.9}},
+  {"type": "test.expect", "entity": {"name": "Tag", "yAbove": 6.6, "yBelow": 6.9}},
+  {"type": "test.expect", "entity": {"name": "Ball", "yBelow": 4.5, "yAbove": -2}},
+  {"type": "test.expect", "entity": {"name": "Platform", "position": [0, 5, 0]}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.expect", "playing": false, "entity": {"name": "Crate", "position": [0, 8, 0], "has": ["PhysicsBody"]}},
+  {"type": "test.expect", "entity": {"name": "Tag", "position": [0, 9, 0]}},
+  {"type": "test.expect", "entity": {"name": "Ball", "position": [3.5, 8, 0]}},
+
+  {"type": "editor.component.remove", "id": "Crate", "component": "PhysicsBody"},
+  {"type": "test.expect", "entity": {"name": "Crate", "lacks": ["PhysicsBody"], "has": ["Collider"]}},
+  {"type": "editor.play"},
+  {"type": "test.wait", "frames": 60, "ms": 1000},
+  {"type": "test.expect", "entity": {"name": "Crate", "position": [0, 8, 0]}},
+  {"type": "test.expect", "entity": {"name": "Ball", "yBelow": 4.5, "yAbove": -2}},
+  {"type": "editor.stop"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "editor.undo"},
+  {"type": "test.expect", "entity": {"name": "Crate", "has": ["PhysicsBody"], "mass": 5}},
+  {"type": "test.exit"}
+]

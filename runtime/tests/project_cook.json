@@ -1,0 +1,172 @@
+// Cooking a scene before it opens (the project editor_prefabs_unpacked left: DamagedHelmet in
+// Assets, Main open). Three times:
+// - a broken model in Assets: the cook fails, the panel shows the cooker's error in a dialog;
+// - another process holds the scene's cook lock (this one's id: a running process): the cook
+//   waits ("waiting" on the panel) until the lock goes, then runs;
+// - with a second copy of the model imported, its textures and the first one's are copied from
+//   the scene's earlier cook (Scenes/Main.fvt) instead of encoded again.
+// The cook waits in Cache/Cook while Main's files are open, and is moved in as Main opens again in
+// the same process. project_cook_reload then finds a lock left by a process that is gone and ignores it.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Assets/Broken.glb",
+  "text": "not a model"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak",
+  "save": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3000,
+  "cook": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   ".modal-actions .tbtn"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "probe": {
+   "assetsCookFailed": true,
+   "assetsDialog": true
+  },
+  "fileMissing": "Cache/Stamps/Scenes_Main.fpak.cooking"
+ },
+ {
+  "type": "test.mouse",
+  "at": ".modal-actions .tbtn"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Assets/Broken.glb",
+  "remove": true
+ },
+ {
+  "type": "editor.assets.importFiles",
+  "paths": [
+   "samples/DamagedHelmet.glb"
+  ],
+  "folder": "Assets"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 1500
+ },
+ {
+  "type": "test.expect",
+  "fileExists": "Assets/DamagedHelmet (2).glb"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Cache/Stamps/Scenes_Main.fpak.cooking",
+  "pid": true
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak",
+  "save": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 1500
+ },
+ {
+  "type": "test.probe",
+  "rects": [
+   "[data-as=\"cancelCook\"]"
+  ]
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "cooking": true,
+  "cookStages": [
+   "waiting"
+  ],
+  "probe": {
+   "assetsCooking": "waiting"
+  }
+ },
+ {
+  "type": "test.capture",
+  "path": "project_cook_waiting.png"
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Cache/Stamps/Scenes_Main.fpak.cooking",
+  "remove": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 6000,
+  "cook": true
+ },
+ {
+  "type": "test.expect",
+  "cooking": false,
+  "cookStages": [
+   "waiting",
+   "done"
+  ],
+  "cookReused": 2,
+  "probe": {
+   "assetsCookFailed": false
+  },
+  "fileExists": [
+   "Scenes/Main.fpak",
+   "Scenes/Main.fvt"
+  ],
+  "fileMissing": [
+   "Cache/Stamps/Scenes_Main.fpak.cooking",
+   "Cache/Cook/Scenes_Main.fpak",
+   "Cache/Cook/Scenes_Main.fvt"
+  ],
+  "sceneOpen": "Scenes/Main.fpak",
+  "sceneSwitches": 1,
+  "modelLoaded": "Assets/DamagedHelmet (2).glb"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Cache/Stamps/Scenes_Main.fpak.cooking",
+  "text": "4000000000"
+ },
+ {
+  "type": "test.exit"
+ }
+]

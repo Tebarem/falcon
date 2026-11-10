@@ -1,0 +1,632 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9a40d1d..0e24642 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,10 +44,22 @@ set(CEF_LITE_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+ set(CEF_LITE_SHADER_OUTPUTS
+   "${CEF_LITE_SHADER_DIR}/native_ui.vert.spv"
+   "${CEF_LITE_SHADER_DIR}/native_ui.frag.spv"
+-  "${CEF_LITE_SHADER_DIR}/native_ui.vert.dxil"
+-  "${CEF_LITE_SHADER_DIR}/native_ui.frag.dxil"
+   "${CEF_LITE_SHADER_DIR}/native_ui.vert.msl"
+   "${CEF_LITE_SHADER_DIR}/native_ui.frag.msl")
++# DXIL where there is DXC (Windows: Slang loads dxcompiler.dll).
++set(CEF_LITE_DXIL_COMMANDS)
++if(WIN32)
++  list(APPEND CEF_LITE_SHADER_OUTPUTS
++    "${CEF_LITE_SHADER_DIR}/native_ui.vert.dxil"
++    "${CEF_LITE_SHADER_DIR}/native_ui.frag.dxil")
++  set(CEF_LITE_DXIL_COMMANDS
++    COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
++      -entry ui_vs_main -stage vertex -target dxil -profile sm_6_0 -O3
++      -o "${CEF_LITE_SHADER_DIR}/native_ui.vert.dxil"
++    COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
++      -entry ui_fs_main -stage fragment -target dxil -profile sm_6_0 -O3
++      -o "${CEF_LITE_SHADER_DIR}/native_ui.frag.dxil")
++endif()
+ add_custom_command(
+   OUTPUT ${CEF_LITE_SHADER_OUTPUTS}
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CEF_LITE_SHADER_DIR}"
+@@ -57,12 +69,7 @@ add_custom_command(
+   COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
+     -entry ui_fs_main -stage fragment -target spirv -profile spirv_1_5 -O3
+     -o "${CEF_LITE_SHADER_DIR}/native_ui.frag.spv"
+-  COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
+-    -entry ui_vs_main -stage vertex -target dxil -profile sm_6_0 -O3
+-    -o "${CEF_LITE_SHADER_DIR}/native_ui.vert.dxil"
+-  COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
+-    -entry ui_fs_main -stage fragment -target dxil -profile sm_6_0 -O3
+-    -o "${CEF_LITE_SHADER_DIR}/native_ui.frag.dxil"
++  ${CEF_LITE_DXIL_COMMANDS}
+   COMMAND "${SLANGC_EXECUTABLE}" "${CEF_LITE_SHADER_SOURCE}"
+     -entry ui_vs_main -stage vertex -target metal -profile sm_6_0 -O3
+     -o "${CEF_LITE_SHADER_DIR}/native_ui.vert.msl"
+@@ -100,7 +107,11 @@ target_compile_definitions(cef_lite PRIVATE
+   WIN32_LEAN_AND_MEAN)
+ target_compile_definitions(cef_lite PUBLIC CEF_LITE_STATIC=1)
+ target_link_libraries(cef_lite PUBLIC SDL3::SDL3 cef_lite_ui_host_contract PRIVATE
+-  libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
++  libcef_dll_wrapper ${CEF_STANDARD_LIBS})
++# macOS loads the framework at run time (cef_load_library), never links it.
++if(NOT APPLE)
++  target_link_libraries(cef_lite PRIVATE libcef_lib)
++endif()
+ if(WIN32)
+   target_link_libraries(cef_lite PRIVATE d3d11 d3d12)
+ endif()
+@@ -110,18 +121,37 @@ if(MSVC)
+ endif()
+ add_dependencies(cef_lite cef_lite_shaders)
+ 
+-set(CEF_LITE_BINARY_FILES
+-  chrome_elf.dll
+-  d3dcompiler_47.dll
+-  libcef.dll
+-  libEGL.dll
+-  libGLESv2.dll
+-  v8_context_snapshot.bin)
+-set(CEF_LITE_RESOURCE_FILES
+-  chrome_100_percent.pak
+-  chrome_200_percent.pak
+-  resources.pak
+-  icudtl.dat)
++if(WIN32)
++  set(CEF_LITE_BINARY_FILES
++    chrome_elf.dll
++    d3dcompiler_47.dll
++    libcef.dll
++    libEGL.dll
++    libGLESv2.dll
++    v8_context_snapshot.bin)
++elseif(APPLE)
++  # Everything is in the framework (copied whole below).
++  set(CEF_LITE_BINARY_FILES)
++else()
++  # (SwiftShader: Chromium's GPU process falls back to it without a usable GPU)
++  set(CEF_LITE_BINARY_FILES
++    libcef.so
++    libEGL.so
++    libGLESv2.so
++    libvk_swiftshader.so
++    libvulkan.so.1
++    vk_swiftshader_icd.json
++    v8_context_snapshot.bin)
++endif()
++if(APPLE)
++  set(CEF_LITE_RESOURCE_FILES)
++else()
++  set(CEF_LITE_RESOURCE_FILES
++    chrome_100_percent.pak
++    chrome_200_percent.pak
++    resources.pak
++    icudtl.dat)
++endif()
+ # The CEF runtime next to the host (CEF_LITE_RUNTIME_DIR); the host executable is
+ # also CEF's helper process (cef_lite_run_subprocess).
+ add_custom_target(cef_lite_runtime ALL
+@@ -138,13 +168,23 @@ add_custom_target(cef_lite_runtime ALL
+   COMMAND ${CMAKE_COMMAND} -E copy_directory
+     "${CEF_LITE_SHADER_DIR}"
+     "${CEF_LITE_SHADER_STAGE_DIR}"
+-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-    "${CEF_RESOURCE_DIR}/locales/en-US.pak"
+-    "${CEF_LITE_RUNTIME_DIR}/locales/en-US.pak"
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+     "${CEF_ROOT}/CREDITS.html"
+     "${CEF_LITE_RUNTIME_DIR}/CREDITS.html"
+   VERBATIM)
++if(APPLE)
++  add_custom_command(TARGET cef_lite_runtime POST_BUILD
++    COMMAND ${CMAKE_COMMAND} -E copy_directory
++      "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
++      "${CEF_LITE_RUNTIME_DIR}/Chromium Embedded Framework.framework"
++    VERBATIM)
++else()
++  add_custom_command(TARGET cef_lite_runtime POST_BUILD
++    COMMAND ${CMAKE_COMMAND} -E copy_if_different
++      "${CEF_RESOURCE_DIR}/locales/en-US.pak"
++      "${CEF_LITE_RUNTIME_DIR}/locales/en-US.pak"
++    VERBATIM)
++endif()
+ foreach(file ${CEF_LITE_BINARY_FILES})
+   add_custom_command(TARGET cef_lite_runtime POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+@@ -168,6 +208,20 @@ add_dependencies(cef_lite_runtime cef_lite_shaders)
+ set_target_properties(cef_lite PROPERTIES
+   ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+ 
++# macOS: the helper program Chromium's processes run as; the host puts copies of
++# it in its helper bundles (<Name> Helper.app, <Name> Helper (GPU).app, ...).
++if(APPLE)
++  add_executable(cef_lite_helper src/cef_helper_main.cpp src/cef_subprocess.cpp)
++  target_compile_features(cef_lite_helper PRIVATE cxx_std_20)
++  target_include_directories(cef_lite_helper PRIVATE
++    "${CMAKE_CURRENT_SOURCE_DIR}/include"
++    "${CEF_INCLUDE_PATH}"
++    $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>)
++  target_compile_definitions(cef_lite_helper PRIVATE
++    CEF_LITE_BUILD=1 CEF_LITE_STATIC=1)
++  target_link_libraries(cef_lite_helper PRIVATE libcef_dll_wrapper ${CEF_STANDARD_LIBS})
++endif()
++
+ if(CEF_LITE_BUILD_EXAMPLE)
+   add_executable(cef_lite_sdl_gpu_example examples/host/main.c)
+   target_compile_features(cef_lite_sdl_gpu_example PRIVATE c_std_11)
+diff --git a/include/cef_lite.h b/include/cef_lite.h
+index 95b48bc..906d466 100644
+--- a/include/cef_lite.h
++++ b/include/cef_lite.h
+@@ -105,6 +105,10 @@ typedef struct CefLiteInputEvent {
+  * --type=...): call it first in main and return its exit code. The host passes
+  * its own executable as subprocess_path. */
+ CEF_LITE_API int cef_lite_run_subprocess(void);
++/* Linux and macOS: CEF reads the process's arguments from main's argc/argv.
++ * Call it first in main, before cef_lite_run_subprocess or cef_lite_create
++ * (Windows takes them from the OS, and ignores this). */
++CEF_LITE_API void cef_lite_set_main_args(int argc, char** argv);
+ 
+ CEF_LITE_API CefLiteStatus cef_lite_create(
+     SDL_GPUDevice* device,
+diff --git a/src/cef_helper_main.cpp b/src/cef_helper_main.cpp
+new file mode 100644
+index 0000000..f8a56ae
+--- /dev/null
++++ b/src/cef_helper_main.cpp
+@@ -0,0 +1,11 @@
++// macOS: Chromium's helper processes run from their own small bundles
++// (<Name> Helper.app, <Name> Helper (GPU).app, ...), beside the host
++// executable. Each is this program: it loads the framework and runs CEF's
++// subprocess. (Windows and Linux relaunch the host executable instead.)
++
++#include "cef_lite.h"
++
++int main(int argc, char** argv) {
++  cef_lite_set_main_args(argc, argv);
++  return cef_lite_run_subprocess();
++}
+diff --git a/src/cef_main_args.h b/src/cef_main_args.h
+new file mode 100644
+index 0000000..319e2ab
+--- /dev/null
++++ b/src/cef_main_args.h
+@@ -0,0 +1,24 @@
++#pragma once
++
++#include "include/cef_app.h"
++
++#include <string>
++
++namespace cef_lite_internal {
++
++/* The process's arguments for CefExecuteProcess / CefInitialize: the module
++ * handle on Windows, main's argc/argv (cef_lite_set_main_args) elsewhere. */
++CefMainArgs MainArgs();
++void SetMainArgs(int argc, char** argv);
++
++#if defined(__APPLE__)
++/* macOS loads "Chromium Embedded Framework" at run time (never linked). The
++ * main process finds it in cef/ beside its executable; a helper process
++ * (bin/<Name> Helper*.app/Contents/MacOS/<Name> Helper*) three folders up.
++ * Once per process; false when it isn't there. */
++bool LoadFramework(bool helper);
++/* The framework's folder (settings.framework_dir_path). */
++std::string FrameworkDirectory();
++#endif
++
++}  // namespace cef_lite_internal
+diff --git a/src/cef_subprocess.cpp b/src/cef_subprocess.cpp
+index 8c2697f..3f5cb1e 100644
+--- a/src/cef_subprocess.cpp
++++ b/src/cef_subprocess.cpp
+@@ -6,8 +6,19 @@
+ #include "include/wrapper/cef_helpers.h"
+ 
+ #include "cef_lite.h"
++#include "cef_main_args.h"
+ 
++#if defined(_WIN32)
+ #include <windows.h>
++#elif defined(__APPLE__)
++#include "include/wrapper/cef_library_loader.h"
++
++#include <mach-o/dyld.h>
++
++#include <climits>
++#include <cstdlib>
++#include <string>
++#endif
+ 
+ namespace {
+ 
+@@ -115,8 +126,87 @@ class SubprocessApp final : public CefApp {
+ 
+ /* The host executable doubles as CEF's helper (renderer, GPU, utility):
+  * Chromium relaunches it with --type=..., and it calls this first thing. */
++namespace cef_lite_internal {
++
++namespace {
++int g_argc = 0;
++char** g_argv = nullptr;
++}  // namespace
++
++CefMainArgs MainArgs() {
++#if defined(_WIN32)
++  return CefMainArgs(GetModuleHandleW(nullptr));
++#else
++  return CefMainArgs(g_argc, g_argv);
++#endif
++}
++
++void SetMainArgs(int argc, char** argv) {
++  g_argc = argc;
++  g_argv = argv;
++}
++
++#if defined(__APPLE__)
++namespace {
++
++std::string g_framework_dir;
++
++/* The folder of this process's executable, symbolic links resolved. */
++std::string ExecutableDirectory() {
++  char raw[PATH_MAX * 2] = {};
++  uint32_t size = sizeof(raw);
++  if (_NSGetExecutablePath(raw, &size) != 0) {
++    return {};
++  }
++  char resolved[PATH_MAX] = {};
++  if (realpath(raw, resolved) == nullptr) {
++    return {};
++  }
++  std::string path(resolved);
++  const auto slash = path.rfind('/');
++  return slash == std::string::npos ? std::string() : path.substr(0, slash);
++}
++
++}  // namespace
++
++bool LoadFramework(bool helper) {
++  static bool loaded = false;
++  if (loaded) {
++    return true;
++  }
++  std::string base = ExecutableDirectory();
++  // A helper: <bin>/<Name> Helper.app/Contents/MacOS/<Name> Helper.
++  for (int up = helper ? 3 : 0; up > 0 && !base.empty(); --up) {
++    base = base.substr(0, base.rfind('/'));
++  }
++  if (base.empty()) {
++    return false;
++  }
++  g_framework_dir = base + "/cef/Chromium Embedded Framework.framework";
++  const std::string library = g_framework_dir + "/Chromium Embedded Framework";
++  loaded = cef_load_library(library.c_str()) == 1;
++  return loaded;
++}
++
++std::string FrameworkDirectory() {
++  return g_framework_dir;
++}
++#endif
++
++}  // namespace cef_lite_internal
++
++extern "C" CEF_LITE_API void cef_lite_set_main_args(int argc, char** argv) {
++  cef_lite_internal::SetMainArgs(argc, argv);
++}
++
+ extern "C" CEF_LITE_API int cef_lite_run_subprocess(void) {
+-  CefMainArgs main_args(GetModuleHandleW(nullptr));
++#if defined(__APPLE__)
++  // A helper process (its own small bundle) loads the framework first.
++  if (!cef_lite_internal::LoadFramework(/*helper=*/true)) {
++    return 1;
++  }
++#endif
++  CefMainArgs main_args = cef_lite_internal::MainArgs();
+   CefRefPtr<SubprocessApp> app = new SubprocessApp();
+   return CefExecuteProcess(main_args, app, nullptr);
+ }
+diff --git a/src/falcon_cef_ui.cpp b/src/falcon_cef_ui.cpp
+index ccad7e9..73cdbfc 100644
+--- a/src/falcon_cef_ui.cpp
++++ b/src/falcon_cef_ui.cpp
+@@ -19,7 +19,16 @@
+ #include <SDL3/SDL_falcon_gpu.h>
+ #endif
+ 
++#include "cef_main_args.h"
++
++#if defined(_WIN32)
+ #include <windows.h>
++#else
++#include "include/capi/cef_app_capi.h"
++
++#include <dlfcn.h>
++#include <cstdlib>
++#endif
+ 
+ #include <algorithm>
+ #include <atomic>
+@@ -120,7 +129,7 @@ struct FalconCefUiHost {
+   std::atomic<uint64_t> paint_count = 0;
+   std::atomic<uint64_t> accelerated_paint_count = 0;
+   SDL_Window* window = nullptr;
+-  HWND window_handle = nullptr;
++  CefWindowHandle window_handle = kNullWindowHandle;
+   void* presenter = nullptr;
+   CefRefPtr<CefBrowser> browser;
+   CefRefPtr<CefApp> app;
+@@ -372,24 +381,66 @@ void QueueInput(FalconCefUiHost& host, const FalconUiInputEvent& event) {
+   host.input_text_bytes += host.input_events.back().text.size();
+ }
+ 
++/* UTF-8 to UTF-16 (surrogate pairs above U+FFFF); empty when the text is not
++ * valid UTF-8, as MultiByteToWideChar's MB_ERR_INVALID_CHARS did. */
++std::u16string Utf8ToUtf16(const uint8_t* bytes, uint32_t length) {
++  static constexpr char32_t kMin[4] = {0, 0x80, 0x800, 0x10000};
++  std::u16string out;
++  uint32_t i = 0;
++  while (i < length) {
++    const unsigned char lead = bytes[i];
++    uint32_t count = 0;
++    char32_t code = 0;
++    if (lead < 0x80) {
++      code = lead;
++    } else if ((lead & 0xE0) == 0xC0) {
++      count = 1;
++      code = lead & 0x1F;
++    } else if ((lead & 0xF0) == 0xE0) {
++      count = 2;
++      code = lead & 0x0F;
++    } else if ((lead & 0xF8) == 0xF0) {
++      count = 3;
++      code = lead & 0x07;
++    } else {
++      return {};
++    }
++    if (i + count >= length) {
++      return {};
++    }
++    for (uint32_t k = 1; k <= count; ++k) {
++      const unsigned char next = bytes[i + k];
++      if ((next & 0xC0) != 0x80) {
++        return {};
++      }
++      code = (code << 6) | (next & 0x3F);
++    }
++    if (code < kMin[count] || code > 0x10FFFF ||
++        (code >= 0xD800 && code <= 0xDFFF)) {
++      return {};
++    }
++    if (code >= 0x10000) {
++      code -= 0x10000;
++      out.push_back(static_cast<char16_t>(0xD800 + (code >> 10)));
++      out.push_back(static_cast<char16_t>(0xDC00 + (code & 0x3FF)));
++    } else {
++      out.push_back(static_cast<char16_t>(code));
++    }
++    i += count + 1;
++  }
++  return out;
++}
++
+ bool UiFrameWithinBudget(uint32_t width, uint32_t height) {
+   return width != 0 && height != 0 &&
+       static_cast<uint64_t>(width) * height * 4u <= kMaxUiFrameBytes;
+ }
+ 
+-std::filesystem::path ExecutableDirectory() {
+-  wchar_t buffer[32768] = {};
+-  const DWORD length = GetModuleFileNameW(
+-      nullptr, buffer, static_cast<DWORD>(std::size(buffer)));
+-  if (length == 0 || length >= std::size(buffer)) {
+-    return {};
+-  }
+-  return std::filesystem::path(buffer, buffer + length).parent_path();
+-}
+-
+ /* Chromium's resources (paks, locales, icudtl, v8 snapshot) sit next to
+- * libcef.dll, which the host may load from a folder of its own (delay-loaded). */
++ * libcef (libcef.dll / libcef.so), which the host may load from a folder of its
++ * own. macOS keeps them inside the framework, where CEF finds them itself. */
+ std::filesystem::path LibcefDirectory() {
++#if defined(_WIN32)
+   HMODULE module = GetModuleHandleW(L"libcef.dll");
+   wchar_t buffer[32768] = {};
+   const DWORD length = module ? GetModuleFileNameW(
+@@ -398,25 +449,57 @@ std::filesystem::path LibcefDirectory() {
+     return {};
+   }
+   return std::filesystem::path(buffer, buffer + length).parent_path();
++#elif defined(__APPLE__)
++  return {};
++#else
++  Dl_info info{};
++  if (dladdr(reinterpret_cast<const void*>(&cef_initialize), &info) == 0 ||
++      info.dli_fname == nullptr) {
++    return {};
++  }
++  std::error_code error;
++  const auto path = std::filesystem::canonical(info.dli_fname, error);
++  return error ? std::filesystem::path() : path.parent_path();
++#endif
+ }
+ 
+-std::filesystem::path FacadeDirectory() {
+-  HMODULE module = nullptr;
+-  if (!GetModuleHandleExW(
+-          GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+-              GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+-          reinterpret_cast<LPCWSTR>(
+-              reinterpret_cast<const void*>(&FacadeDirectory)),
+-          &module)) {
+-    return {};
++/* A path as CEF takes it (UTF-16 on Windows, UTF-8 elsewhere). */
++void SetCefPath(cef_string_t* target, const std::filesystem::path& path) {
++#if defined(_WIN32)
++  CefString(target).FromWString(path.wstring());
++#else
++  CefString(target).FromString(path.string());
++#endif
++}
++
++/* Where per-user caches live: %LOCALAPPDATA%, ~/Library/Caches, or
++ * $XDG_CACHE_HOME (~/.cache); the temporary folder when there is none. */
++std::filesystem::path UserCacheDirectory() {
++  std::error_code error;
++#if defined(_WIN32)
++  wchar_t local_app_data[MAX_PATH] = {};
++  const DWORD length = GetEnvironmentVariableW(
++      L"LOCALAPPDATA", local_app_data, MAX_PATH);
++  if (length > 0 && length < MAX_PATH) {
++    return std::filesystem::path(local_app_data);
+   }
+-  wchar_t buffer[32768] = {};
+-  const DWORD length = GetModuleFileNameW(
+-      module, buffer, static_cast<DWORD>(std::size(buffer)));
+-  if (length == 0 || length >= std::size(buffer)) {
+-    return {};
++#else
++  const char* home = std::getenv("HOME");
++#if defined(__APPLE__)
++  if (home != nullptr && home[0] != '\0') {
++    return std::filesystem::path(home) / "Library" / "Caches";
+   }
+-  return std::filesystem::path(buffer, buffer + length).parent_path();
++#else
++  const char* xdg = std::getenv("XDG_CACHE_HOME");
++  if (xdg != nullptr && xdg[0] == '/') {
++    return std::filesystem::path(xdg);
++  }
++  if (home != nullptr && home[0] != '\0') {
++    return std::filesystem::path(home) / ".cache";
++  }
++#endif
++#endif
++  return std::filesystem::temp_directory_path(error);
+ }
+ 
+ /* CEF's browser profile (cookies, caches, metrics) is per-user state. Keep it
+@@ -434,12 +517,7 @@ std::filesystem::path RootCachePath(const std::string& ui_root) {
+         character >= 'A' && character <= 'Z' ? character - 'A' + 'a' : character);
+     hash *= 1099511628211ull;
+   }
+-  wchar_t local_app_data[MAX_PATH] = {};
+-  const DWORD length = GetEnvironmentVariableW(
+-      L"LOCALAPPDATA", local_app_data, MAX_PATH);
+-  const std::filesystem::path base = length > 0 && length < MAX_PATH
+-      ? std::filesystem::path(local_app_data)
+-      : std::filesystem::temp_directory_path(error);
++  const std::filesystem::path base = UserCacheDirectory();
+   char name[17] = {};
+   std::snprintf(
+       name, sizeof(name), "%016llx", static_cast<unsigned long long>(hash));
+@@ -994,37 +1072,20 @@ class InputTask final : public CefTask {
+         if (event_.text_length > static_cast<uint32_t>(INT_MAX)) {
+           break;
+         }
+-        const int source_length = static_cast<int>(event_.text_length);
+-        const int character_count = MultiByteToWideChar(
+-            CP_UTF8,
+-            MB_ERR_INVALID_CHARS,
+-            reinterpret_cast<LPCCH>(event_.text),
+-            source_length,
+-            nullptr,
+-            0);
+-        if (character_count <= 0) {
+-          break;
+-        }
+-        std::vector<wchar_t> characters(
+-            static_cast<size_t>(character_count));
+-        if (MultiByteToWideChar(
+-                CP_UTF8,
+-                MB_ERR_INVALID_CHARS,
+-                reinterpret_cast<LPCCH>(event_.text),
+-                source_length,
+-                characters.data(),
+-                character_count) != character_count) {
++        const std::u16string characters = Utf8ToUtf16(
++            event_.text, event_.text_length);
++        if (characters.empty()) {
+           break;
+         }
+-        for (wchar_t character : characters) {
++        for (char16_t character : characters) {
+           CefKeyEvent key;
+           key.type = KEYEVENT_CHAR;
+           key.modifiers = CEFEventModifiers(event_.modifiers);
+           // On Windows Chromium takes a char event's character from
+           // windows_key_code (WM_CHAR's wParam); without it the text is lost.
+           key.windows_key_code = static_cast<int>(character);
+-          key.character = static_cast<char16_t>(character);
+-          key.unmodified_character = static_cast<char16_t>(character);
++          key.character = character;
++          key.unmodified_character = character;
+           browser_host->SendKeyEvent(key);
+         }
+         browser_host->SendExternalBeginFrame();
+@@ -1821,7 +1882,7 @@ bool CreateBrowserForSurface(CefUiSurface& surface) {
+   }
+   CefWindowInfo window_info;
+   window_info.SetAsWindowless(
+-      host.external_presenter ? nullptr : host.window_handle);
++      host.external_presenter ? kNullWindowHandle : host.window_handle);
+   window_info.shared_texture_enabled = host.accelerated;
+   window_info.external_begin_frame_enabled = true;
+   window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
+@@ -2169,10 +2230,14 @@ bool InitializeHost(FalconCefUiHost* host) {
+     }
+     presenter->Prepare(host->width, host->height);
+     const SDL_PropertiesID properties = SDL_GetWindowProperties(host->window);
++#if defined(_WIN32)
+     host->window_handle = static_cast<HWND>(SDL_GetPointerProperty(
+         properties,
+         SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+         nullptr));
++#else
++    (void)properties;
++#endif
+   }
+ 
+   FalconUiBackend backend{};
+@@ -2227,7 +2292,16 @@ bool InitializeHost(FalconCefUiHost* host) {
+     falcon_ui_surface_set_visible(host->ui_host, host->ui_surface, 0);
+   }
+ 
+-  CefMainArgs main_args(GetModuleHandleW(nullptr));
++#if defined(__APPLE__)
++  if (!cef_lite_internal::LoadFramework(/*helper=*/false)) {
++    SetInitialization(*host, FALCON_CEF_UI_STATUS_FAILED);
++    falcon_ui_host_destroy(host->ui_host);
++    host->ui_host = nullptr;
++    ShutdownPresentation(*host);
++    return false;
++  }
++#endif
++  CefMainArgs main_args = cef_lite_internal::MainArgs();
+   CefRefPtr<CefUiApp> app = new CefUiApp(host);
+   host->app = app;
+   const int child_exit_code = CefExecuteProcess(main_args, app, nullptr);
+@@ -2255,14 +2329,16 @@ bool InitializeHost(FalconCefUiHost* host) {
+     ShutdownPresentation(*host);
+     return false;
+   }
+-  CefString(&settings.root_cache_path).FromWString(root_cache_path.wstring());
++  SetCefPath(&settings.root_cache_path, root_cache_path);
+   const auto facade_directory = LibcefDirectory();
+   if (!facade_directory.empty()) {
+-    CefString(&settings.resources_dir_path)
+-        .FromWString(facade_directory.wstring());
+-    CefString(&settings.locales_dir_path)
+-        .FromWString((facade_directory / "locales").wstring());
++    SetCefPath(&settings.resources_dir_path, facade_directory);
++    SetCefPath(&settings.locales_dir_path, facade_directory / "locales");
+   }
++#if defined(__APPLE__)
++  CefString(&settings.framework_dir_path)
++      .FromString(cef_lite_internal::FrameworkDirectory());
++#endif
+   CefString(&settings.browser_subprocess_path)
+       .FromString(host->subprocess_path);
+   if (!CefInitialize(main_args, settings, app, nullptr)) {

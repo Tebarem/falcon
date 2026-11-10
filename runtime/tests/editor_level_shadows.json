@@ -1,0 +1,28 @@
+// Level meshes cast shadows: a level floor seen with nothing over it, then with a slab high above
+// it (made after the scene opened: a live mesh, out of the view), whose shadow darkens the floor
+// (editor_level_shadows_drawn compares the two). The shadow map's caster list takes live meshes as
+// they are built (VirtualShadowMap::setLiveChunks), and the ray-tracing BVH (the GI probes' rays)
+// takes their triangles (the slab's in it; without them the sky would light closed level rooms).
+[
+ {"type": "test.wait", "frames": 20, "ms": 800},
+ {"type": "test.newScene", "name": "Shadows"},
+ {"type": "editor.project.openScene", "scene": "Scenes/Shadows.fpak"},
+ {"type": "test.wait", "frames": 60, "ms": 1500},
+ {"type": "test.wait", "frames": 100000, "build": true},
+ {"type": "editor.entity.create", "kind": "level", "shape": "plane", "name": "Floor"},
+ {"type": "editor.transform.set", "id": "Floor", "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": [6, 1, 6]},
+ {"type": "editor.select", "ids": []},
+ {"type": "test.view", "position": [2, 2, 4], "target": [-2.3, 0, -1.7]},
+ {"type": "test.wait", "frames": 90, "ms": 2500},
+ {"type": "test.capture", "path": "level_shadows_before.png", "viewport": true},
+ {"type": "test.wait", "frames": 3},
+ {"type": "editor.entity.create", "kind": "level", "shape": "box", "name": "Slab"},
+ {"type": "editor.transform.set", "id": "Slab", "position": [0, 6, 0], "rotation": [0, 0, 0], "scale": [2, 0.1, 2]},
+ {"type": "editor.select", "ids": []},
+ {"type": "test.view", "position": [2, 2, 4], "target": [-2.3, 0, -1.7]},
+ {"type": "test.wait", "frames": 90, "ms": 2500},
+ {"type": "test.expect", "entity": {"name": "Slab", "levelDrawnTriangles": 12}},
+ {"type": "test.expect", "live": {"bvhTriangles>": 0}},
+ {"type": "test.capture", "path": "level_shadows_after.png", "viewport": true},
+ {"type": "test.exit"}
+]

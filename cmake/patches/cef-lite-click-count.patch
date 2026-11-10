@@ -1,0 +1,73 @@
+diff --git a/include/cef_lite.h b/include/cef_lite.h
+index b16b00b..cb43ec7 100644
+--- a/include/cef_lite.h
++++ b/include/cef_lite.h
+@@ -92,6 +92,7 @@ typedef struct CefLiteInputEvent {
+     uint32_t modifiers;
+     const uint8_t* text;
+     uint32_t text_length;
++    uint32_t click_count; /* pointer buttons: 1 single, 2 double, 3 triple; 0 counts as 1 */
+ } CefLiteInputEvent;
+ 
+ /* SDL_Window and SDL_GPUDevice stay owned by the caller. Create one CefLite
+diff --git a/include/falcon_ui_host.h b/include/falcon_ui_host.h
+index 34a3d40..58d6a92 100644
+--- a/include/falcon_ui_host.h
++++ b/include/falcon_ui_host.h
+@@ -73,6 +73,7 @@ typedef struct FalconUiInputEvent {
+   uint32_t modifiers;
+   const uint8_t* text;
+   uint32_t text_length;
++  uint32_t click_count; /* pointer buttons: 1 single, 2 double, 3 triple; 0 counts as 1 */
+ } FalconUiInputEvent;
+ 
+ typedef struct FalconUiSurfaceState {
+diff --git a/src/cef_lite.cpp b/src/cef_lite.cpp
+index e3d2af7..fb1065c 100644
+--- a/src/cef_lite.cpp
++++ b/src/cef_lite.cpp
+@@ -648,6 +648,7 @@ CEF_LITE_API CefLiteStatus cef_lite_dispatch_input(
+   native.modifiers = event->modifiers;
+   native.text = event->text;
+   native.text_length = event->text_length;
++  native.click_count = event->click_count;
+   return falcon_cef_ui_surface_dispatch_input(ui->host, &native);
+ }
+ 
+@@ -724,7 +725,8 @@ CEF_LITE_API CefLiteStatus cef_lite_poll_input(
+         native.key,
+         native.modifiers,
+         native.text,
+-        native.text_length};
++        native.text_length,
++        native.click_count};
+   }
+   return status;
+ }
+diff --git a/src/falcon_cef_ui.cpp b/src/falcon_cef_ui.cpp
+index c624c26..34710ab 100644
+--- a/src/falcon_cef_ui.cpp
++++ b/src/falcon_cef_ui.cpp
+@@ -942,11 +942,13 @@ class InputTask final : public CefTask {
+           browser_host->SetFocus(true);
+           browser_host->SendMouseMoveEvent(mouse, false);
+         }
++        // The click count makes Chromium fire dblclick and select a word
++        // (2) or the whole line (3).
+         browser_host->SendMouseClickEvent(
+             mouse,
+             button,
+             (event_.flags & FALCON_UI_INPUT_FLAG_RELEASED) != 0,
+-            1);
++            static_cast<int>(std::clamp(event_.click_count, 1u, 3u)));
+         browser_host->SendExternalBeginFrame();
+         if ((event_.flags & FALCON_UI_INPUT_FLAG_RELEASED) != 0) {
+           surface_->host->mouse_buttons &= ~button_mask;
+@@ -1963,6 +1965,7 @@ void DispatchSdlEvent(FalconCefUiHost& host, const SDL_Event& event) {
+           ? 0
+           : (event.button.button == SDL_BUTTON_MIDDLE ? 1 : 2);
+       input.flags = event.button.down ? 0 : FALCON_UI_INPUT_FLAG_RELEASED;
++      input.click_count = event.button.clicks;
+       break;
+     case SDL_EVENT_MOUSE_WHEEL:
+       input.kind = FALCON_UI_INPUT_POINTER_WHEEL;

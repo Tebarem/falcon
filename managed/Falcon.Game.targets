@@ -1,0 +1,35 @@
+<Project>
+  <!-- Imported into every project game the editor builds (CustomAfterMicrosoftCommonTargets): the
+       script components' source generator, next to the engine's Falcon.Engine.dll. A project
+       needs nothing of its own for its Falcon.Component classes to be registered. -->
+  <ItemGroup>
+    <Analyzer Include="$(MSBuildThisFileDirectory)Falcon.Engine.Generators.dll" />
+  </ItemGroup>
+  <!-- RPC calls ([Rpc.Broadcast] ...) routed by the generator's interceptors (Falcon.Generated). -->
+  <PropertyGroup>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Falcon.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+  <!-- Editor code (Scripts/Editor/ and libraries' Editor/: menu items, tools) only in the editor's
+       builds (FalconEditor, with FALCON_EDITOR defined): a shipped game has none of it. -->
+  <PropertyGroup Condition="'$(FalconEditor)' == 'true'">
+    <DefineConstants>$(DefineConstants);FALCON_EDITOR</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(FalconEditor)' != 'true'">
+    <Compile Remove="Editor/**" />
+  </ItemGroup>
+  <!-- Published with NativeAOT (File > Build Game): the engine's export (falcon_script_init) in the
+       game's own module, as the Sandbox has it (Directory.Build.targets). -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)AotEntry.cs" Link="Generated/AotEntry.cs" />
+  </ItemGroup>
+  <!-- Deterministic floats: the same instruction set as the editor's JIT (DOTNET_EnableAVX=0, set
+       by the engine), so a shipped game and an editor client simulate the same bits. (x64 only:
+       ARM64 has the one instruction set.) -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' And '$(IlcInstructionSet)' == '' And $(RuntimeIdentifier.EndsWith('-x64'))">
+    <IlcInstructionSet>x86-64-v2</IlcInstructionSet>
+  </PropertyGroup>
+  <!-- The project's libraries' code (Libraries/*/Code of the enabled, trusted ones), compiled into
+       the game: written by the editor before each build (project/libraries.h). -->
+  <Import Project="$(MSBuildProjectDirectory)/../Cache/Scripts/Libraries.props"
+          Condition="Exists('$(MSBuildProjectDirectory)/../Cache/Scripts/Libraries.props')" />
+</Project>

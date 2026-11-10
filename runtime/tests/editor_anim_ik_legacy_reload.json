@@ -1,0 +1,8 @@
+// Reopened after Move IK to the Graph: the Animator has no IK of its own (none saved), its graph's IK
+// (Assets/LegsPlain.fgraph) drives the rig through the bindings it kept.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.wait", "frames": 10, "ms": 300},
+  {"type": "test.expect", "fileContains": {"Assets/LegsPlain.fgraph": "\"entity\""}, "anim": {"entity": "legs", "ownIk": false, "footIk": true, "bound": ["LookTarget", "LeftHandTarget"], "looking": {"bone": "head", "at": [3.5, 2.2, 2.5], "within": 2}, "bonesAt": [{"bone": "hand_l", "at": [5.35, 1.2, 0.35], "within": 0.01}]}},
+  {"type": "test.exit"}
+]

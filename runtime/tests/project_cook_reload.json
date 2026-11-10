@@ -1,0 +1,37 @@
+// Opened after project_cook, which moved its cook in when it opened Main again (in process, L4):
+// the scene loads with both models and nothing to cook, so the lock project_cook left (naming a
+// process that is gone) is never even looked at.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.probe"
+ },
+ {
+  "type": "test.wait",
+  "frames": 2,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "modelLoaded": "Assets/DamagedHelmet (2).glb",
+  "probe": {
+   "assetsStale": false
+  },
+  "fileExists": [
+   "Scenes/Main.fpak",
+   "Scenes/Main.fvt",
+   "Cache/Stamps/Scenes_Main.fpak.cooking"
+  ],
+  "fileMissing": [
+   "Cache/Cook/Scenes_Main.fpak",
+   "Cache/Cook/Scenes_Main.fvt"
+  ]
+ },
+ {
+  "type": "test.exit"
+ }
+]

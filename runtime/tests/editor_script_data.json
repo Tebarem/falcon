@@ -1,0 +1,254 @@
+// Data components (X2, API v33): a C# [Component] struct added to an entity in the editor with
+// its defaults, fields set (one undone), read by a system's query while playing, kept at Stop,
+// saved, read again after another scene and back, removed and the removal undone.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "primitive",
+  "name": "Crate",
+  "primitive": "cube"
+ },
+ {
+  "type": "test.writeFile",
+  "path": "Scripts/Game.cs",
+  "text": "using System.Numerics;\nusing System.Runtime.CompilerServices;\nusing Falcon;\n\nnamespace ScriptTest;\n\n// editor_script_data (API v33): a data component placed and set in the editor, saved with the\n// scene, read by a system's query while playing.\n[Component(\"ScriptTest.Health\")]\npublic struct Health\n{\n    public float Value;\n    public int Lives;\n    public bool Alive;\n    public Vector3 Spawn;\n\n    public Health()\n    {\n        Value = 100;\n        Lives = 3;\n        Alive = true;\n        Spawn = default;\n    }\n}\n\npublic sealed class HealthReader : GameSystem\n{\n    public static string Seen = \"none\";\n    private Query? _health;\n\n    public override void OnStart() => _health = new Query(Query.In<Health>());\n\n    public override void OnUpdate(float dt)\n    {\n        int count = 0;\n        foreach (Chunk c in _health!)\n        {\n            System.ReadOnlySpan<Health> h = c.Read<Health>(0);\n            for (int i = 0; i < c.Count; ++i, ++count)\n                Seen = $\"{h[i].Value} {h[i].Lives} {h[i].Alive} {h[i].Spawn.Y}\";\n        }\n        Seen += $\" count {count}\";\n    }\n}\n\npublic sealed class DataGame : Game\n{\n    [ModuleInitializer]\n    internal static void Register() => Register<DataGame>();\n\n    public override void OnUpdate(float dt) => Hud.Show($\"health {HealthReader.Seen}\");\n}\n"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "editor.component.add",
+  "id": "Crate",
+  "component": "Data:ScriptTest.Health"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 100,
+     "Lives": 3,
+     "Alive": true,
+     "Spawn": [
+      0,
+      0,
+      0
+     ]
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.data.set",
+  "id": "Crate",
+  "component": "ScriptTest.Health",
+  "field": "Value",
+  "value": 42.5
+ },
+ {
+  "type": "editor.data.set",
+  "id": "Crate",
+  "component": "ScriptTest.Health",
+  "field": "Lives",
+  "value": 7
+ },
+ {
+  "type": "editor.data.set",
+  "id": "Crate",
+  "component": "ScriptTest.Health",
+  "field": "Spawn",
+  "value": [
+   0,
+   2,
+   0
+  ]
+ },
+ {
+  "type": "editor.data.set",
+  "id": "Crate",
+  "component": "ScriptTest.Health",
+  "field": "Value",
+  "value": 10
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 10
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 42.5,
+     "Lives": 7,
+     "Spawn": [
+      0,
+      2,
+      0
+     ]
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.play"
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 500
+ },
+ {
+  "type": "test.expect",
+  "playing": true,
+  "hud": "health 42.5 7 True 2 count 1"
+ },
+ {
+  "type": "editor.stop"
+ },
+ {
+  "type": "test.wait",
+  "frames": 5,
+  "ms": 200
+ },
+ {
+  "type": "test.expect",
+  "playing": false
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 42.5,
+     "Lives": 7
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.scene.save"
+ },
+ {
+  "type": "test.expect",
+  "fileContains": {
+   "Scenes/Main.edits.json": "\"ScriptTest.Health\""
+  }
+ },
+ {
+  "type": "test.newScene",
+  "name": "DataOther"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/DataOther.fpak",
+  "save": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3000,
+  "cook": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "sceneOpen": "Scenes/DataOther.fpak"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Main.fpak",
+  "save": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3000,
+  "cook": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 30,
+  "ms": 1000
+ },
+ {
+  "type": "test.expect",
+  "sceneOpen": "Scenes/Main.fpak"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 42.5,
+     "Lives": 7,
+     "Alive": true,
+     "Spawn": [
+      0,
+      2,
+      0
+     ]
+    }
+   }
+  }
+ },
+ {
+  "type": "editor.component.remove",
+  "id": "Crate",
+  "component": "Data:ScriptTest.Health"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": null
+   }
+  }
+ },
+ {
+  "type": "editor.undo"
+ },
+ {
+  "type": "test.expect",
+  "entity": {
+   "name": "Crate",
+   "data": {
+    "ScriptTest.Health": {
+     "Value": 42.5
+    }
+   }
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

@@ -1,0 +1,138 @@
+# Shared ECS components. falcon_schemagen turns this into the C++ structs the engine uses
+# (build/<preset>/gen/components.gen.h) and the C# structs scripts read and write in place
+# (managed/Falcon.Engine/Generated/Components.g.cs). Both sides register/lookup the flecs
+# component by name and size, so a layout drift fails loudly instead of corrupting memory.
+#
+#   component <Name>         starts a component
+#   <type> <field>[<count>]  types: f32 u32 i32 u64 f32x3 f32x4
+#   # ...                    comment, copied into both outputs when above a field or component
+
+# World transform, three rows of a 3x4 matrix (row-major, like InstanceGpu.world).
+component WorldTransform
+    f32 rows[12]
+
+# Rendered with a mesh of the scene; gpuSlot indexes the GPU instance table.
+component MeshInstance
+    u32 mesh
+    u32 gpuSlot
+
+# A child's transform relative to its Parent's world transform (3x4 rows). Roots have none:
+# their WorldTransform is the source. A child's WorldTransform is derived from this every frame
+# (Scene::propagate), so move children through it.
+component LocalTransform
+    f32 rows[12]
+
+# The entity a child hangs under (flecs entity id).
+component Parent
+    u64 entity
+
+# A point (type 0), spot (type 1) or directional (type 2) light. Position and direction (-Z) come
+# from the entity's WorldTransform. color is linear RGB, intensity multiplies it (candela, as
+# glTF's KHR_lights_punctual; lux for directional lights); range 0: no limit (it reaches as far
+# as its light visibly does, from the intensity). Spot angles are half angles in degrees.
+# flags: 1 = casts shadows (up to 32 point / spot lights get a shadow slot), 2 = hidden (editor).
+# The first directional light is the sun (its virtual shadow map and the GI's light); there
+# is one.
+component Light
+    u32 type
+    f32 color[3]
+    f32 intensity
+    f32 range
+    f32 innerAngle
+    f32 outerAngle
+    u32 flags
+
+# A camera: looks along -Z of its WorldTransform (+Y up). fov is the vertical field of view in
+# degrees. flags: 1 = the main camera (Play, the Game view and the game render from it). (Named so
+# as not to clash with the scripts' Camera API.)
+component CameraComponent
+    f32 fov
+    f32 nearClip
+    u32 flags
+
+# A dynamic Box3D body (owned by the physics world; its transform is streamed separately).
+component RigidBody
+    u32 bodyId[2]
+    u32 index
+
+# A rigid body the physics world simulates while the game runs (the editor's Play): it moves its
+# entity (dynamic), or follows it (flags 1: kinematic, moved by scripts or animation; it pushes
+# others, nothing pushes it). mass in kg; damping slows its linear / angular velocity;
+# gravityScale 0: it floats. Its shape is the entity's Collider (without one it has none and
+# collides with nothing). bodyId: its Box3D body while simulated (b3BodyId bits; the scripts'
+# body API takes the entity), 0 otherwise.
+component PhysicsBody
+    f32 mass
+    f32 linearDamping
+    f32 angularDamping
+    f32 gravityScale
+    u32 flags
+    u32 bodyId[2]
+
+# A collision shape in its entity's space (scaled with it): a box (shape 0; size: its full size),
+# a sphere (1; size[0]: its radius), the entity's mesh (2; its cooked collider; on a moving body
+# its bounds, as a box) or a capsule (3; size[0]: its radius, size[1]: its height, along Y). center
+# offsets a box, sphere or capsule. Without a PhysicsBody it is static. layer: its collision layer
+# (0..31; everything else is on layer 0); ignore: the layers it passes through (bit i: layer i).
+# flags: 1 = a trigger: it collides with nothing, and reports what comes into it and goes out
+# (Physics.Triggers).
+component Collider
+    u32 shape
+    f32 center[3]
+    f32 size[3]
+    f32 friction
+    f32 bounciness
+    u32 layer
+    u32 ignore
+    u32 flags
+
+# A sound playing at its entity (Unity's AudioSource). sound: the sound (.fsound) or clip (.wav,
+# .ogg) it plays, by id (the audio system's id for its project path; the edits save the path; 0:
+# none). flags: 1 = play on start (when the game starts: the editor's Play), 2 = loop, 4 = 3D
+# (placed at the entity; else 2D, straight to both ears), 8 = these settings, not the .fsound's
+# (loop, 3D, distances, rolloff, air, bus, occlusion; a clip always uses these), 16 = air absorption
+# (far sounds lose their highs), 32 = linear rolloff (else inverse distance), 64 = occluded by what
+# is between it and the listener, 128 = heard through it (transmission), 256 = reflections and reverb
+# from the scene, 512 = not varied (exactly as made; else the sound's and the project's variation). volume and pitch
+# multiply the sound's. Full volume within minDistance, then the rolloff, silent at maxDistance
+# (metres). bus: 0 sfx, 1 physics, 2 ambience, 3 music, 4 ui. voice: what plays it while the game
+# runs (0: nothing).
+component AudioSource
+    u32 sound
+    u32 flags
+    f32 volume
+    f32 pitch
+    f32 minDistance
+    f32 maxDistance
+    u32 bus
+    u32 voice
+
+# Where the game hears from while it runs (the first enabled one; without one, the main camera,
+# or the editor's view). gain multiplies everything heard.
+component AudioListener
+    f32 gain
+    u32 flags
+
+# How an entity's mesh treats sound, instead of its material's (Steam Audio's three bands: absorbed
+# on a bounce, scattered, passed through; 0 .. 1). flags: 1 = left out of the acoustics (sound
+# passes as if it were not there), 2 = these values, not the material's, 4 = it occludes while it
+# moves (a Rigidbody; static ones always do), 8 = surface sounds of its own: the surface preset
+# `surface` (1-based), at impactGain and impactPitch (else its material's). preset: the acoustic
+# preset its values came from (1-based; 0: values of its own).
+component AcousticSurface
+    u32 flags
+    u32 preset
+    f32 absorption[3]
+    f32 scattering
+    f32 transmission[3]
+    u32 surface
+    f32 impactGain
+    f32 impactPitch
+
+# A bone of a character's skeleton expanded into entities (the editor's Expand Bones): its
+# LocalTransform follows the character's pose every frame (anim/bone_entities.h), so whatever hangs
+# under it follows the animation. index: the bone in its skeleton. flags: 1 = the skeleton's group
+# (the "Skeleton" entity under the model, in the skinned mesh's place; not a bone).
+component Bone
+    u32 index
+    u32 flags

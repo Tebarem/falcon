@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "name": "Grey Plaster",
+  "baseColor": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 1,
+  "emissive": [
+    0,
+    0,
+    0
+  ],
+  "emissiveStrength": 1,
+  "normalScale": 1,
+  "occlusionStrength": 1,
+  "alpha": "opaque",
+  "alphaCutoff": 0.5,
+  "doubleSided": false,
+  "size": [
+    1.0,
+    1.0
+  ],
+  "parallax": 0.004,
+  "textures": {
+    "baseColor": "@falcon/Plaster/Textures/Grey Plaster/color.jpg",
+    "normal": "@falcon/Plaster/Textures/Grey Plaster/normal.jpg",
+    "metallicRoughness": "@falcon/Plaster/Textures/Grey Plaster/arm.jpg",
+    "occlusion": "@falcon/Plaster/Textures/Grey Plaster/arm.jpg",
+    "height": "@falcon/Plaster/Textures/Grey Plaster/height.jpg"
+  },
+  "acoustic": {
+    "preset": "plaster"
+  },
+  "surface": {
+    "preset": "concrete"
+  }
+}

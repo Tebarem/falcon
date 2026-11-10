@@ -1,0 +1,119 @@
+// Blockouts' default material: the editor put Kenney's prototype textures into the project when it
+// opened it (Assets/Prototype), and level meshes' faces without a material draw with Light Grid.
+// Help/Install Prototype Materials puts them in again.
+[
+ {
+  "type": "test.wait",
+  "frames": 20,
+  "ms": 800
+ },
+ {
+  "type": "test.newScene",
+  "name": "Prototype"
+ },
+ {
+  "type": "editor.project.openScene",
+  "scene": "Scenes/Prototype.fpak"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.wait",
+  "frames": 100000,
+  "build": true
+ },
+ {
+  "type": "test.expect",
+  "prototypeDefault": true
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "box",
+  "name": "Block"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Block",
+  "position": [
+   0,
+   1,
+   0
+  ],
+  "rotation": [
+   0,
+   0.4,
+   0
+  ],
+  "scale": [
+   4,
+   2,
+   3
+  ]
+ },
+ {
+  "type": "editor.entity.create",
+  "kind": "level",
+  "shape": "plane",
+  "name": "Floor"
+ },
+ {
+  "type": "editor.transform.set",
+  "id": "Floor",
+  "position": [
+   0,
+   0,
+   0
+  ],
+  "rotation": [
+   0,
+   0,
+   0
+  ],
+  "scale": [
+   3,
+   1,
+   3
+  ]
+ },
+ {
+  "type": "editor.frame",
+  "id": "Block"
+ },
+ {
+  "type": "test.wait",
+  "frames": 60,
+  "ms": 1500
+ },
+ {
+  "type": "test.capture",
+  "path": "level_prototype.png",
+  "viewport": true
+ },
+ {
+  "type": "test.wait",
+  "frames": 3
+ },
+ {
+  "type": "editor.level.prototype"
+ },
+ {
+  "type": "test.wait",
+  "frames": 10,
+  "ms": 300
+ },
+ {
+  "type": "test.expect",
+  "prototypeDefault": true,
+  "entity": {
+   "name": "Block",
+   "levelTriangles": 12
+  }
+ },
+ {
+  "type": "test.exit"
+ }
+]

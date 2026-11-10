@@ -1,0 +1,29 @@
+// Clip markup in the Animator (editor_anim_graph's project): an event "Peak" half way through the
+// bar's Bend clip, saved beside the model (Assets/skinned.fevents) and onto its clips at once. The
+// graph's Bent -> Jumping transition made to wait for it (an Event node as its condition): the
+// preview, bent, reaches the peak and jumps; its sampled events reach the page.
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "editor.anim.open", "path": "Assets/skinned.fgraph"},
+  {"type": "test.wait", "frames": 20, "ms": 600},
+  {"type": "editor.anim.do", "op": "events", "clip": "Bend", "events": [{"id": "Peak", "at": 0.5}], "sync": [{"id": "Down", "at": 0.0}]},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "fileExists": "Assets/skinned.fevents",
+   "probe": {"animatorEventsModel": "Assets/skinned.gltf", "animatorEventsError": "", "animatorMarkupClips": 1}},
+  {"type": "editor.anim.do", "op": "view", "scope": "when:machine:Bent->Jumping"},
+  {"type": "editor.anim.do", "op": "add", "nodeType": "event", "as": "peak", "at": [-220, 0]},
+  {"type": "editor.anim.do", "op": "set", "node": "peak", "path": "ids", "value": ["Peak"]},
+  {"type": "editor.anim.do", "op": "link", "from": "peak", "to": "#result"},
+  {"type": "test.wait", "frames": 10, "ms": 400},
+  {"type": "editor.anim.preview.restart"},
+  {"type": "editor.anim.param", "name": "Bent", "value": true},
+  {"type": "test.wait", "frames": 120, "ms": 2000},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 3, "ms": 100},
+  {"type": "test.expect", "probe": {"animatorErrors": 0, "animatorState": "Jumping", "animatorEventsSeen>": 0}},
+  {"type": "test.capture", "path": "anim_events.png"},
+  {"type": "test.wait", "frames": 3},
+  {"type": "test.exit"}
+]

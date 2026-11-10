@@ -1,0 +1,7 @@
+{
+  "name": "Toolbox",
+  "version": "1.0.0",
+  "description": "A test library of editor tools: menu items and an editor tool that hears the editor's events.",
+  "author": "Falcon tests",
+  "dependencies": []
+}

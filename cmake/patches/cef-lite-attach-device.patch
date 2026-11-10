@@ -1,0 +1,188 @@
+diff --git a/include/cef_lite.h b/include/cef_lite.h
+index ac5f54b..95b48bc 100644
+--- a/include/cef_lite.h
++++ b/include/cef_lite.h
+@@ -110,6 +110,13 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+     SDL_GPUDevice* device,
+     const CefLiteConfig* config,
+     CefLite** output);
++/* Created with a NULL device (target_format then unused), Chromium starts and
++ * the page loads while the host is still making its device; frames that arrive
++ * meanwhile are kept. Attach the device once, before draw. */
++CEF_LITE_API CefLiteStatus cef_lite_attach_device(
++    CefLite* ui,
++    SDL_GPUDevice* device,
++    SDL_GPUTextureFormat target_format);
+ CEF_LITE_API void cef_lite_destroy(CefLite* ui);
+ CEF_LITE_API CefLiteStatus cef_lite_pump(CefLite* ui);
+ CEF_LITE_API CefLiteStatus cef_lite_draw(
+diff --git a/src/cef_lite.cpp b/src/cef_lite.cpp
+index fb1065c..aa91256 100644
+--- a/src/cef_lite.cpp
++++ b/src/cef_lite.cpp
+@@ -31,6 +31,14 @@ struct CefLite {
+   SDL_GPUGraphicsPipeline* pipeline = nullptr;
+   std::mutex gpu_mutex;
+   std::vector<SDL_GPUTexture*> retired_textures;
++  /* Created without a device: the shaders' folder for attach, and the page's
++   * latest frame (a full copy) until there is a texture to upload it to. */
++  std::string shader_root;
++  std::vector<uint8_t> pending_pixels;
++  uint32_t pending_width = 0;
++  uint32_t pending_height = 0;
++  uint32_t pending_stride = 0;
++  uint32_t pending_format = 0;
+   std::atomic<FalconCefUiStatus> frame_status{FALCON_CEF_UI_STATUS_OK};
+   uint64_t frames = 0;
+   uint64_t accelerated_copies = 0;
+@@ -100,7 +108,7 @@ SDL_GPUShaderFormat SelectShaderFormat(
+   return SDL_GPU_SHADERFORMAT_INVALID;
+ }
+ 
+-bool CreatePipeline(CefLite& ui, const CefLiteConfig& config) {
++bool CreatePipeline(CefLite& ui, SDL_GPUTextureFormat target_format) {
+   const char* suffix = nullptr;
+   const char* spirv_entrypoint = nullptr;
+   const SDL_GPUShaderFormat format = SelectShaderFormat(
+@@ -110,7 +118,7 @@ bool CreatePipeline(CefLite& ui, const CefLiteConfig& config) {
+   if (format == SDL_GPU_SHADERFORMAT_INVALID) {
+     return false;
+   }
+-  const std::string root(config.shader_root);
++  const std::string& root = ui.shader_root;
+   const auto vertex_bytes = ReadBinary(root + "/native_ui.vert" + suffix);
+   const auto fragment_bytes = ReadBinary(root + "/native_ui.frag" + suffix);
+   if (vertex_bytes.empty() || fragment_bytes.empty()) {
+@@ -160,7 +168,7 @@ bool CreatePipeline(CefLite& ui, const CefLiteConfig& config) {
+   }
+ 
+   SDL_GPUColorTargetDescription color_target{};
+-  color_target.format = config.target_format;
++  color_target.format = target_format;
+   color_target.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+   color_target.blend_state.dst_color_blendfactor =
+       SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+@@ -403,6 +411,19 @@ void OnFrame(void* user_data, const FalconUiFrame* frame) {
+   }
+ 
+   std::lock_guard lock(ui->gpu_mutex);
++  if (ui->device == nullptr) {
++    if (readback && frame->payload != nullptr &&
++        frame->payload_size >= (size_t)frame->stride_bytes * frame->height) {
++      const auto* bytes = static_cast<const uint8_t*>(frame->payload);
++      ui->pending_pixels.assign(
++          bytes, bytes + (size_t)frame->stride_bytes * frame->height);
++      ui->pending_width = frame->width;
++      ui->pending_height = frame->height;
++      ui->pending_stride = frame->stride_bytes;
++      ui->pending_format = frame->format;
++    }
++    return;
++  }
+   if (!EnsureTexture(*ui, *frame)) {
+     ui->frame_status.store(FALCON_CEF_UI_STATUS_FAILED);
+     return;
+@@ -459,7 +480,7 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+     return CEF_LITE_STATUS_INVALID_ARGUMENT;
+   }
+   *output = nullptr;
+-  if (device == nullptr || config == nullptr ||
++  if (config == nullptr ||
+       config->struct_size < sizeof(*config) ||
+       config->version != CEF_LITE_CONFIG_VERSION ||
+       config->ui_root == nullptr || config->subprocess_path == nullptr ||
+@@ -467,7 +488,8 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+       config->subprocess_path[0] == '\0' || config->shader_root[0] == '\0' ||
+       config->width == 0 || config->height == 0 ||
+       !std::isfinite(config->scale) || config->scale <= 0.0f ||
+-      config->target_format == SDL_GPU_TEXTUREFORMAT_INVALID ||
++      (device != nullptr &&
++       config->target_format == SDL_GPU_TEXTUREFORMAT_INVALID) ||
+       config->visible > 1 || config->continuous > 1 ||
+       config->reserved[0] != 0 || config->reserved[1] != 0) {
+     return CEF_LITE_STATUS_INVALID_ARGUMENT;
+@@ -479,7 +501,8 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+   }
+   ui->device = device;
+   try {
+-    if (!CreatePipeline(*ui, *config)) {
++    ui->shader_root = config->shader_root;
++    if (device != nullptr && !CreatePipeline(*ui, config->target_format)) {
+       ReleaseGpuResources(*ui);
+       delete ui;
+       return CEF_LITE_STATUS_FAILED;
+@@ -501,10 +524,12 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+     cef_config.subprocess_path_length =
+         std::char_traits<char>::length(config->subprocess_path);
+     cef_config.no_sandbox = 1;
+-    /* Only Direct3D 12 has a proven shared-texture import. Every other
+-     * SDL_GPU backend uploads Chromium's GPU-rendered readback frames. */
+-    const char* driver = SDL_GetGPUDeviceDriver(device);
+-    ui->shared_texture = driver != nullptr && std::string(driver) == "direct3d12";
++    /* Every SDL_GPU backend uploads Chromium's GPU-rendered readback frames.
++     * The Direct3D 12 shared-texture import (CopySharedFrame) hangs the
++     * device (DXGI_ERROR_DEVICE_HUNG) under sustained repaints, such as a CSS
++     * animation at the windowless frame rate, so it stays off until that is
++     * understood. */
++    ui->shared_texture = false;
+     cef_config.accelerated_paint = ui->shared_texture ? 1 : 0;
+     cef_config.visible = config->visible;
+     const FalconCefUiStatus status = falcon_cef_ui_host_create_external(
+@@ -526,6 +551,43 @@ CEF_LITE_API CefLiteStatus cef_lite_create(
+   return CEF_LITE_STATUS_OK;
+ }
+ 
++CEF_LITE_API CefLiteStatus cef_lite_attach_device(
++    CefLite* ui,
++    SDL_GPUDevice* device,
++    SDL_GPUTextureFormat target_format) {
++  if (ui == nullptr || device == nullptr ||
++      target_format == SDL_GPU_TEXTUREFORMAT_INVALID) {
++    return CEF_LITE_STATUS_INVALID_ARGUMENT;
++  }
++  std::lock_guard lock(ui->gpu_mutex);
++  if (ui->device != nullptr) {
++    return CEF_LITE_STATUS_INVALID_ARGUMENT;
++  }
++  ui->device = device;
++  if (!CreatePipeline(*ui, target_format)) {
++    ReleaseGpuResources(*ui);
++    ui->device = nullptr;
++    return CEF_LITE_STATUS_FAILED;
++  }
++  if (!ui->pending_pixels.empty()) {
++    FalconUiFrame frame{};
++    frame.struct_size = sizeof(frame);
++    frame.version = FALCON_UI_FRAME_VERSION;
++    frame.source = FALCON_UI_FRAME_SOURCE_CPU_PIXELS;
++    frame.format = ui->pending_format;
++    frame.width = ui->pending_width;
++    frame.height = ui->pending_height;
++    frame.stride_bytes = ui->pending_stride;
++    frame.payload = ui->pending_pixels.data();
++    frame.payload_size = ui->pending_pixels.size();
++    ui->frame_status.store(
++        EnsureTexture(*ui, frame) ? UploadReadbackFrame(*ui, frame)
++                                  : FALCON_CEF_UI_STATUS_FAILED);
++    std::vector<uint8_t>().swap(ui->pending_pixels);
++  }
++  return CEF_LITE_STATUS_OK;
++}
++
+ CEF_LITE_API void cef_lite_destroy(CefLite* ui) {
+   if (ui == nullptr) {
+     return;
+diff --git a/src/falcon_cef_ui.cpp b/src/falcon_cef_ui.cpp
+index a7cc407..ccad7e9 100644
+--- a/src/falcon_cef_ui.cpp
++++ b/src/falcon_cef_ui.cpp
+@@ -1020,6 +1020,9 @@ class InputTask final : public CefTask {
+           CefKeyEvent key;
+           key.type = KEYEVENT_CHAR;
+           key.modifiers = CEFEventModifiers(event_.modifiers);
++          // On Windows Chromium takes a char event's character from
++          // windows_key_code (WM_CHAR's wParam); without it the text is lost.
++          key.windows_key_code = static_cast<int>(character);
+           key.character = static_cast<char16_t>(character);
+           key.unmodified_character = static_cast<char16_t>(character);
+           browser_host->SendKeyEvent(key);

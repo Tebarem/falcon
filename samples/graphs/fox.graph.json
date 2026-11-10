@@ -1,0 +1,41 @@
+// Fox locomotion: idle (Survey) <-> move (Walk/Run blended by Speed, synchronized).
+// Cook: falcon cook Fox.glb fox.fpak --graph samples/graphs/fox.graph.json
+{
+  "name": "FoxLocomotion",
+  "skeleton": 0,
+  "parameters": {
+    "Speed": { "type": "float", "default": 0.0 }
+  },
+  "root": {
+    "type": "stateMachine",
+    "default": "Idle",
+    "states": {
+      "Idle": {
+        "pose": { "type": "clip", "clip": "Survey" },
+        "transitions": [
+          { "to": "Move", "when": { "type": "compare", "input": "$Speed", "op": ">", "value": 0.1 },
+            "duration": 0.35, "easing": "smooth" }
+        ]
+      },
+      "Move": {
+        "pose": {
+          "type": "speedScale",
+          // Faster than the run clip: play it faster instead of extrapolating the blend.
+          "input": { "type": "math", "a": { "type": "clamp", "input": "$Speed", "min": 4.0, "max": 100.0 }, "op": "div", "b": 4.0 },
+          "pose": {
+            "type": "blend1d",
+            "input": "$Speed",
+            "sources": [
+              { "value": 1.0, "pose": { "type": "clip", "clip": "Walk" } },
+              { "value": 4.0, "pose": { "type": "clip", "clip": "Run" } }
+            ]
+          }
+        },
+        "transitions": [
+          { "to": "Idle", "when": { "type": "compare", "input": "$Speed", "op": "<=", "value": 0.1 },
+            "duration": 0.45, "easing": "smooth" }
+        ]
+      }
+    }
+  }
+}

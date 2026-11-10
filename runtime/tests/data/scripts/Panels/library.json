@@ -1,0 +1,7 @@
+{
+  "name": "Panels",
+  "version": "1.0.0",
+  "description": "A test library with an editor window of its own HTML (editor_library_ui).",
+  "author": "Falcon tests",
+  "dependencies": []
+}

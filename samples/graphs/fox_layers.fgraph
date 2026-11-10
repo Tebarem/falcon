@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "name": "FoxLayers",
+  "skeleton": 0,
+  "parameters": {
+    "X": { "type": "float", "default": 1.5 },
+    "Y": { "type": "float", "default": 0.5 },
+    "Look": { "type": "float", "default": 1.0 }
+  },
+  "boneMasks": {
+    "Head": { "default": 0, "bones": { "b_Neck_04": 0.5, "b_Head_05": 1 }, "propagate": true }
+  },
+  "root": "@layers",
+  "nodes": {
+    "layers": { "type": "layers", "base": "@space", "layers": [ { "pose": "@look", "weight": "$Look", "mask": "@head" } ] },
+    "space": {
+      "type": "blend2d", "x": "$X", "y": "$Y",
+      "sources": [
+        { "value": [0, 0], "pose": "@survey" },
+        { "value": [1, 0], "pose": "@walk" },
+        { "value": [4, 0], "pose": "@run" },
+        { "value": [2, 2], "pose": "@slowWalk" }
+      ]
+    },
+    "survey": { "type": "clip", "clip": "Survey" },
+    "walk": { "type": "clip", "clip": "Walk" },
+    "run": { "type": "clip", "clip": "Run" },
+    "slowWalk": { "type": "clip", "clip": "Walk", "speed": 0.5 },
+    "look": { "type": "clip", "clip": "Survey" },
+    "head": { "type": "boneMask", "mask": "Head" }
+  }
+}
