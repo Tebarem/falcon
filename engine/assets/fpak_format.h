@@ -198,7 +198,7 @@ enum InstanceFlags : uint32_t {
     // decimetres above the ground (rocks that match the cliffs around them).
     kInstanceTerrainShaded = 1u << 2,
     kInstanceNoShadow = 1u << 3,  // casts no shadow (scatter layers with shadows off)
-    kInstanceScatter = 1u << 4,   // grown by a scatter layer: thinned first when the GPU's budgets run out
+    kInstanceScatter = 1u << 4,   // grown by a scatter layer, or all alpha-masked (set at load): thinned first when the GPU's budgets run out
     // Moved lately (set by the renderer while it streams instances): drawn over the shadow
     // pages' cached static layer instead of into it (render/virtual_shadow_map.h).
     kInstanceDynamic = 1u << 5,

@@ -100,6 +100,22 @@ bool ScenePak::finishRead()
                     }
                 }
             }
+        // Meshes whose every cluster is alpha-masked (grass, flowers, leaf cards): their instances
+        // are thinned with a scatter layer's when the visible clusters run over budget, the far
+        // small ones first and the same ones every frame (cluster_cull), not dropped at random.
+        std::vector<uint8_t> foliage(meshes_.size(), 0);
+        for (size_t i = 0; i < meshes_.size(); ++i) {
+            const fpak::MeshGpu& m = meshes_[i];
+            bool masked = m.clusterCount > 0;
+            for (uint32_t c = m.clusterOffset; masked && c < m.clusterOffset + m.clusterCount; ++c) {
+                const uint32_t material = c < clusterCount ? clusters[c].counts >> 16 : ~0u;
+                masked = material < materials_.size() && (materials_[material].flags & fpak::kMaterialAlphaMask);
+            }
+            foliage[i] = masked;
+        }
+        for (fpak::InstanceGpu& inst : instances_)
+            if (inst.mesh < foliage.size() && foliage[inst.mesh])
+                inst.flags |= fpak::kInstanceScatter;
     }
     readLibraries();
     readNodeAnimation();

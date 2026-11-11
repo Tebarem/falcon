@@ -796,10 +796,13 @@ void logStats(SDL_Window* window, const GpuDrivenRenderer& r, VirtualShadowMap& 
             v.resident, v.capacity, v.residentPerMip[0], v.residentPerMip[1], v.residentPerMip[2], v.residentPerMip[3],
             v.residentPerMip[4], v.residentPerMip[5], v.queued, v.inFlight, (unsigned long long)v.uploadedTotal,
             v.requestsLastFeedback, double(vt.mipBias()));
-    FX_INFO("gpu: %u instances, %u chunks, %u+%u clusters (%u+%u masked, %u re-tested), %.2fM triangles, lod %.3g px%s%s%s",
+    char thinned[48] = "";
+    if (r.scatterPixels() > 0.0f)
+        SDL_snprintf(thinned, sizeof(thinned), ", scatter thinned below %.0f px", double(r.scatterPixels()));
+    FX_INFO("gpu: %u instances, %u chunks, %u+%u clusters (%u+%u masked, %u re-tested), %.2fM triangles, lod %.3g px%s%s%s%s",
             g.instances, g.chunks, g.visible1, g.visible2, g.masked1, g.masked2, g.candidates,
             double(g.triangles1 + g.triangles2) * 1e-6,
-            double(s.lodPixels), s.occlusion ? "" : ", occlusion off", s.freezeCulling ? ", FROZEN" : "",
+            double(s.lodPixels), s.occlusion ? "" : ", occlusion off", s.freezeCulling ? ", FROZEN" : "", thinned,
             (g.overflow & 3) ? ", OVERFLOW" : "");
     if (r.deformedInstances())
         FX_INFO("vertex functions: %u instances deformed, %u vertices", r.deformedInstances(), r.deformedVertices());

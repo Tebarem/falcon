@@ -16,6 +16,11 @@ Each frame runs entirely on the GPU:
    In the generated open world
    (183k instances), distant grass patches and flowers otherwise overflowed the 131,072
    visible-cluster budget, and the dropped clusters were foliage: trees lost their leaves.
+   Instances of meshes whose every cluster is alpha-masked (grass, flowers, leaf cards: set at
+   load, `ScenePak::open`) carry `kInstanceScatter`, so they are thinned with the terrain's
+   scatter while the visible clusters run over budget: the far small ones go, the same ones every
+   frame, instead of an overflow dropping different clusters each frame (flicker). The GPU stats
+   line says "scatter thinned below N px" while it is on.
 2. Per cluster: the DAG LOD cut (projected error ≤ threshold < parent error), frustum culling,
    backface cones, and the previous frame's HiZ.
 3. Visible clusters expand into the index buffer, drawn with **one indexed indirect draw** into
