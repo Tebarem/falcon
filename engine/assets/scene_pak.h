@@ -70,6 +70,9 @@ public:
     uint32_t cookedMeshCount() const { return header().sections[uint32_t(fpak::Section::Meshes)].count; }
     std::string meshName(uint32_t mesh) const;
     int32_t findMesh(const std::string& name) const;  // -1: none
+    // What a scatter asset of this name places: the mesh, else a model's parts (a glTF mesh with
+    // several materials cooks to a mesh per primitive, "name/material"), all at one transform.
+    std::vector<uint32_t> scatterMeshes(const std::string& name) const;
 
     // Libraries cooked into the scene (--library: a project's models): where each came from
     // (relative to the project) and its nodes, a mesh and a world transform each (the model's

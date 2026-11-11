@@ -218,13 +218,13 @@ std::vector<ScatterPool> reserveScatterPools(const std::vector<ScatterLayer>& la
     for (uint32_t l = 0; l < layers.size(); ++l)
         for (uint32_t a = 0; a < layers[l].assets.size(); ++a) {
             const ScatterAsset& asset = layers[l].assets[a];
-            const int32_t mesh = pak.findMesh(asset.mesh);
-            if (mesh < 0) {
+            const std::vector<uint32_t> meshes = pak.scatterMeshes(asset.mesh);
+            if (meshes.empty())
                 FX_WARN("terrain: scatter layer '%s': the scene has no mesh '%s'", layers[l].name.c_str(), asset.mesh.c_str());
-                continue;
+            for (uint32_t mesh : meshes) {  // (a model: a pool per part)
+                pools.push_back({l, a, mesh, pak.addInstancePool(mesh, asset.budget), asset.budget});
+                total += asset.budget;
             }
-            pools.push_back({l, a, uint32_t(mesh), pak.addInstancePool(uint32_t(mesh), asset.budget), asset.budget});
-            total += asset.budget;
         }
     if (!pools.empty())
         FX_INFO("terrain: %zu scatter pools, %u instance slots", pools.size(), total);

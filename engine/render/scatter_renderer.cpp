@@ -144,21 +144,20 @@ void ScatterRenderer::assignPools(const std::vector<ScatterLayer>& layers)
     uint32_t used = 0;  // of arena_[range]
     for (uint32_t l = 0; l < layers.size(); ++l)
         for (uint32_t a = 0; a < layers[l].assets.size(); ++a) {
-            const int32_t mesh = pak_->findMesh(layers[l].assets[a].mesh);
-            if (mesh < 0)
-                continue;
             const uint32_t want = layers[l].assets[a].budget;
-            while (range < arena_.size() && arena_[range].second - used < want && arena_[range].second - used < 4096) {
-                ++range;  // (what is left of a range too small for it: the next range)
-                used = 0;
+            for (uint32_t mesh : pak_->scatterMeshes(layers[l].assets[a].mesh)) {  // (a model: a pool per part)
+                while (range < arena_.size() && arena_[range].second - used < want && arena_[range].second - used < 4096) {
+                    ++range;  // (what is left of a range too small for it: the next range)
+                    used = 0;
+                }
+                if (range >= arena_.size()) {
+                    ++stats_.unplaced;
+                    continue;
+                }
+                const uint32_t count = std::min(want, arena_[range].second - used);
+                pools_.push_back({l, a, mesh, arena_[range].first + used, count});
+                used += count;
             }
-            if (range >= arena_.size()) {
-                ++stats_.unplaced;
-                continue;
-            }
-            const uint32_t count = std::min(want, arena_[range].second - used);
-            pools_.push_back({l, a, uint32_t(mesh), arena_[range].first + used, count});
-            used += count;
         }
 }
 
@@ -175,7 +174,10 @@ void ScatterRenderer::buildSubs(const std::vector<ScatterLayer>& layers, std::ve
         if (pool.layer >= layers.size())
             continue;
         const ScatterLayer& l = layers[pool.layer];
-        if (!l.enabled || pool.asset >= l.assets.size() || pak_->findMesh(l.assets[pool.asset].mesh) != int32_t(pool.mesh))
+        if (!l.enabled || pool.asset >= l.assets.size())
+            continue;
+        const std::vector<uint32_t> parts = pak_->scatterMeshes(l.assets[pool.asset].mesh);
+        if (std::find(parts.begin(), parts.end(), pool.mesh) == parts.end())
             continue;
         float total = 0.0f;
         for (const ScatterAsset& a : l.assets)
@@ -199,7 +201,11 @@ void ScatterRenderer::buildSubs(const std::vector<ScatterLayer>& layers, std::ve
             s.freeBlocks.push_back(b);
         s.collision = l.collision;
         s.paintOnly = l.paintBit >= 0 && l.paint == 2 ? l.paintBit : -1;
-        const fpak::MeshGpu& mesh = pak_->meshes()[pool.mesh];
+        // A model's parts share everything but the mesh (the seed is the asset's), so they land
+        // on the same candidates; it stands on its lowest part's lowest point.
+        float lowest = 1e30f;
+        for (uint32_t part : parts)
+            lowest = std::min(lowest, pak_->meshes()[part].posOffset[1]);
         SubLayerGpu g = {};
         g.a[0] = pool.mesh;
         g.a[1] = s.k;
@@ -225,7 +231,7 @@ void ScatterRenderer::buildSubs(const std::vector<ScatterLayer>& layers, std::ve
         g.e[1] = l.tilt * (kPi / 180.0f);
         g.e[2] = l.sink;
         g.e[3] = l.tintVariation;
-        g.f[0] = -mesh.posOffset[1];  // the mesh's lowest point stands on the ground
+        g.f[0] = -lowest;  // the mesh's lowest point stands on the ground
         g.f[1] = l.jitter;
         g.f[2] = l.yawRange * (kPi / 180.0f);
         // Terrain shading: the layer (by number, or the first with the look), the base blend.

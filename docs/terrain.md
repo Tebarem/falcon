@@ -118,7 +118,10 @@ erosion.
   - **A layer:**
     - up to 16 meshes, each with a share (shown as a percentage of the layer) and a scale range.
       In the panel the meshes are a list: pick one to edit it, Add Mesh, or drop meshes (or a
-      model, for all its meshes) from the Project panel onto the list;
+      model, for all its meshes) from the Project panel onto the list. A mesh with several
+      materials cooks to a mesh per material (`oak/bark`, `oak/leaves`): an asset named `oak`
+      places them all, together (`ScenePak::scatterMeshes`: a pool per part, the same candidates,
+      standing on the lowest part's lowest point);
     - a density (instances per m²), a seed and a draw distance.
   - **Where they grow:**
     - on chosen material layers (with a minimum share);

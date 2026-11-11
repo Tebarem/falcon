@@ -414,6 +414,20 @@ int32_t ScenePak::findMesh(const std::string& name) const
     return -1;
 }
 
+std::vector<uint32_t> ScenePak::scatterMeshes(const std::string& name) const
+{
+    if (const int32_t m = findMesh(name); m >= 0)
+        return {uint32_t(m)};
+    std::vector<uint32_t> parts;
+    if (name.empty())
+        return parts;
+    const std::string prefix = name + "/";
+    for (uint32_t m = 0; m < cookedMeshCount(); ++m)
+        if (meshName(m).compare(0, prefix.size(), prefix) == 0)
+            parts.push_back(m);
+    return parts;
+}
+
 const b3MeshData* ScenePak::staticCollider(uint32_t mesh) const
 {
     if (live_.ownsMesh(mesh))

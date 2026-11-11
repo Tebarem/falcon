@@ -1263,8 +1263,9 @@ void TerrainEditor::write(JsonWriter& w)
             w.beginArray();
             for (uint32_t a = 0; a < layers[l].assets.size(); ++a) {
                 bool live = false;
+                const std::vector<uint32_t> parts = pak_ ? pak_->scatterMeshes(layers[l].assets[a].mesh) : std::vector<uint32_t>();
                 for (const ScatterPool& p : sr.pools())
-                    live = live || (p.layer == l && p.asset == a && pak_ && pak_->findMesh(layers[l].assets[a].mesh) == int32_t(p.mesh));
+                    live = live || (p.layer == l && p.asset == a && std::find(parts.begin(), parts.end(), p.mesh) != parts.end());
                 w.value(nullptr, live);
             }
             w.endArray();
