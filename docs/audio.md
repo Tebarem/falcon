@@ -52,6 +52,12 @@ Steam Audio (see [Building](building.md)). It has sources and sounds with HRTF, 
   - every visible mesh entity, from its mesh's cooked collider (the built-in cube and sphere: their
     shapes; meshes without a collider, such as foliage, let sound through), as a world-space
     static mesh of its own. One that changes material is placed again.
+  - What is looked at each frame: mesh entities whose table changed (moved, added, a component
+    set; flecs change detection), and 2048 of the others in turn, so a big scene costs what
+    changed rather than its size. What the pak's instance row holds (hidden, its material) is no
+    ECS change and is seen on the entity's turn (every frame in a scene of up to 2048). Removed,
+    disabled (the editor's delete) or destroyed entities are taken out through observers. The
+    generated open world's 183k entities took 60-75 ms a frame when all were looked at.
   - A mesh that moves (a held weapon, a door, an occluding body) is instanced from its first move
     on: its triangles in their own space, in a Steam Audio scene of their own, placed by a
     transform. Moving it then costs a transform at the next commit, not a new mesh. Before this,

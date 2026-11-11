@@ -39,6 +39,7 @@ constexpr uint32_t kMaxSources = 64;
 constexpr uint32_t kTerrainStep = 4;        // samples per audio quad (2 m at 0.5 m spacing)
 constexpr float kTerrainRadius = 256.0f;     // tiles within this of the listener
 constexpr uint32_t kResolveEvery = 15;       // frames between materials resolved again (moves: every frame)
+constexpr uint32_t kSyncSlice = 2048;        // mesh entities looked at again a frame, besides those changed
 
 // Materials by value (quantized): a changed one shows as another key.
 struct MaterialKey {
@@ -172,9 +173,14 @@ struct AudioScene::Impl {
     Scene* ecs = nullptr;
     MaterialLibrary* materials = nullptr;
     const Terrain* terrain = nullptr;
-    std::unique_ptr<flecs::query<const MeshInstance, const WorldTransform>> meshes;
+    std::unique_ptr<flecs::query<const MeshInstance, const WorldTransform, const AcousticSurface*>> meshes;
+    // Mesh entities taken out of the world (destroyed, disabled, the component removed) since the
+    // last sync: their meshes are taken out of the scene.
+    flecs::observer gone, goneDisabled;
+    std::vector<flecs::entity_t> goneIds;
     uint64_t frame = 0;
     bool resolveAll = true;
+    uint64_t sliceStart = 0, meshCount = 0;  // the round of looking at every mesh entity in turn
 
     std::unordered_map<uint32_t, Triangles> triangles;  // by mesh, in its own space (empty: no shape)
     // A placed mesh: its triangles in world space, a static mesh of its own; one that changes
@@ -194,7 +200,6 @@ struct AudioScene::Impl {
         AcousticParams material;
         float rows[12] = {};
         uint32_t triangles = 0;
-        uint64_t seen = 0;
         bool moving = false;  // a body (an occluder only while it moves): not baked
         float3 lo = {}, hi = {};  // world bounds (placed)
         uint32_t liveRevision = 0;  // a live mesh's (render/live_geometry.h) when placed: newer places it again
@@ -478,10 +483,10 @@ struct AudioScene::Impl {
     }
 
     // An entity's acoustic material: its own (AcousticSurface), else its .fmat's, else generic.
-    AcousticParams materialOf(flecs::entity e, const MeshInstance& mi)
+    AcousticParams materialOf(const MeshInstance& mi, const AcousticSurface* a)
     {
         AcousticParams p;
-        if (const AcousticSurface* a = e.try_get<AcousticSurface>(); a && (a->flags & 2u)) {
+        if (a && (a->flags & 2u)) {
             std::memcpy(p.absorption, a->absorption, sizeof(p.absorption));
             p.scattering = a->scattering;
             std::memcpy(p.transmission, a->transmission, sizeof(p.transmission));
@@ -497,12 +502,41 @@ struct AudioScene::Impl {
         return p;
     }
 
+    // The observers let go (before the world they watch is, or another is attached).
+    void forget()
+    {
+        if (gone)
+            gone.destruct();
+        if (goneDisabled)
+            goneDisabled.destruct();
+        gone = goneDisabled = flecs::observer();
+        goneIds.clear();
+        sliceStart = meshCount = 0;
+    }
+
+    // Mesh entities are looked at when their table changed (moved, added, a component set or
+    // added or removed), and kSyncSlice of the others a frame in turn, so a big scene costs what
+    // changed rather than its size. What the pak's instance row holds (hidden, its material) is no
+    // ECS change: it is seen when the entity's turn comes (every frame in a scene of up to
+    // kSyncSlice, as is everything).
     void syncEntities()
     {
         if (!meshes)
             return;
         ++frame;
-        // Live meshes changed since: their cached triangles are made again.
+        for (flecs::entity_t id : goneIds)
+            if (auto it = entities.find(id); it != entities.end()) {
+                const flecs::entity e(ecs->world(), id);
+                if (e.is_alive() && e.enabled() && e.has<MeshInstance>() && e.has<WorldTransform>())
+                    continue;  // (back already: its table is looked at)
+                unplace(it->second);
+                entities.erase(it);
+                ++geometryRevision;
+            }
+        goneIds.clear();
+        // Live meshes changed since: their cached triangles are made again, and every entity is
+        // looked at (those showing one are placed again).
+        bool all = resolveAll;
         if (pak->liveGeneration() != liveGeneration) {
             liveGeneration = pak->liveGeneration();
             for (auto it = liveRevisions.begin(); it != liveRevisions.end();)
@@ -510,56 +544,84 @@ struct AudioScene::Impl {
                     triangles.erase(it->first);
                     meshHashes.erase(it->first);
                     it = liveRevisions.erase(it);
+                    all = true;
                 } else {
                     ++it;
                 }
         }
-        const bool resolve = resolveAll || frame % kResolveEvery == 0;
+        // This frame's turn: [start, start + kSyncSlice) of last frame's count, wrapping round. Its
+        // materials are resolved again (in a small scene, where the turn is everything, every
+        // kResolveEvery frames).
+        const bool whole = meshCount <= kSyncSlice;
+        const uint64_t start = whole ? 0 : sliceStart % meshCount, end = start + kSyncSlice;
+        const auto inTurn = [&](uint64_t k) { return whole || (k >= start && k < end) || (end > meshCount && k < end - meshCount); };
+        const bool resolveTurn = !whole || frame % kResolveEvery == 0;
+        const bool resolveEvery = resolveAll;
         resolveAll = false;
-        meshes->each([&](flecs::entity e, const MeshInstance& mi, const WorldTransform& w) {
-            const AcousticSurface* a = e.try_get<AcousticSurface>();
-            const bool hidden = mi.gpuSlot < pak->instances().size() && (pak->instances()[mi.gpuSlot].flags & fpak::kInstanceHidden);
-            const bool moving = e.has<RigidBody>() || e.has<PhysicsBody>();
-            if (hidden || (a && (a->flags & 1u)) || (moving && !(a && (a->flags & 4u))))
-                return;  // (unseen this frame: taken out below)
-            auto [it, added] = entities.try_emplace(e.id());
-            Placed& p = it->second;
-            p.seen = frame;
-            const uint32_t live = pak->liveRevision(mi.mesh);  // (0: not a live mesh)
-            const bool changed = added || p.meshIndex != mi.mesh || p.moving != moving || p.liveRevision != live;
-            const bool moves = !changed && std::memcmp(p.rows, w.rows, sizeof(p.rows)) != 0;
-            if (!changed && !resolve) {
-                if (moves) {
-                    move(e.id(), p, w.rows);
-                    ++geometryRevision;
+        uint64_t index = 0;
+        meshes->run([&](flecs::iter& it) {
+            while (it.next()) {
+                const uint64_t first = index, n = it.count();
+                index += n;
+                const bool changed = it.changed();
+                const bool turn = whole || inTurn(first) || inTurn(first + n - 1) || (first < start && first + n > start);
+                if (!all && !changed && !turn) {
+                    it.skip();
+                    continue;
                 }
-                return;
-            }
-            const AcousticParams material = materialOf(e, mi);
-            if (!changed && keyOf(material) == p.key) {
-                if (moves) {
-                    move(e.id(), p, w.rows);
-                    ++geometryRevision;
+                const auto mi = it.field<const MeshInstance>(0);
+                const auto w = it.field<const WorldTransform>(1);
+                const AcousticSurface* a = it.is_set(2) ? &it.field<const AcousticSurface>(2)[0] : nullptr;
+                const bool moving = it.table().has<RigidBody>() || it.table().has<PhysicsBody>();
+                for (auto i : it) {
+                    const bool mine = inTurn(first + i);
+                    if (all || changed || mine)
+                        syncEntity(it.entity(i), mi[i], w[i], a ? &a[i] : nullptr, moving, resolveEvery || (mine && resolveTurn));
                 }
-                return;
             }
-            const bool instanced = !added && (p.instance || moves);  // (one that has moved stays instanced)
-            unplace(p);
-            place(p, mi.mesh, material, w.rows, instanced);
-            p.moving = moving;
-            p.liveRevision = live;
-            if (pak->liveSlots().ownsMesh(mi.mesh))
-                liveRevisions[mi.mesh] = live;
-            ++geometryRevision;
         });
-        for (auto it = entities.begin(); it != entities.end();)
-            if (it->second.seen != frame) {
+        meshCount = index;
+        sliceStart = whole ? 0 : end;
+    }
+    void syncEntity(flecs::entity e, const MeshInstance& mi, const WorldTransform& w, const AcousticSurface* a, bool moving, bool resolve)
+    {
+        const bool hidden = mi.gpuSlot < pak->instances().size() && (pak->instances()[mi.gpuSlot].flags & fpak::kInstanceHidden);
+        if (hidden || (a && (a->flags & 1u)) || (moving && !(a && (a->flags & 4u)))) {
+            if (auto it = entities.find(e.id()); it != entities.end()) {
                 unplace(it->second);
-                it = entities.erase(it);
+                entities.erase(it);
                 ++geometryRevision;
-            } else {
-                ++it;
             }
+            return;
+        }
+        auto [it, added] = entities.try_emplace(e.id());
+        Placed& p = it->second;
+        const uint32_t live = pak->liveRevision(mi.mesh);  // (0: not a live mesh)
+        const bool changed = added || p.meshIndex != mi.mesh || p.moving != moving || p.liveRevision != live;
+        const bool moves = !changed && std::memcmp(p.rows, w.rows, sizeof(p.rows)) != 0;
+        if (!changed && !resolve) {
+            if (moves) {
+                move(e.id(), p, w.rows);
+                ++geometryRevision;
+            }
+            return;
+        }
+        const AcousticParams material = materialOf(mi, a);
+        if (!changed && keyOf(material) == p.key) {
+            if (moves) {
+                move(e.id(), p, w.rows);
+                ++geometryRevision;
+            }
+            return;
+        }
+        const bool instanced = !added && (p.instance || moves);  // (one that has moved stays instanced)
+        unplace(p);
+        place(p, mi.mesh, material, w.rows, instanced);
+        p.moving = moving;
+        p.liveRevision = live;
+        if (pak->liveSlots().ownsMesh(mi.mesh))
+            liveRevisions[mi.mesh] = live;
+        ++geometryRevision;
     }
 
     // The terrain layers' acoustics (each its preset, else its look's).
@@ -1033,6 +1095,7 @@ void AudioScene::shutdown()
     if (m.scene)
         m.clearGeometry();
     m.meshes.reset();
+    m.forget();
     if (m.baked && m.simulator)
         iplSimulatorRemoveProbeBatch(m.simulator, static_cast<IPLProbeBatch>(m.baked->batch));
     m.baked.reset();
@@ -1061,9 +1124,19 @@ void AudioScene::attach(ScenePak* pak, Scene* scene, MaterialLibrary* materials,
     m.materials = materials;
     m.terrain = terrain;
     m.meshes.reset();
-    if (pak && scene)
-        m.meshes = std::make_unique<flecs::query<const MeshInstance, const WorldTransform>>(
-            scene->world().query_builder<const MeshInstance, const WorldTransform>().cached().build());
+    m.forget();
+    if (pak && scene) {
+        m.meshes = std::make_unique<flecs::query<const MeshInstance, const WorldTransform, const AcousticSurface*>>(
+            scene->world().query_builder<const MeshInstance, const WorldTransform, const AcousticSurface*>().cached().detect_changes().build());
+        Impl* impl = impl_.get();
+        m.gone = scene->world().observer().with<MeshInstance>().event(flecs::OnRemove).each([impl](flecs::entity e) {
+            impl->goneIds.push_back(e.id());
+        });
+        // (The editor's delete; matched although disabled, since the term names Disabled.)
+        m.goneDisabled = scene->world().observer().with(flecs::Disabled).with<MeshInstance>().event(flecs::OnAdd).each([impl](flecs::entity e) {
+            impl->goneIds.push_back(e.id());
+        });
+    }
     m.resolveAll = true;
 }
 
