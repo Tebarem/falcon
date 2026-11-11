@@ -1,0 +1,361 @@
+[
+ {
+  "name": "Broadleaf trees",
+  "seed": 11,
+  "density": 0.02,
+  "drawDistance": 1200,
+  "slopeMax": 32,
+  "clumpScale": 70,
+  "clumpAmount": 0.7,
+  "clumpThreshold": 0.4,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0,
+  "tilt": 3,
+  "sink": 0.15,
+  "tintVariation": 0.15,
+  "castShadows": true,
+  "assets": [
+   {
+    "mesh": "oak_a",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.25,
+    "budget": 12000
+   },
+   {
+    "mesh": "oak_b",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.2,
+    "budget": 12000
+   },
+   {
+    "mesh": "oak_c",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.25,
+    "budget": 12000
+   },
+   {
+    "mesh": "birch_a",
+    "weight": 0.8,
+    "scaleMin": 0.85,
+    "scaleMax": 1.2,
+    "budget": 12000
+   },
+   {
+    "mesh": "birch_b",
+    "weight": 0.8,
+    "scaleMin": 0.85,
+    "scaleMax": 1.2,
+    "budget": 12000
+   }
+  ]
+ },
+ {
+  "name": "Firs",
+  "seed": 23,
+  "density": 0.012,
+  "drawDistance": 1200,
+  "slopeMax": 36,
+  "clumpScale": 120,
+  "clumpAmount": 0.9,
+  "clumpThreshold": 0.55,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0,
+  "tilt": 2,
+  "sink": 0.15,
+  "tintVariation": 0.12,
+  "castShadows": true,
+  "assets": [
+   {
+    "mesh": "fir_a",
+    "weight": 1,
+    "scaleMin": 0.7,
+    "scaleMax": 1.3,
+    "budget": 12000
+   },
+   {
+    "mesh": "fir_b",
+    "weight": 1,
+    "scaleMin": 0.7,
+    "scaleMax": 1.2,
+    "budget": 12000
+   },
+   {
+    "mesh": "fir_c",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.3,
+    "budget": 12000
+   }
+  ]
+ },
+ {
+  "name": "Saplings",
+  "seed": 31,
+  "density": 0.006,
+  "drawDistance": 200,
+  "slopeMax": 35,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0.2,
+  "tilt": 6,
+  "sink": 0.05,
+  "tintVariation": 0.2,
+  "castShadows": true,
+  "assets": [
+   {
+    "mesh": "sapling_a",
+    "weight": 1,
+    "scaleMin": 1.0,
+    "scaleMax": 2.0,
+    "budget": 8000
+   },
+   {
+    "mesh": "sapling_b",
+    "weight": 1,
+    "scaleMin": 1.0,
+    "scaleMax": 2.0,
+    "budget": 8000
+   }
+  ]
+ },
+ {
+  "name": "Bushes",
+  "seed": 41,
+  "density": 0.05,
+  "drawDistance": 160,
+  "slopeMax": 38,
+  "clumpScale": 25,
+  "clumpAmount": 0.6,
+  "clumpThreshold": 0.35,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0.4,
+  "tilt": 8,
+  "sink": 0.05,
+  "tintVariation": 0.2,
+  "castShadows": false,
+  "assets": [
+   {
+    "mesh": "bush_a",
+    "weight": 1,
+    "scaleMin": 1.4,
+    "scaleMax": 2.6,
+    "budget": 8000
+   },
+   {
+    "mesh": "bush_b",
+    "weight": 1,
+    "scaleMin": 1.4,
+    "scaleMax": 2.6,
+    "budget": 8000
+   },
+   {
+    "mesh": "bush_c",
+    "weight": 1,
+    "scaleMin": 1.4,
+    "scaleMax": 2.6,
+    "budget": 8000
+   },
+   {
+    "mesh": "bush_d",
+    "weight": 1,
+    "scaleMin": 1.4,
+    "scaleMax": 2.6,
+    "budget": 8000
+   },
+   {
+    "mesh": "bush_e",
+    "weight": 1,
+    "scaleMin": 1.4,
+    "scaleMax": 2.6,
+    "budget": 8000
+   }
+  ]
+ },
+ {
+  "name": "Grass",
+  "seed": 53,
+  "density": 0.7,
+  "drawDistance": 140,
+  "slopeMax": 42,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0.7,
+  "tilt": 5,
+  "sink": 0.02,
+  "tintVariation": 0.2,
+  "castShadows": false,
+  "assets": [
+   {
+    "mesh": "grass_a",
+    "weight": 1,
+    "scaleMin": 0.6,
+    "scaleMax": 1.0,
+    "budget": 40000
+   },
+   {
+    "mesh": "grass_b",
+    "weight": 1,
+    "scaleMin": 0.6,
+    "scaleMax": 1.0,
+    "budget": 40000
+   }
+  ]
+ },
+ {
+  "name": "Flowers",
+  "seed": 61,
+  "density": 0.15,
+  "drawDistance": 90,
+  "slopeMax": 30,
+  "clumpScale": 18,
+  "clumpAmount": 0.8,
+  "clumpThreshold": 0.5,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0.5,
+  "tilt": 8,
+  "sink": 0.02,
+  "tintVariation": 0.15,
+  "castShadows": false,
+  "assets": [
+   {
+    "mesh": "flower_a",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_b",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_c",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_d",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_e",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_f",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_g",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   },
+   {
+    "mesh": "flower_h",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.15,
+    "budget": 4000
+   }
+  ]
+ },
+ {
+  "name": "Logs",
+  "seed": 71,
+  "density": 0.002,
+  "drawDistance": 300,
+  "slopeMax": 25,
+  "jitter": 1,
+  "yawRange": 360,
+  "align": 0.9,
+  "tilt": 3,
+  "sink": 0.12,
+  "tintVariation": 0.1,
+  "castShadows": true,
+  "assets": [
+   {
+    "mesh": "log_a",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.2,
+    "budget": 2000
+   },
+   {
+    "mesh": "log_b",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.2,
+    "budget": 2000
+   },
+   {
+    "mesh": "log_c",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 1.2,
+    "budget": 2000
+   }
+  ]
+ },
+ {
+  "name": "Rocks",
+  "seed": 83,
+  "density": 0.004,
+  "drawDistance": 300,
+  "jitter": 1,
+  "yawRange": 360,
+  "clumpScale": 40,
+  "clumpAmount": 0.6,
+  "clumpThreshold": 0.5,
+  "align": 0.8,
+  "tilt": 25,
+  "sink": 0.15,
+  "tintVariation": 0.15,
+  "castShadows": true,
+  "assets": [
+   {
+    "mesh": "rock_a",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 3.0,
+    "budget": 2000
+   },
+   {
+    "mesh": "rock_b",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 3.0,
+    "budget": 2000
+   },
+   {
+    "mesh": "rock_c",
+    "weight": 1,
+    "scaleMin": 0.8,
+    "scaleMax": 3.0,
+    "budget": 2000
+   }
+  ]
+ }
+]

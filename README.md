@@ -9,6 +9,15 @@ with Slang shaders, games scripted in C#, and an editor built from HTML pages. I
 > Linux build is checked on software Vulkan, and the macOS build has had little use on real Macs
 > so far.
 
+![A forest scattered over Falcon's terrain](docs/images/forest.jpg)
+*A forest grown by the terrain's scatter layers: trees, ferns, grass and flowers, 20k instances on
+screen. GPU 5.6 ms a frame.*
+
+![Sponza flooded by the water system](docs/images/sponza_water.jpg)
+*Sponza flooded with the Tropical lagoon water preset, lit by the probe GI. GPU 5.3 ms a frame.*
+
+Both at 1920×1080 with FSR's native anti-aliasing, on a Radeon RX 9060 XT (Direct3D 12).
+
 ## Features
 
 - **Rendering:** a GPU-driven visibility buffer with cluster LODs and GPU culling, virtual
