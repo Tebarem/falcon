@@ -127,9 +127,17 @@ jobs:
           path: build/profile/Testing/Temporary/LastTest.log
           retention-days: 7
 
+      # A release ships the release build: falcon.exe with the UI's pages and the engine's content
+      # packed into it (FALCON_EMBED_DATA), no profiler. The tests above ran on the profile build.
+      - name: Release build
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notmatch 'mingw|strawberry' }) -join ';'
+          ./build.ps1 -Preset release
+
       - name: Release package
         if: startsWith(github.ref, 'refs/tags/v')
-        run: cmake -DBUILD=build/profile -DOUT=dist -DNAME="falcon-${{ github.ref_name }}-windows-x64" -P scripts/package.cmake
+        run: cmake -DBUILD=build/release -DOUT=dist -DNAME="falcon-${{ github.ref_name }}-windows-x64" -P scripts/package.cmake
 
       - name: Upload release package
         if: startsWith(github.ref, 'refs/tags/v')
