@@ -3,8 +3,8 @@
 set(FX_EXT "${CMAKE_SOURCE_DIR}/external")
 
 # Tracy: on-demand so an unconnected client costs nothing at boot. Its lifetime is manual
-# (runEngine starts and stops it): falcon.exe is also the cooker and Chromium's helper
-# processes, which must not each start a profiler (threads, a listening socket, a crash handler).
+# (runEngine starts and stops it): falcon.exe is also the cooker, which must not start a profiler
+# (threads, a listening socket, a crash handler).
 set(TRACY_ENABLE ${FALCON_TRACY} CACHE BOOL "" FORCE)
 set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
 set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "" FORCE)

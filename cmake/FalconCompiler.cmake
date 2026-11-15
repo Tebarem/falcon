@@ -1,14 +1,14 @@
 # Compiler settings per toolchain: MSVC on Windows, Clang or GCC on Linux and macOS.
 
 if(MSVC)
-  # cef-lite links the static CRT; everything in the process must match.
+  # The static CRT (Ember, built with clang, links it too: everything in the process must match).
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   # Release builds keep symbols in .pdb files beside the binaries too (not shipped in games):
   # freeze reports (core/freeze_watch.h) name functions and lines with falcon.pdb. /OPT:REF and
   # /OPT:ICF keep the binaries as they are without /DEBUG.
   # With a compiler cache (sccache: CMAKE_CXX_COMPILER_LAUNCHER, as CI sets it) each object
   # carries its own debug info (/Z7): objects writing into one shared .pdb (/Zi) can't be
-  # cached. The linker gathers it into falcon.pdb either way. CEF's wrapper follows. No
+  # cached. The linker gathers it into falcon.pdb either way. No
   # precompiled headers either (SDL's: sccache can't cache /Yc and /Yu objects).
   if("${CMAKE_CXX_COMPILER_LAUNCHER}$ENV{CMAKE_CXX_COMPILER_LAUNCHER}" MATCHES "sccache")
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "Embedded")

@@ -1,0 +1,453 @@
+diff --git a/SDL/src/gpu/SDL_sysgpu.h b/SDL/src/gpu/SDL_sysgpu.h
+index 8e0e349..adbec77 100644
+--- a/SDL/src/gpu/SDL_sysgpu.h
++++ b/SDL/src/gpu/SDL_sysgpu.h
+@@ -20,5 +20,6 @@
+ #include "../video/SDL_sysvideo.h"
+ #include "SDL_internal.h"
++#include <SDL3/SDL_falcon_gpu.h>
+ 
+ #ifndef SDL_GPU_DRIVER_H
+ #define SDL_GPU_DRIVER_H
+@@ -693,6 +693,12 @@ struct SDL_GPUDevice
+         SDL_GPURenderer *driverData,
+         const SDL_GPUTextureCreateInfo *createinfo);
+ 
++    bool (*CopyExternalTexture)(
++        SDL_GPURenderer *driverData,
++        SDL_GPUCommandBuffer *commandBuffer,
++        const SDL_FalconExternalTexture *source,
++        SDL_GPUTexture *destination);
++
+     SDL_GPUBuffer *(*CreateBuffer)(
+         SDL_GPURenderer *driverData,
+         SDL_GPUBufferUsageFlags usageFlags,
+@@ -1111,6 +1119,7 @@ struct SDL_GPUDevice
+     ASSIGN_DRIVER_FUNC(CreateSampler, name)                 \
+     ASSIGN_DRIVER_FUNC(CreateShader, name)                  \
+     ASSIGN_DRIVER_FUNC(CreateTexture, name)                 \
++    ASSIGN_DRIVER_FUNC(CopyExternalTexture, name)             \
+     ASSIGN_DRIVER_FUNC(CreateBuffer, name)                  \
+     ASSIGN_DRIVER_FUNC(CreateTransferBuffer, name)          \
+     ASSIGN_DRIVER_FUNC(SetBufferName, name)                 \
+
+diff --git a/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c b/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
+index ae19a13..e167f8f 100644
+--- a/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
++++ b/SDL/src/gpu/vulkan/SDL_gpu_vulkan.c
+@@ -1241,6 +1241,20 @@ struct VulkanRenderer
+ static bool VULKAN_INTERNAL_DefragmentMemory(VulkanRenderer *renderer, VulkanCommandBuffer *commandBuffer);
+ static bool VULKAN_INTERNAL_BeginCommandBuffer(VulkanRenderer *renderer, VulkanCommandBuffer *commandBuffer);
+ static void VULKAN_ReleaseTexture(SDL_GPURenderer *driverData, SDL_GPUTexture *texture);
++
++static bool VULKAN_CopyExternalTexture(
++    SDL_GPURenderer *driverData,
++    SDL_GPUCommandBuffer *commandBuffer,
++    const SDL_FalconExternalTexture *source,
++    SDL_GPUTexture *destination)
++{
++    (void)driverData;
++    (void)commandBuffer;
++    (void)source;
++    (void)destination;
++    SDL_SetError("Vulkan external texture import is not implemented");
++    return false;
++}
+ static void VULKAN_ReleaseWindow(SDL_GPURenderer *driverData, SDL_Window *window);
+ static bool VULKAN_Wait(SDL_GPURenderer *driverData);
+ static bool VULKAN_WaitForFences(SDL_GPURenderer *driverData, bool waitAll, SDL_GPUFence *const *fences, Uint32 numFences);
+
+diff --git a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+index b5a6e50..b31ec6d 100644
+--- a/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
++++ b/SDL/src/gpu/d3d12/SDL_gpu_d3d12.c
+@@ -1077,6 +1077,10 @@ struct D3D12CommandBuffer
+     D3D12UniformBuffer *computeUniformBuffers[MAX_UNIFORM_BUFFERS_PER_STAGE];
+ 
+     // Resource tracking
++    ID3D12Resource **externalResources;
++    Uint32 externalResourceCount;
++    Uint32 externalResourceCapacity;
++
+     D3D12Texture **usedTextures;
+     Uint32 usedTextureCount;
+     Uint32 usedTextureCapacity;
+@@ -1602,6 +1606,10 @@ static void D3D12_INTERNAL_DestroyCommandBuffer(D3D12CommandBuffer *commandBuffe
+     SDL_free(commandBuffer->usedDescriptorHeaps);
+     SDL_free(commandBuffer->usedUniformBuffers);
+     SDL_free(commandBuffer->textureDownloads);
++    for (Uint32 i = 0; i < commandBuffer->externalResourceCount; i += 1) {
++        ID3D12Resource_Release(commandBuffer->externalResources[i]);
++    }
++    SDL_free(commandBuffer->externalResources);
+     SDL_free(commandBuffer);
+ }
+ 
+@@ -2051,6 +2059,34 @@ static void D3D12_INTERNAL_TrackTexture(
+         usedTextureCapacity)
+ }
+ 
++static bool D3D12_INTERNAL_TrackExternalResource(
++    D3D12CommandBuffer *commandBuffer,
++    ID3D12Resource *resource)
++{
++    for (Uint32 i = 0; i < commandBuffer->externalResourceCount; i += 1) {
++        if (commandBuffer->externalResources[i] == resource) {
++            return true;
++        }
++    }
++
++    if (commandBuffer->externalResourceCount ==
++        commandBuffer->externalResourceCapacity) {
++        const Uint32 newCapacity = commandBuffer->externalResourceCapacity + 1;
++        ID3D12Resource **resources = (ID3D12Resource **)SDL_realloc(
++            commandBuffer->externalResources,
++            newCapacity * sizeof(ID3D12Resource *));
++        if (resources == NULL) {
++            return false;
++        }
++        commandBuffer->externalResources = resources;
++        commandBuffer->externalResourceCapacity = newCapacity;
++    }
++
++    commandBuffer->externalResources[
++        commandBuffer->externalResourceCount++] = resource;
++    return true;
++}
++
+ static void D3D12_INTERNAL_TrackBuffer(
+     D3D12CommandBuffer *commandBuffer,
+     D3D12Buffer *buffer)
+@@ -6251,6 +6287,120 @@ static void D3D12_CopyTextureToTexture(
+         destinationSubresource->parent);
+ }
+ 
++static bool D3D12_CopyExternalTexture(
++    SDL_GPURenderer *driverData,
++    SDL_GPUCommandBuffer *commandBuffer,
++    const SDL_FalconExternalTexture *source,
++    SDL_GPUTexture *destination)
++{
++    D3D12Renderer *renderer = (D3D12Renderer *)driverData;
++    D3D12CommandBuffer *d3d12CommandBuffer =
++        (D3D12CommandBuffer *)commandBuffer;
++    D3D12TextureContainer *destinationContainer =
++        (D3D12TextureContainer *)destination;
++    ID3D12Resource *sourceResource = NULL;
++    D3D12_RESOURCE_DESC sourceDesc;
++    D3D12TextureSubresource *destinationSubresource;
++    D3D12_TEXTURE_COPY_LOCATION sourceLocation;
++    D3D12_TEXTURE_COPY_LOCATION destinationLocation;
++    HRESULT res;
++
++    if (source == NULL || source->struct_size < sizeof(*source) ||
++        source->version != SDL_FALCON_EXTERNAL_TEXTURE_VERSION ||
++        source->kind != SDL_FALCON_EXTERNAL_TEXTURE_D3D12_SHARED_HANDLE ||
++        source->native.handle == NULL || destination == NULL ||
++        source->width == 0 || source->height == 0 ||
++        source->width > destinationContainer->header.info.width ||
++        source->height > destinationContainer->header.info.height ||
++        (source->format != SDL_GPU_TEXTUREFORMAT_INVALID &&
++         source->format != destinationContainer->header.info.format)) {
++        SDL_SetError("Invalid external D3D12 texture source");
++        return false;
++    }
++
++    res = ID3D12Device_OpenSharedHandle(
++        renderer->device,
++        (HANDLE)source->native.handle,
++        D3D_GUID(D3D_IID_ID3D12Resource),
++        (void **)&sourceResource);
++    if (FAILED(res)) {
++        D3D12_INTERNAL_SetError(
++            renderer,
++            "Failed to open external D3D12 texture for copy!",
++            res);
++        return false;
++    }
++
++    ID3D12Resource_GetDesc(sourceResource, &sourceDesc);
++    if (sourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
++        sourceDesc.Width < source->width ||
++        sourceDesc.Height < source->height ||
++        sourceDesc.Format != SDLToD3D12_TextureFormat[
++            destinationContainer->header.info.format]) {
++        SDL_SetError("External D3D12 texture description is incompatible");
++        ID3D12Resource_Release(sourceResource);
++        return false;
++    }
++
++    if (!D3D12_INTERNAL_TrackExternalResource(
++            d3d12CommandBuffer,
++            sourceResource)) {
++        SDL_SetError("Could not retain external D3D12 texture");
++        ID3D12Resource_Release(sourceResource);
++        return false;
++    }
++
++    destinationSubresource = D3D12_INTERNAL_PrepareTextureSubresourceForWrite(
++        d3d12CommandBuffer,
++        destinationContainer,
++        0,
++        0,
++        false,
++        D3D12_RESOURCE_STATE_COPY_DEST);
++
++    D3D12_INTERNAL_ResourceBarrier(
++        d3d12CommandBuffer,
++        D3D12_RESOURCE_STATE_COMMON,
++        D3D12_RESOURCE_STATE_COPY_SOURCE,
++        sourceResource,
++        0,
++        false);
++
++    sourceLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
++    sourceLocation.SubresourceIndex = 0;
++    sourceLocation.pResource = sourceResource;
++    destinationLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
++    destinationLocation.SubresourceIndex = destinationSubresource->index;
++    destinationLocation.pResource = destinationSubresource->parent->resource;
++
++    D3D12_BOX sourceBox = {
++        0, 0, 0, source->width, source->height, 1};
++    ID3D12GraphicsCommandList_CopyTextureRegion(
++        d3d12CommandBuffer->graphicsCommandList,
++        &destinationLocation,
++        0,
++        0,
++        0,
++        &sourceLocation,
++        &sourceBox);
++
++    D3D12_INTERNAL_ResourceBarrier(
++        d3d12CommandBuffer,
++        D3D12_RESOURCE_STATE_COPY_SOURCE,
++        D3D12_RESOURCE_STATE_COMMON,
++        sourceResource,
++        0,
++        false);
++    D3D12_INTERNAL_TextureSubresourceTransitionToDefaultUsage(
++        d3d12CommandBuffer,
++        D3D12_RESOURCE_STATE_COPY_DEST,
++        destinationSubresource);
++    D3D12_INTERNAL_TrackTexture(
++        d3d12CommandBuffer,
++        destinationSubresource->parent);
++    return true;
++}
++
+ static void D3D12_CopyBufferToBuffer(
+     SDL_GPUCommandBuffer *commandBuffer,
+     const SDL_GPUBufferLocation *source,
+@@ -7842,6 +7986,11 @@ static bool D3D12_INTERNAL_CleanCommandBuffer(
+         return false;
+     }
+ 
++    for (i = 0; i < commandBuffer->externalResourceCount; i += 1) {
++        ID3D12Resource_Release(commandBuffer->externalResources[i]);
++    }
++    commandBuffer->externalResourceCount = 0;
++
+     res = ID3D12CommandAllocator_Reset(commandBuffer->commandAllocator);
+     CHECK_D3D12_ERROR_AND_RETURN("Could not reset command allocator", false);
+ 
+
+diff --git a/SDL/src/gpu/SDL_falcon_gpu.c b/SDL/src/gpu/SDL_falcon_gpu.c
+new file mode 100644
+--- /dev/null
++++ b/SDL/src/gpu/SDL_falcon_gpu.c
+@@ -0,0 +1,27 @@
++/* Falcon-specific SDL_GPU bridge for accelerated CEF UI frames. */
++
++#define SDL_FALCON_GPU_BUILD 1
++
++#include "SDL_internal.h"
++#include "SDL_sysgpu.h"
++
++SDL_FALCON_GPU_API bool SDLCALL SDL_FalconCopyExternalTexture(
++    SDL_GPUDevice *device,
++    SDL_GPUCommandBuffer *commandBuffer,
++    const SDL_FalconExternalTexture *source,
++    SDL_GPUTexture *destination)
++{
++    if (device == NULL) {
++        SDL_SetError("Invalid GPU device");
++        return false;
++    }
++    if (source == NULL || device->CopyExternalTexture == NULL) {
++        SDL_SetError("The selected SDL_GPU backend cannot import this external texture");
++        return false;
++    }
++    return device->CopyExternalTexture(
++        device->driverData,
++        commandBuffer,
++        source,
++        destination);
++}
+diff --git a/SDL/src/gpu/metal/SDL_gpu_metal.m b/SDL/src/gpu/metal/SDL_gpu_metal.m
+index 44a2319..2cfa891 100644
+--- a/SDL/src/gpu/metal/SDL_gpu_metal.m
++++ b/SDL/src/gpu/metal/SDL_gpu_metal.m
+@@ -27,4 +27,5 @@
+ #include <Metal/Metal.h>
+ #include <QuartzCore/CoreAnimation.h>
++#include <IOSurface/IOSurface.h>
+ 
+ #include "../SDL_sysgpu.h"
+
+@@ -4506,1 +4506,73 @@
++static bool METAL_CopyExternalTexture(
++    SDL_GPURenderer *driverData,
++    SDL_GPUCommandBuffer *commandBuffer,
++    const SDL_FalconExternalTexture *source,
++    SDL_GPUTexture *destination)
++{
++    @autoreleasepool {
++        MetalRenderer *renderer = (MetalRenderer *)driverData;
++        MetalCommandBuffer *metalCommandBuffer =
++            (MetalCommandBuffer *)commandBuffer;
++        MetalTextureContainer *destinationContainer =
++            (MetalTextureContainer *)destination;
++        MTLTextureDescriptor *descriptor;
++        id<MTLTexture> sourceTexture;
++        MetalTexture *destinationTexture;
++
++        if (source == NULL || destination == NULL ||
++            source->struct_size < sizeof(*source) ||
++            source->version != SDL_FALCON_EXTERNAL_TEXTURE_VERSION ||
++            source->kind != SDL_FALCON_EXTERNAL_TEXTURE_IOSURFACE ||
++            source->native.handle == NULL || source->plane_count != 0 ||
++            source->width == 0 || source->height == 0 ||
++            source->width > destinationContainer->header.info.width ||
++            source->height > destinationContainer->header.info.height ||
++            source->format != destinationContainer->header.info.format) {
++            SDL_SetError("Invalid IOSurface texture import arguments");
++            return false;
++        }
++
++        descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
++            SDLToMetal_TextureFormat(source->format)
++            width:source->width
++            height:source->height
++            mipmapped:NO];
++        descriptor.storageMode = MTLStorageModeShared;
++        descriptor.usage = MTLTextureUsageShaderRead;
++        sourceTexture = [renderer->device newTextureWithDescriptor:descriptor
++            iosurface:(IOSurfaceRef)source->native.handle
++            plane:0];
++        if (sourceTexture == nil) {
++            SDL_SetError("Could not wrap CEF IOSurface as a Metal texture");
++            return false;
++        }
++        destinationTexture = METAL_INTERNAL_PrepareTextureForWrite(
++            renderer,
++            destinationContainer,
++            false);
++        if (metalCommandBuffer->blitEncoder == nil) {
++            metalCommandBuffer->blitEncoder =
++                [metalCommandBuffer->handle blitCommandEncoder];
++        }
++        if (destinationTexture == NULL ||
++            metalCommandBuffer->blitEncoder == nil) {
++            SDL_SetError("Could not create the Metal UI texture copy pass");
++            return false;
++        }
++
++        [metalCommandBuffer->blitEncoder
++            copyFromTexture:sourceTexture
++            sourceSlice:0
++            sourceLevel:0
++            sourceOrigin:MTLOriginMake(0, 0, 0)
++            sourceSize:MTLSizeMake(source->width, source->height, 1)
++            toTexture:destinationTexture->handle
++            destinationSlice:0
++            destinationLevel:0
++            destinationOrigin:MTLOriginMake(0, 0, 0)];
++        METAL_INTERNAL_TrackTexture(metalCommandBuffer, destinationTexture);
++        return true;
++    }
++}
++
+ static SDL_GPUDevice *METAL_CreateDevice(bool debugMode, bool preferLowPower, SDL_PropertiesID props)
+
+diff --git a/SDL/include/SDL3/SDL_falcon_gpu.h b/SDL/include/SDL3/SDL_falcon_gpu.h
+new file mode 100644
+--- /dev/null
++++ b/SDL/include/SDL3/SDL_falcon_gpu.h
+@@ -0,0 +1,76 @@
++/*
++  Falcon external-texture import for SDL_GPU.
++
++  This private SDL extension normalizes OS-native CEF frame handles at the
++  SDL_GPU boundary. Platform drivers own the import and GPU copy.
++*/
++
++#ifndef SDL_falcon_gpu_h_
++#define SDL_falcon_gpu_h_
++
++#include <SDL3/SDL_gpu.h>
++#include <stdint.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define SDL_FALCON_EXTERNAL_TEXTURE_VERSION 1u
++#define SDL_FALCON_EXTERNAL_TEXTURE_MAX_PLANES 4u
++#define SDL_FALCON_GPU_PATCH_REVISION 2u
++
++#if defined(SDL_FALCON_GPU_BUILD) && defined(_WIN32)
++#define SDL_FALCON_GPU_API __declspec(dllexport)
++#elif defined(_WIN32)
++#define SDL_FALCON_GPU_API __declspec(dllimport)
++#elif defined(__GNUC__)
++#define SDL_FALCON_GPU_API __attribute__((visibility("default")))
++#else
++#define SDL_FALCON_GPU_API
++#endif
++
++typedef enum SDL_FalconExternalTextureKind {
++    SDL_FALCON_EXTERNAL_TEXTURE_D3D12_SHARED_HANDLE = 1,
++    SDL_FALCON_EXTERNAL_TEXTURE_DMA_BUF = 2,
++    SDL_FALCON_EXTERNAL_TEXTURE_IOSURFACE = 3,
++    SDL_FALCON_EXTERNAL_TEXTURE_ANDROID_HARDWARE_BUFFER = 4
++} SDL_FalconExternalTextureKind;
++
++typedef struct SDL_FalconExternalTexturePlane {
++    intptr_t handle; /* DMA-BUF file descriptor */
++    uint64_t size;
++    uint64_t offset;
++    uint32_t stride;
++    uint32_t reserved;
++} SDL_FalconExternalTexturePlane;
++
++typedef struct SDL_FalconExternalTexture {
++    uint32_t struct_size;
++    uint32_t version;
++    uint32_t kind;
++    uint32_t plane_count;
++    uint32_t width;
++    uint32_t height;
++    SDL_GPUTextureFormat format;
++    uint32_t reserved;
++    uint64_t modifier;
++    union {
++        void *handle; /* Win32 shared handle, IOSurfaceRef, or AHardwareBuffer */
++        SDL_FalconExternalTexturePlane planes[SDL_FALCON_EXTERNAL_TEXTURE_MAX_PLANES];
++    } native;
++} SDL_FalconExternalTexture;
++
++/* Records a native-to-SDL_GPU texture copy in command_buffer. The source
++ * handle/FDs are borrowed and must remain valid until the submitted copy has
++ * completed. Unsupported platform imports fail; there is no CPU fallback. */
++extern SDL_FALCON_GPU_API bool SDLCALL SDL_FalconCopyExternalTexture(
++    SDL_GPUDevice *device,
++    SDL_GPUCommandBuffer *command_buffer,
++    const SDL_FalconExternalTexture *source,
++    SDL_GPUTexture *destination);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* SDL_falcon_gpu_h_ */

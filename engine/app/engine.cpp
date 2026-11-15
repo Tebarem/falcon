@@ -19,6 +19,7 @@
 #include "core/freeze_watch.h"
 #include "core/jobs.h"
 #include "core/json.h"
+#include "core/engine_files.h"
 #include "core/log.h"
 #include "core/profile.h"
 #include "editor/anim_preview.h"
@@ -95,7 +96,7 @@ bool parseEngineArgs(int argc, char** argv, EngineConfig& c)
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
         if (!std::strcmp(a, "--"))
-            break;  // the rest is for Chromium (CEF reads the process command line itself)
+            break;  // the rest is not the engine's
         const char* next = i + 1 < argc ? argv[i + 1] : nullptr;
         auto take = [&]() -> const char* {
             if (!next) {
@@ -584,8 +585,8 @@ void sampleCounters(const GpuDrivenRenderer& r, const VirtualTextureSystem& vt, 
                  pairs = counter("Broadphase pairs", "ms", "Physics"), collide = counter("Collide", "ms", "Physics"),
                  solve = counter("Solve", "ms", "Physics"), sleep = counter("Sleep islands", "ms", "Physics"),
                  characters = counter("Characters", "", "Animation"), animMs = counter("Update", "ms", "Animation"),
-                 uiFrames = counter("Page frames", "", "UI"), uiCopy = counter("Frame copy (average)", "ms", "UI"),
-                 uiCopyMax = counter("Frame copy (max)", "ms", "UI"), uiIn = counter("Messages in", "", "UI"),
+                 uiFrames = counter("Page frames", "", "UI"), uiRender = counter("Page update", "ms", "UI"),
+                 uiRenderMax = counter("Page update (max)", "ms", "UI"), uiIn = counter("Messages in", "", "UI"),
                  uiOut = counter("Messages out", "", "UI"),
                  workingSet = counter("Working set", "MB", "Memory"), privateBytes = counter("Private bytes", "MB", "Memory");
     } id;
@@ -636,8 +637,8 @@ void sampleCounters(const GpuDrivenRenderer& r, const VirtualTextureSystem& vt, 
     setCounter(id.animMs, animation.lastUpdateMs());
     const UiStats us = ui.stats();
     setCounter(id.uiFrames, double(us.frames));
-    setCounter(id.uiCopy, us.copyMs);
-    setCounter(id.uiCopyMax, us.copyMaxMs);
+    setCounter(id.uiRender, us.renderMs);
+    setCounter(id.uiRenderMax, us.renderMaxMs);
     setCounter(id.uiIn, double(us.messagesIn));
     setCounter(id.uiOut, double(us.messagesOut));
     uint64_t gpuTotal = 0;
@@ -859,7 +860,6 @@ struct Process {
     AudioSystem audio;  // (the device; scenes attach to it)
     MeshRenderer meshes;  // runtime meshes (R5; scripts' Mesh), kept across scenes
     int exitCode = 0;
-    std::filesystem::path privateProfile;
     // The frame loop's.
     SDL_GPUTexture* hiddenTarget = nullptr;  // --hidden: the frame's target instead of a swapchain image
     uint32_t hiddenW = 0, hiddenH = 0;
@@ -1431,16 +1431,11 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
 
     const bool server = config.server;
     if (firstScene && !server) {
-        // The page loads only while Chromium is pumped (on this thread).
-        while (ui.active() && !gpu.created()) {
-            ui.pump();
-            SDL_Delay(1);
-        }
         if (!gpu.attachWindow(window))
             return 1;
         boot::mark("gpu attached");
         if (ui.active())
-            ui.attach(gpu.get());  // (its first frame, when it came already, uploaded now)
+            ui.attach(gpu);  // (the page loads now: Ember draws with the device)
         if (gpuprof::init(gpu.get()))  // (sections are timed always: the shadow map's budget)
             gpuprof::setActive(profiler::enabled() && config.profile);
     }
@@ -1669,7 +1664,8 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
             } else {
                 user = asset_library::defaultUserRoot();
             }
-            asset_library::setRoots(std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "content/library", user);
+            asset_library::setRoots({}, user);
+            asset_library::setFalconRootLater([] { return engine_files::contentDir("library"); });
         }
         ei.projectDir = config.projectPath;
         ei.materials = &materials;
@@ -1880,7 +1876,7 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
     // Tests run hidden (--hidden): nothing appears or takes focus; frames render offscreen.
     if (!config.hidden && firstScene) {
         // The editor's and launcher's page draws their title bar: the window waits a little for
-        // its first frame (Chromium started alongside the GPU device) rather than show up blank;
+        // its first frame rather than show up blank;
         // the editor's for one drawn after it took the state (startUi), its panels filled.
         const uint64_t pageDeadline = SDL_GetTicksNS() + 500'000'000ull;
         const uint64_t framesBefore = useEditor && editor.connected() ? ui.stats().frames : 0;
@@ -2647,7 +2643,7 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
             es.characters = animation.characterCount();
             const UiStats us = ui.stats();
             es.uiFrames = us.frames;
-            es.uiCopyMs = us.copyMs;
+            es.uiRenderMs = us.renderMs;
             editor.report(es);
             editorTicks = now;
             editorFrames = 0;
@@ -2705,8 +2701,8 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
             }
             if (ui.active()) {
                 const UiStats us = ui.stats();
-                FX_INFO("ui: %llu page frames (%llu shared-texture; %.3f ms per copy, max %.3f), %llu messages in, %llu out%s",
-                        (unsigned long long)us.frames, (unsigned long long)us.accelerated, us.copyMs, us.copyMaxMs,
+                FX_INFO("ui: %llu page frames (%.3f ms the last update, max %.3f), %llu messages in, %llu out%s",
+                        (unsigned long long)us.frames, us.renderMs, us.renderMaxMs,
                         (unsigned long long)us.messagesIn,
                         (unsigned long long)us.messagesOut, useEditor && !editor.playing() ? " | EDITING" : "");
             }
@@ -2830,6 +2826,10 @@ int runScene(Process& p, const EngineConfig& config, ScenePak& pak, const bool h
 int runSession(const EngineConfig& config)
 {
     boot::mark("main");
+    // The editor's library and prototype textures: falcon.exe's own unpacked on a thread, the
+    // first time a build runs (core/engine_files.h).
+    if (config.editor)
+        engine_files::prepareContent();
     // Boot is ordered so slow steps overlap: the scene file streams in and the GPU device
     // is created on a worker while the window and ECS are set up on the main thread.
     auto firstPak = std::make_unique<ScenePak>();
@@ -2921,22 +2921,22 @@ int runSession(const EngineConfig& config)
     // HTML UI: started below, once the window is there.
     std::string& uiBundle = p.uiBundle;
     uiBundle = config.uiBundle ? config.uiBundle : "";
-    const std::string exeDir = SDL_GetBasePath() ? SDL_GetBasePath() : "";
+    // (falcon.exe's own when it carries them: engine_files.h)
     if (config.editor && uiBundle.empty())
-        uiBundle = exeDir + "falcon-ui/editor";
+        uiBundle = engine_files::uiBundle("editor");
     if (config.launcher && uiBundle.empty())
-        uiBundle = exeDir + "falcon-ui/launcher";
+        uiBundle = engine_files::uiBundle("launcher");
     if (!config.editor && !config.launcher && !config.server && config.projectPath && uiBundle.empty()) {  // a game: the project's UI/Game
         std::error_code ec;
         const std::filesystem::path page = std::filesystem::path(config.projectPath) / "UI" / "Game";
         if (std::filesystem::exists(page / "index.html", ec))
             uiBundle = page.generic_string();
     }
-    // A bare name picks one of the bundles shipped next to the executable (--ui hud).
+    // A bare name picks one of the engine's bundles (--ui hud).
     SDL_PathInfo bundleInfo = {};
-    if (!uiBundle.empty() && !SDL_GetPathInfo(uiBundle.c_str(), &bundleInfo) &&
-        SDL_GetPathInfo((exeDir + "falcon-ui/" + uiBundle).c_str(), &bundleInfo))
-        uiBundle = exeDir + "falcon-ui/" + uiBundle;
+    if (!uiBundle.empty() && !engine_files::isPackedUi(uiBundle) && !SDL_GetPathInfo(uiBundle.c_str(), &bundleInfo))
+        if (std::string engineBundle = engine_files::uiBundle(uiBundle, false); !engineBundle.empty())
+            uiBundle = std::move(engineBundle);
     FrameSettings& settings = p.settings;
     scripts.setRenderSettings(&settings);  // (scripts' Render.Set: put back at the editor's Stop)
     settings.lodPixels = config.lodPixels;
@@ -2967,20 +2967,9 @@ int runSession(const EngineConfig& config)
     settings.post.manualExposure = config.manualExposure;
     if (config.debugMode >= 0)
         settings.debugView = DebugView(SDL_min(uint32_t(config.debugMode), uint32_t(DebugView::Count) - 1));
-    // Hidden runs (tests) get a browser profile of their own: Chromium allows one process per
-    // profile, and cef-lite keeps it under %LOCALAPPDATA% per UI folder, so a test would hand its
-    // window to an editor the user has open (and get no UI). The profile goes at exit.
-    std::filesystem::path& privateProfile = p.privateProfile;
-    if (config.hidden) {
-        std::error_code ec;
-        privateProfile = std::filesystem::temp_directory_path(ec) / ("falcon-hidden-" + std::to_string(currentProcessId()));
-        std::filesystem::create_directories(privateProfile, ec);
-        if (!ec)
-            platform::setEnv("LOCALAPPDATA", platform::utf8(privateProfile));
-    }
-    // The page's Chromium starts now (libcef, its processes, the page: ~0.35 s) while the GPU
-    // device is made on its worker; runScene pumps it while it waits, then gives it the device.
-    if (!uiBundle.empty() && p.ui.init(nullptr, window, uiBundle.c_str()))
+    // The UI's runtime starts now (its system font index builds on a thread) while the GPU device
+    // is made on its worker; runScene gives it the device, and the page loads then.
+    if (!uiBundle.empty() && p.ui.init(window, uiBundle.c_str()))
         boot::mark("ui created");
     p.startTicks = p.lastTicks = p.statsTicks = p.lastFrameTicks = p.editorTicks = SDL_GetTicksNS();
     p.viewport = {0, 0, uint32_t(config.width), uint32_t(config.height)};
@@ -3173,10 +3162,6 @@ int runSession(const EngineConfig& config)
     jobs::shutdown();
     SDL_DestroyWindow(window);
     SDL_Quit();
-    if (!privateProfile.empty()) {  // best effort: a renderer process may still hold a file
-        std::error_code ec;
-        std::filesystem::remove_all(privateProfile, ec);
-    }
     if (p.sim.active() && !p.sim.finish())
         p.exitCode = 1;  // (a replay that came out differently)
     // --net-clients: the host's run includes its clients' (they end when it does, or time out).
@@ -3237,7 +3222,7 @@ int runEngine(const EngineConfig& config)
         GpuDevice::warmUp(config.gpu);
 #if defined(TRACY_ENABLE)
     // Tracy's lifetime is manual (FalconDeps.cmake): its threads, socket and crash handler start
-    // here, in the engine only, not in the cooker or in Chromium's helpers (also falcon.exe).
+    // here, in the engine only, not in the cooker.
     // Its start sleeps 200 ms (timer calibration), so it runs on a thread; zones wait for
     // profiler::tracyUp (core/profile.h). No zone may run outside this window.
     struct TracyLifetime {
@@ -3269,7 +3254,7 @@ int runEngine(const EngineConfig& config)
         // The editor: the prototype textures put into the project once (blockouts' default
         // material), before the cook so it takes them in.
         if (c.editor && !project.prototypeInstalled) {
-            const std::string content = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "content/prototype";
+            const std::string content = engine_files::contentDir("prototype");
             int made = 0;
             if (level::installPrototype(content, project.dir, error, &made)) {
                 project.prototypeInstalled = true;

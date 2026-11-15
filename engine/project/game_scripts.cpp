@@ -4,6 +4,7 @@
 #include "project/project.h"
 
 #include "app/process.h"
+#include "core/bundle.h"
 #include "core/log.h"
 #include "core/platform.h"
 
@@ -504,17 +505,29 @@ void GameBuild::copy()
     fs::create_directories(out, ec);
     // The engine: falcon.exe as <name>.exe (falcon as <name> on Linux and macOS); no debug files, no
     // script builds (the game is native), no material library (a project carries copies of what it
-    // uses: Assets/Falcon).
+    // uses: Assets/Falcon), no freeze reports the editor wrote beside itself.
     const std::string exe = falconExe();
     copyTree(engine, out, [&](const std::string& rel) {
         const std::string ext = fs::path(rel).extension().string();
-        return rel == "scripts" || rel == "shaderc" || rel == "Game" || rel == "steamcmd" || rel == "content/library" || ext == ".pdb" ||
+        return rel == "scripts" || rel == "shaderc" || rel == "Game" || rel == "steamcmd" || rel == "content/library" ||
+               rel == "FreezeReports" || ext == ".pdb" ||
                ext == ".ilk" || ext == ".lib" || ext == ".dbg" ||
                ext == ".exp" ||
                rel == fs::path(exe).filename().generic_string();
     });
     const fs::path gameExe = out / (name_ + platform::executableSuffix());
-    copyFile(exe, gameExe);
+    // A falcon.exe carrying the engine's files (core/bundle.h) gives the game its UI pages, not the
+    // editor's content.
+    if (bundle::Bundle packed; packed.open(exe)) {
+        std::vector<bundle::Source> keep;
+        for (const bundle::File& f : packed.files())
+            if (f.path.starts_with("ui/"))
+                keep.push_back({f.path, {}, &packed, &f});
+        if (std::string error; !bundle::write(exe, gameExe, keep, error) && failed.empty())
+            failed = error;
+    } else {
+        copyFile(exe, gameExe);
+    }
     // Its dedicated server: the same executable, headless (--server; its own arguments pass on).
 #if defined(_WIN32)
     const fs::path server = out / (name_ + " Server.cmd");

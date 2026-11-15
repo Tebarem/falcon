@@ -2,12 +2,12 @@
 # Packages a build's bin/ for this OS, as the release pipeline ships it:
 #   Windows  <NAME>.zip     bin/ (falcon.pdb kept: freeze reports name functions with it)
 #   Linux    <NAME>.tar.gz  bin/ (falcon, its libraries and data; executables stay executable)
-#   macOS    <NAME>.zip     Falcon.app: bin/'s code (Mach-O files, the helper apps, the CEF
-#                           framework) in Contents/MacOS, everything else in Contents/Resources,
-#                           each tree linking to the other's files so bin/'s whole layout is in
-#                           both (executableDir() is Contents/MacOS, SDL_GetBasePath()
-#                           Contents/Resources); an Info.plist; signed ad hoc so it opens
-#                           (Gatekeeper still asks once: it isn't notarized)
+#   macOS    <NAME>.zip     Falcon.app: bin/'s code (Mach-O files) in Contents/MacOS,
+#                           everything else in Contents/Resources, each tree linking to the
+#                           other's files so bin/'s whole layout is in both (executableDir() is
+#                           Contents/MacOS, SDL_GetBasePath() Contents/Resources); an Info.plist;
+#                           signed ad hoc so it opens (Gatekeeper still asks once: it isn't
+#                           notarized)
 # Left out everywhere: linker leftovers (.ilk, .lib, .exp), the NativeAOT symbol files (.dbg) and
 # CMake's own files.
 
@@ -152,7 +152,7 @@ if(CMAKE_HOST_APPLE)
 </plist>
 ")
   # Inside out (codesign --deep is deprecated): the loose libraries and executables, then the
-  # nested bundles (the CEF framework, the Falcon Helper apps), then the app. A
+  # nested bundles (frameworks, apps), then the app. A
   # bundle's own executable is signed with its bundle.
   file(GLOB_RECURSE files LIST_DIRECTORIES false "${code_dir}/*")
   set(bundles)

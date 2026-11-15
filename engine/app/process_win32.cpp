@@ -49,8 +49,7 @@ void appendArgument(std::wstring& line, const std::wstring& arg)
 }
 
 // `program` with `args`, its output going where ours does. The child inherits our stdout and
-// stderr and nothing else (SDL_CreateProcess would hand it every inheritable handle, Chromium's
-// IPC with its helpers included). `errorFile`: its error output goes there instead; with
+// stderr and nothing else (SDL_CreateProcess would hand it every inheritable handle). `errorFile`: its error output goes there instead; with
 // `allToFile`, its standard output too. A program without a path is searched for (PATH).
 HANDLE spawnProgram(const std::string& program, const std::vector<std::string>& args, const std::string& errorFile = {},
                     bool allToFile = false)

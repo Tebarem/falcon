@@ -44,6 +44,10 @@ double msSinceProcessStart();
 
 // The user's Documents folder (empty if unknown).
 std::filesystem::path documentsDir();
+// Where Falcon keeps what it can make again, per user and machine (empty if unknown):
+// %LOCALAPPDATA%/Falcon, ~/Library/Caches/Falcon, $XDG_CACHE_HOME/falcon or ~/.cache/falcon
+// ($FALCON_CACHE_DIR instead when set: tests).
+std::filesystem::path localCacheDir();
 
 // Into the Recycle Bin / Trash, undoable from there. False: nothing or not everything moved.
 bool moveToTrash(const std::vector<std::filesystem::path>& paths);

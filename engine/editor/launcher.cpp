@@ -179,7 +179,7 @@ void Launcher::handle(const Json& m)
         sendState();
     } else if (type == "test.mouse" || type == "test.probe") {
         // Real input: the page is asked where "at" is (launcher.probe), then SDL events go
-        // through the UI layer and cef-lite to it, aimed at (fx, fy) of the rect. test.probe
+        // through the UI layer and Ember to it, aimed at (fx, fy) of the rect. test.probe
         // only asks (test.expect value / focused / dialog check the answer).
         if (type == "test.mouse")
             mouse_ = m.dump(0);

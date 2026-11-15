@@ -1,4 +1,4 @@
-# SDL_GPU notes (SDL 3.4.18 + cef-lite patch)
+# SDL_GPU notes (SDL 3.4.18 + the external-texture patch)
 
 Facts verified against SDL source or measured on hardware (AMD RX 9060 XT, Windows 11).
 The renderer design depends on them.
@@ -108,4 +108,4 @@ Not yet run on Apple hardware: compiled by Apple's `metal` in CI (`metal-shaders
 - Tracy's static init adds ~220 ms before `main` in `profile` builds only. Shipping builds
   have no Tracy.
 - Device creation starts on a worker thread right after `SDL_Init`. Later boot work
-  (asset mapping, CEF subprocess, CLR) belongs inside that window, where it costs nothing.
+  (asset mapping, the UI runtime, CLR) belongs inside that window, where it costs nothing.

@@ -180,6 +180,21 @@ double msSinceProcessStart()
 #endif
 }
 
+fs::path localCacheDir()
+{
+    if (const char* dir = std::getenv("FALCON_CACHE_DIR"); dir && *dir)
+        return fs::path(dir);
+#if defined(__APPLE__)
+    const fs::path h = home();
+    return h.empty() ? fs::path() : h / "Library" / "Caches" / "Falcon";
+#else
+    if (const char* cache = std::getenv("XDG_CACHE_HOME"); cache && *cache == '/')
+        return fs::path(cache) / "falcon";
+    const fs::path h = home();
+    return h.empty() ? fs::path() : h / ".cache" / "falcon";
+#endif
+}
+
 fs::path documentsDir()
 {
     const fs::path h = home();

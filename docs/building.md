@@ -11,15 +11,13 @@ git submodule update --init --depth 1
 ```
 
 On Linux and macOS (Apple silicon, macOS 14+): CMake 3.25+, Ninja, a C++20 compiler (gcc 13+,
-clang 17+ or Xcode 16+), the .NET 10 SDK and, on Linux, SDL's X11/Wayland/audio development
-packages (the list is in `.github/workflows/build.yml`). `build.sh` fetches Slang into
-`~/slang-<version>-<os>-<arch>` and CEF (the editor's browser) into `external/cef-lite/vendor/cef`,
-and builds the `linux` or `macos` preset into `build/<preset>/`. Steam Audio and the Steamworks SDK
+clang 17+ or Xcode 16+), a C23 compiler with `#embed` for the UI (gcc 15+ or clang 19+: Ubuntu's
+`clang-19`, Homebrew's `llvm` on macOS), the .NET 10 SDK and, on Linux, SDL's X11/Wayland/audio
+development packages (the list is in `.github/workflows/build.yml`). `build.sh` fetches Slang into
+`~/slang-<version>-<os>-<arch>` and builds the `linux` or `macos` preset into `build/<preset>/`. Steam Audio and the Steamworks SDK
 come from `cmake -DDEP=steamaudio -P scripts/fetch.cmake` and
 `cmake -DDEP=steamworks -DZIP=steamworks_sdk_165.zip -P scripts/fetch.cmake`. Not there yet: QUIC
-(MsQuic) and AMD FSR / NVIDIA DLSS (Direct3D 12 only). On macOS Chromium's processes run from
-`Falcon Helper.app` and its variants beside `falcon`, and the framework is in
-`bin/cef/Chromium Embedded Framework.framework`.
+(MsQuic) and AMD FSR / NVIDIA DLSS (Direct3D 12 only).
 
 ```bash
 git submodule update --init --depth 1
@@ -40,22 +38,46 @@ the editor (`--editor`) and the cooker (`falcon cook ...`); `falcon --help` list
 `bin/` holds:
 
 ```
-falcon.exe      the game, the editor, the cooker, and Chromium's helper processes
-cef/            the CEF runtime (libcef.dll and Chromium's data; CEF can't be linked statically)
+falcon.exe      the game, the editor and the cooker (with SDL and the UI's Ember linked in)
 fsr/            AMD's FSR DLLs and license (when fetched; see below)
 dlss/           the DLSS plugin, NVIDIA's DLSS DLL and license (when fetched; see below)
 audio/          Valve's Steam Audio (phonon.dll) and its third-party licences (when fetched; see below)
-falcon-ui/      the HTML UI bundles (launcher, editor, hud)
-shaders/        cef-lite's compositing shaders
+falcon-ui/      the HTML UI bundles (launcher, editor, hud), but in a release build: see below
+content/        the engine's content (the material library, the prototype textures), likewise
 scripts/        the C# scripts
 ```
+
+A Windows release build packs `falcon-ui/` and `content/` into `falcon.exe` instead
+(`FALCON_EMBED_DATA`, on by default there; `-DFALCON_EMBED_DATA=ON` or `OFF` for any build). After
+each link, or when `ui/` or `content/` change, `tools/pack` (`falcon_pack`, in `tools/`) appends
+their files to the executable, after the program, where the loader doesn't look
+(`engine/core/bundle.h` has the layout), and removes the two folders from `bin/`. falcon.exe is then
+about 267 MB: the program is 24 MB and the content 243 MB. `falcon_pack <exe> --list` shows what an
+executable carries.
+- **The pages** are read from the executable as they load: the editor's page is
+  `falcon://ui/editor/index.html`, served by the UI layer (`engine/core/engine_files.h`). There is
+  nothing to watch, so a packed page doesn't reload live; debug and profile builds keep the folder
+  for that.
+- **The content** is copied into projects by ordinary file code, so the editor unpacks it once
+  into the user's cache: `%LOCALAPPDATA%/Falcon/Content/<hash of the content>/`
+  (`~/.cache/falcon` on Linux, `~/Library/Caches/Falcon` on macOS, `FALCON_CACHE_DIR` for tests).
+  It unpacks on a thread from the editor's start, in about 0.7 s the first time a version runs, and
+  other versions' copies there are removed. The material library waits for it when first listed.
+- **A game build** (File > Build Game) gets the pages in its executable but not the content: its
+  `<name>.exe` is about 24 MB.
+- Test: `editor_packed` packs a copy of falcon.exe on its own in a folder, loads the editor's page
+  from it and lists the Falcon materials it unpacked.
+
+The other folders stay files: Windows loads a DLL only from a file, the vendors' DLLs are signed or
+licensed as they are, and `shaderc/` and `scripts/` are programs and assemblies other processes run.
 
 Build-time tools (`falcon_shaderc`, `falcon_schemagen`) and the test tools `falcon_imgdiff` and
 `falcon_wavdiff` go to `tools/`, not `bin/`.
 
 The first configure copies SDL into the build tree and applies four patches there; the
 submodule itself stays pristine:
-- cef-lite's external-texture patch;
+- `cmake/patches/sdl3-falcon-external-texture.patch` (from cef-lite, which the UI used to be:
+  the patches below were made on top of it);
 - `cmake/patches/sdl3-falcon-timestamps.patch`: GPU timestamp queries for D3D12 and Vulkan
   (`SDL3/SDL_falcon_timestamps.h`), which the profiler uses. This is a local patch, not meant
   for upstream SDL;
@@ -87,18 +109,16 @@ headers, the Windows x64 `phonon.dll` (53 MB) with its import library, and `THIR
 stages the DLL and `THIRDPARTY.md` in `bin/audio/`. `phonon.dll` is delay-loaded when audio
 starts, so falcon.exe runs without it and pans sounds instead of using the HRTF.
 
-The UI (editor and in-game HTML) needs the CEF binary distribution in
-`external/cef-lite/vendor/cef` (`powershell -File external/cef-lite/scripts/fetch-cef.ps1`).
-Without it, or with `-DFALCON_UI=OFF`, the engine builds without UI. **cef-lite is GPL-3.0,
-so a build with the UI is GPL-licensed.** `FALCON_UI=OFF` gives a build without GPL code.
-Our changes to cef-lite live in `cmake/patches/` and are applied to the submodule's working
-tree at configure time (once):
-- `cef-lite-click-count` passes mouse click counts to Chromium, so double-click and word/line
-  selection work.
-- `cef-lite-single-exe` makes the host executable CEF's helper process as well
-  (`cef_lite_run_subprocess`), in place of CEF's `bootstrap.exe` and a subprocess DLL. Chromium
-  relaunches `falcon.exe --type=...`, and `main` hands those runs to CEF before anything else
-  starts. The patch also finds Chromium's resources next to `libcef.dll` (in `cef/`).
+The UI (the launcher, the editor and in-game HTML) is Ember (`external/ember`,
+[Tebarem/ember](https://github.com/Tebarem/ember), zlib), an HTML, CSS and JavaScript engine that
+draws with SDL_GPU on the engine's own device. It is C23 (`#embed`), which MSVC can't compile, so
+`cmake/FalconUi.cmake` builds it as its own CMake project with LLVM's clang for the MSVC ABI (from
+`C:/Program Files/LLVM`; `winget install LLVM.LLVM`, 19 or newer) against the engine's patched SDL,
+with the static C runtime, and links the static library into falcon.exe: one SDL in the process.
+`-DFALCON_EMBER_DIR=<checkout>` builds another Ember tree (to work on Ember beside Falcon). Without
+the submodule, or with `-DFALCON_UI=OFF`, the engine builds without UI. The configure step fetches
+the three of Ember's own submodules its library needs (SDL_image, SheenBidi, kb) when they are
+missing; the others are for its tests and networking.
 
 The level tools use four more submodules, built static with the engine (`cmake/FalconDeps.cmake`):
 - Manifold 3.5.4 (Apache-2.0): booleans for cut volumes. Built serial, without its 2D

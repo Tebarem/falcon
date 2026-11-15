@@ -146,7 +146,7 @@ struct EditorFrameStats {
     uint32_t objects = 0, clusters = 0, vsmPages = 0, vtResident = 0, vtCapacity = 0, bodies = 0, characters = 0;
     double triangles = 0.0;
     uint64_t uiFrames = 0;
-    double uiCopyMs = 0.0;
+    double uiRenderMs = 0.0;
 };
 
 class EditorBridge : public LevelEditorLink {
@@ -237,8 +237,7 @@ public:
     void extract(std::vector<InstanceUpdate>& rows);
 
     // Tests: page messages (a JSON array) applied one per frame from 0.5 s after the page connected
-    // (as a person would: heavy page updates while its first frames are in flight can wedge
-    // CEF 151's off-screen renderer),
+    // (as a person would),
     // plus test steps: {"type":"test.wait","frames":N | "ms":T}, {"type":"test.pick","x":0.5,"y":0.5}
     // (a GPU pick at a viewport fraction), {"type":"test.ping","n":N} (the page answers
     // editor.pong and repaints: proves it is alive, handling messages and painting),
@@ -928,6 +927,7 @@ private:
     bool scriptWaitPreviews_ = false;
     bool scriptWaitGi_ = false;  // until the GI probes all sleep
     uint32_t scriptWaitProbe_ = 0;  // frames left for the page to answer a test.probe (the script holds)
+    bool scriptLockstep_ = true;    // while a script runs, the page keeps up with each frame (test.lockstep)
     uint64_t scriptWaitUntilNs_ = 0;
     uint64_t connectedNs_ = 0;
     uint32_t steps_ = 0;

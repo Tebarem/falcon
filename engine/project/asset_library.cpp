@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <mutex>
 #include <unordered_map>
 
 namespace fx::asset_library {
@@ -19,6 +20,8 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string falcon_, user_;
+std::function<std::string()> findFalcon_;  // (setFalconRootLater: called once, then falcon_)
+std::mutex falconMutex_;
 
 fs::path toPath(const std::string& utf8) { return fs::path(std::u8string(utf8.begin(), utf8.end())); }
 std::string fromPath(const fs::path& p)
@@ -85,11 +88,28 @@ bool copyIn(const std::string& projectDir, const std::string& path, std::string&
 
 void setRoots(const std::string& falcon, const std::string& user)
 {
-    falcon_ = trimmed(falcon);
+    {
+        std::lock_guard lock(falconMutex_);
+        findFalcon_ = nullptr;
+        falcon_ = trimmed(falcon);
+    }
     user_ = trimmed(user);
 }
 
-const std::string& falconRoot() { return falcon_; }
+void setFalconRootLater(std::function<std::string()> find)
+{
+    std::lock_guard lock(falconMutex_);
+    findFalcon_ = std::move(find);
+    falcon_.clear();
+}
+
+const std::string& falconRoot()
+{
+    std::lock_guard lock(falconMutex_);
+    if (findFalcon_)
+        falcon_ = trimmed(std::exchange(findFalcon_, nullptr)());
+    return falcon_;
+}
 const std::string& userRoot() { return user_; }
 
 std::string defaultUserRoot()
@@ -106,7 +126,7 @@ std::string absolute(const std::string& path)
     const bool falcon = under(path, kFalcon);
     if (!falcon && !under(path, kUser))
         return {};
-    const std::string& root = falcon ? falcon_ : user_;
+    const std::string& root = falcon ? falconRoot() : user_;
     const size_t n = std::strlen(falcon ? kFalcon : kUser);
     const fs::path rel = toPath(path.size() > n ? path.substr(n + 1) : std::string()).lexically_normal();
     if (root.empty() || rel.is_absolute() || rel.has_root_name() || (!rel.empty() && fromPath(*rel.begin()) == ".."))

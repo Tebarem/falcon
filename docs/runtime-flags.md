@@ -100,7 +100,7 @@
 | `--terrain-scatter mesh[:density[:budget]],...` | a scatter layer per entry on a `--terrain`: a mesh, or a preset's name (`Boulders`, `Scree`, `Cliff rocks`, `Spires and arches`); or a JSON list of layers, as in `terrain.json` |
 | `--terrain-generate <preset \| JSON>` | run a generator stack (a preset's name, e.g. `Mountains`, or a stack as in `terrain.json`) over the terrain at start-up |
 | `--camera x,y,z,tx,ty,tz` | the start camera's position and the point it looks at |
-| `-- <switches>` | the rest of the command line is for Chromium (the engine ignores it) |
+| `-- <switches>` | the rest of the command line is ignored |
 | `--gpu-debug` | SDL_GPU debug mode / API validation |
 | `--no-audio` | no sound at all |
 | `--audio-null` | no playback device: mix from the frame clock (as `--hidden` does) |

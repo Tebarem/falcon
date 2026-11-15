@@ -10,16 +10,15 @@ window.addEventListener('error', e => {
   }
 });
 
-try {  // the whole page: report what breaks it (CEF masks script errors as "Script error.")
+try {  // the whole page: report what breaks it (as ui.error)
 
 // ---------------------------------------------------------------- basics
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-// CEF 151's off-screen renderer crashes (a CHECK, exit 0xC0000409; the page goes dead) when the
-// page creates a <button> at runtime or gives a <label> a title. So: clickable things are
-// <span role="button">, and tooltips go on a wrapping element, never on a <label>.
+// The page's conventions: clickable things made at runtime are <span role="button">, and tooltips
+// go on a wrapping element, never on a <label>.
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
@@ -47,7 +46,7 @@ function setText(node, text) {
   if (node.textContent !== text) node.textContent = text;  // unchanged text: no repaint
 }
 
-// Page preferences live in the engine's editor prefs (cef-lite runs without a disk cache, so
+// Page preferences live in the engine's editor prefs (the page keeps no storage between runs, so
 // localStorage would not survive a restart). They arrive with editor.prefs on connect.
 let pagePrefs = {};
 let prefsLoaded = false;  // (none with --no-prefs: tests)
@@ -117,7 +116,7 @@ function capturePointer(on) {
 }
 document.addEventListener('focusin', e => { if (isTextField(e.target)) send('ui.input', { keyboard: true }); });
 document.addEventListener('focusout', e => { if (isTextField(e.target)) send('ui.input', { keyboard: false }); });
-// Double-click selects a whole field (Chromium would select one word), ready to type over.
+// Double-click selects a whole field (a browser would select one word), ready to type over.
 document.addEventListener('dblclick', e => {
   const t = e.target;
   if (t.tagName === 'INPUT' && isTextField(t)) t.select();
@@ -320,8 +319,7 @@ function menuBelow(button, items) {
   openMenu(items, r.left, r.bottom + 2, button);
 }
 
-// A <select>'s list is a native popup widget, which the off-screen browser never draws (cef-lite
-// has no popup surface), so every select opens this page's menu instead: a pick sets its value
+// Every <select> opens this page's menu instead of its own list (styled like the other menus): a pick sets its value
 // and fires 'change' as the native list would. The keyboard (arrows) still works natively.
 document.addEventListener('mousedown', e => {
   const sel = e.button === 0 && e.target.closest ? e.target.closest('select') : null;
@@ -1394,7 +1392,7 @@ new MutationObserver(records => {
       }
 }).observe(document.body, { childList: true, subtree: true });
 
-// A tooltip on a row (on the row, not its label: see the CEF notes at the top).
+// A tooltip on a row (on the row, not its label: see the conventions at the top).
 function tip(node, text) {
   node.setAttribute('title', text);
   return node;
@@ -3732,11 +3730,11 @@ function onState(p) {
   applyPlayLayout();
 }
 
-// window.falcon is provided (read-only) by cef-lite; a plain browser gets a stand-in.
+// window.falcon is the engine's channel (read-only, Ember's host channel); a plain browser gets a
+// stand-in.
 if (!window.falcon) window.falcon = {};
-// cef-lite calls onMessage straight from its renderer-side IPC handler, where exceptions vanish
-// silently. Messages are queued and handled in order from a normal task instead (errors are
-// reported as ui.error).
+// Messages are queued and handled in order from a task of their own (errors are reported as
+// ui.error).
 const inbox = [];
 let inboxQueued = false;
 window.falcon.onMessage = message => {
@@ -3875,7 +3873,7 @@ function handleEngineMessage(p) {
           return r.top >= 0 && r.bottom <= window.innerHeight + 0.5; })(),
         dialogScrolls: (() => { const b = $('.modal.dialog .dialog-body'); return !!b && b.scrollHeight > b.clientHeight + 1; })(),
         focus: a && a !== document.body ? a.tagName.toLowerCase() + (a.type ? ':' + a.type : '') : '',
-        selection: field ? a.value.slice(a.selectionStart, a.selectionEnd) : String(window.getSelection()),
+        selection: field ? a.value.slice(a.selectionStart, a.selectionEnd) : window.getSelection ? String(window.getSelection()) : '',
         value: field ? a.value : '',
         selectionAll: !!field && a.value !== '' && a.selectionStart === 0 && a.selectionEnd === a.value.length,
         giIntensity: state.settings ? state.settings.giIntensity : 0,

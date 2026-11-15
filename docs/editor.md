@@ -83,8 +83,8 @@ camera start from.
 Quick start: run `falcon.exe`, then **New project** and **Create**. The editor opens on the
 empty Main scene. In the Terrain tab, use **New Terrain**, then **Generate**, then **Save**.
 
-- **Opening:** the launcher starts `falcon.exe --editor --project <dir>` and quits. Chromium
-  initialises once per process, so each session is its own process.
+- **Opening:** the launcher starts `falcon.exe --editor --project <dir>` and quits: each session is
+  its own process.
 - **In the editor (File menu):**
   - New Scene… (cooks `Scenes/<Name>.fpak` and adds it to the project)
   - Open Scene (the project's scenes)
@@ -207,7 +207,8 @@ empty Main scene. In the Terrain tab, use **New Terrain**, then **Generate**, th
       its UVs stay one tile a metre.
   - **Library** (`engine/project/asset_library.*`): materials, textures and models every project
     sees, in the panel's Library section, shared by them all.
-    - **Falcon:** 30 CC0 materials shipped with the engine (`content/library`, from
+    - **Falcon:** 30 CC0 materials shipped with the engine (`content/library`; packed into a
+      release falcon.exe and unpacked into the user's cache, see building.md; from
       [Poly Haven](https://polyhaven.com), `License.txt`): wood, concrete, plaster, brick, metal,
       tiles, ground and roofing, each with its colour, normal, AO / roughness / metal and
       height maps at 2K, its real-world size and a parallax depth for its relief. Only the bare
@@ -360,26 +361,41 @@ Sample sources go in `samples/_src/` (git-ignored): Khronos glTF-Sample-Assets
 
 ## UI and editor
 
-The editor shell and in-game UI are HTML pages rendered by Chromium through cef-lite
-(Tebarem/cef-lite, GPL-3.0). cef-lite composites them over the frame with SDL_GPU.
+The editor shell and in-game UI are HTML pages rendered by Ember (`external/ember`,
+Tebarem/ember, zlib), an HTML, CSS and JavaScript engine that draws with SDL_GPU on the engine's
+own device, linked into falcon.exe.
 
 ```powershell
 ./build/release/bin/falcon.exe --scene samples/cooked/sponza.fpak --editor
-./build/release/bin/falcon.exe --scene samples/cooked/sponza.fpak --script build/release/bin/scripts/jit/Sandbox.dll --ui hud
+./build/release/bin/falcon.exe --scene samples/cooked/sponza.fpak --script build/release/sample_scripts/jit/Sandbox.dll --ui hud
 ```
 
 - **Layer** (`engine/ui/ui_layer.*`):
-  - Chromium runs off-screen in its own processes (`falcon.exe --type=...`). `libcef.dll` is
-    delay-loaded from `cef/` (`runtime/cef_runtime.cpp`) when the UI is first created. Tracy
-    starts in `runEngine` only, so the helpers don't each run a profiler.
-  - Each frame, the page is drawn in one render pass on top of the swapchain image, after the
-    scene blit.
-  - Chromium renders the page on the GPU and reads it back; the engine uploads the parts that
-    changed (every backend). cef-lite's D3D12 shared-texture import is off: under sustained
-    repaints (a CSS animation at the windowless frame rate) it hung the device
-    (`DXGI_ERROR_DEVICE_HUNG`), and it stalled the main thread on every page frame.
+  - The page is an offscreen Ember view in the same process, on a thread of its own ("UI" in
+    the profiler), which owns Ember's runtime and view. It updates the page at the display's
+    rate, and sooner (half a display frame) when input or messages wait: the page's tasks,
+    timers and messages run and, when something changed, the changed parts are redrawn into the
+    view's texture (a command buffer of the UI thread's, submitted there). Only then is the
+    texture published; each frame the main thread blends the last published one over the
+    swapchain image after the scene blit (`shaders/ui_composite.slang`: premultiplied alpha, one
+    texel a pixel). The main thread never waits on page work. The page's canvas is transparent:
+    the scene shows where it paints nothing.
   - Pages talk to the engine with `window.falcon.postMessage(json)` and
-    `window.falcon.onMessage`.
+    `window.falcon.onMessage` (Ember's host channel). Messages to the page run as page tasks, in
+    order, in the page's next update. What the page says reaches the engine in order, in the
+    `pump()` after the update that said it.
+  - SDL events are routed on the main thread (the game or the page); the page's are copied into
+    the UI thread's queue, scaled from window pixels to CSS pixels, with the modifiers held when
+    they were routed. The page is window pixels / display scale CSS pixels, drawn at the display
+    scale. A resize replaces the view's texture: a copy of the last picture is shown until the
+    page has drawn at the new size.
+  - Editor test scripts count frames, so while one runs the page is in lockstep: each `pump()`
+    first waits (the `UiLayer::lockstep wait` zone) until the page has taken in what was queued
+    for it and updated, as when the page updated on the main thread. A script's
+    `{"type": "test.lockstep", "on": false}` turns that off, e.g. to measure the main thread.
+  - File URLs: the page may read its bundle and the project's folder (`emb_runtime_allow_path`).
+  - Iframes (editor windows, Inspector drawers, a game's UI) are nested Ember documents with their
+    own scripts; they talk to the editor page with `postMessage`.
   - Messages handled by the layer itself:
     - `ui.layout {viewport, exclude}` gives the part of the window the game owns. The scene
       renders there at that size, and pointer input inside it goes to the game, except over
@@ -390,16 +406,16 @@ The editor shell and in-game UI are HTML pages rendered by Chromium through cef-
   - **Live reload:** the layer watches its page's folder (`core/dir_watch.*`: Windows' change
     notifications, settled for 150 ms). When a file there changes (saved in an editor, copied over),
     the page reloads. That covers the editor (`falcon-ui/editor/`), the launcher, the HUD and a
-    game's `UI/Game`. A reloaded editor page says `editor.ready` again and gets the whole state
+    game's `UI/Game`; not pages a release falcon.exe carries (`falcon://ui/...`, building.md). A reloaded editor page says `editor.ready` again and gets the whole state
     back: prefs, editor code's tools, the scene and settings, and the game's UI frame while playing.
   - Keys reach both the page and the game unless a text field has focus. A drag keeps going
     to whichever side it started on (the camera, a gizmo, a splitter) until the button is
     released.
 - **Boot:**
-  - `libcef.dll` is delay-loaded. Runs without `--editor` / `--ui` never load it.
-  - The UI is created right after the first frame is submitted (~0.2 s for libcef and the
-    browser process), so it never delays the first present.
-  - The page appears ~0.4 s later. Before that, frames render without it.
+  - Ember's runtime starts with the window, on the UI thread (its font index builds on a thread
+    of Ember's). The page loads there once the GPU device exists, since Ember draws with it,
+    while the main thread goes on loading the scene; the window shows with the page's first
+    frame.
 - **Editor** (`--editor`): a Unity 6 style shell. The page is `ui/editor`; the engine side is
   `engine/editor/editor_bridge.*` (state and commands) and `engine/editor/scene_view.*` (the
   viewport).
@@ -582,38 +598,18 @@ The editor shell and in-game UI are HTML pages rendered by Chromium through cef-
   - **Project:** the files next to the scene.
   - Not yet: multi-select, adding components, multiple scenes, duplicating cooked meshes,
     colliders on created shapes, the cooked glTF hierarchy (the cooker flattens it).
-- **In-game UI** (`--ui <dir>`; a bare name picks a bundle shipped in `bin/falcon-ui/`):
+- **In-game UI** (`--ui <dir>`; a bare name picks one of the engine's bundles: in falcon.exe when it
+  carries them, else in `bin/falcon-ui/`):
   - Scripts use `Ui.Send(json)` and `Ui.TryReceive(out json)`.
   - The Sandbox HUD (`ui/hud`) shows live counts four times a second. Tab opens a menu whose
     buttons send `hud.fountain` / `hud.kick` back to the game.
 - **Cost:**
-  - Pumping the browser and handling messages: ~0.05 ms per frame.
-  - Uploading a changed page frame (the readback): ~1 ms. Keep pages static between
-    updates. Unchanged text should not be re-set, because a repaint only happens when the page
-    changes.
-  - The D3D12 shared-texture import (off, above) waited on the GPU after copying each frame
-    (Chromium may reuse its texture once the paint callback returns), which drained the queued
-    frames: 4 ms on average (14 ms max) for the HUD, up to ~20 ms in the editor. Bringing it
-    back needs cef-lite to keep the copy in flight until the texture is released (or a
-    GPU-side fence with Chromium), and the hang above understood.
-  - **Renderer crashes (fixed):** the page's renderer used to die (exit code 0xC0000409, the
-    page stops painting and answering) whenever its JavaScript got busy for a few
-    milliseconds.
-    - Crash dumps showed fast-fail code 57 (`FAST_FAIL_CONTROL_INVALID_RETURN_ADDRESS`): a CET
-      shadow-stack violation.
-    - The renderer ran from CEF's `bootstrap.exe`, which is marked CET compatible. cef-lite
-      runs Chromium without its sandbox, and the sandbox is what normally turns CET off for
-      renderers.
-    - With CET enforced, V8 is killed as soon as it swaps optimized code under a running
-      function.
-    - The build cleared that flag on the copied bootstrap. Renderers are now `falcon.exe`,
-      which is not marked CET compatible; it must stay that way.
-    - The older workarounds were blamed on specific triggers: clickable elements built as
-      `<span role="button">` instead of runtime `<button>`s, tooltips on wrapping elements
-      rather than `<label>`s, and scripted tests waiting 0.5 s after the page connects. Those
-      triggers were most likely just moments when the page was busy. The workarounds stay until
-      that is checked.
-    - The UI layer delivers engine messages at most every 16 ms (batched as `ui.batch`), since
-      each delivery makes Chromium begin a frame.
-    - The editor test pings the page (`test.ping` and `editor.pong`), so a dead page fails the
-      run.
+  - Ember's page update (`ui:` log line, profiler counters "Page update", the `UiLayer::render`
+    zone on the UI thread): its tasks and messages, and the redraw of what changed into the
+    texture. It costs the UI thread, not the frame (the main thread's `UiLayer::pump` only takes
+    the page's messages), but a slow update delays what the page shows and says. Keep pages
+    static between updates: unchanged text should not be re-set, because a redraw only happens
+    when the page changes.
+  - The composite is one full-screen triangle a frame.
+  - The editor test pings the page (`test.ping` and `editor.pong`), so a dead page fails the
+    run.

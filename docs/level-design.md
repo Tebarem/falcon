@@ -154,7 +154,8 @@ reads its sizes at a glance. The grid is [Kenney's Prototype Textures](https://w
 six colours (dark, light, green, orange, purple, red) of thirteen 1 m patterns. They are grids,
 marks, quarters, diagonals, crosses, checkers, tiles, and stairs, door and window guides.
 - **Where they come from:** the engine ships them in `content/prototype/<Colour>/<pattern>.png`
-  (`bin/content` next to `falcon.exe`; Kenney numbers each colour's files differently, so here they
+  (`bin/content` next to `falcon.exe`, or packed into a release falcon.exe and unpacked into the
+  user's cache; Kenney numbers each colour's files differently, so here they
   are named by pattern). The licence is beside them.
 - **Into each project, once:** the editor puts them into a project when it opens it, before the
   scene is cooked (`level/prototype_materials.*`, `installPrototype`).

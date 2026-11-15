@@ -14,6 +14,7 @@
 // files). A copy made before is used as it is, so the project's own edits to it stay. Projects
 // cook and ship only their copies; game builds leave bin/content/library out.
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,9 @@ constexpr const char* kUser = "@library";
 
 // Where the two are (absolute, '/' separated; empty: none). The editor sets them as it starts.
 void setRoots(const std::string& falcon, const std::string& user);
+// Falcon's found when first needed instead (core/engine_files.h: falcon.exe's own may still be
+// unpacking as the editor starts).
+void setFalconRootLater(std::function<std::string()> find);
 const std::string& falconRoot();
 const std::string& userRoot();
 // Documents/Falcon Library.

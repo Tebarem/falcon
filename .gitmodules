@@ -1,6 +1,6 @@
-[submodule "external/cef-lite"]
-	path = external/cef-lite
-	url = https://github.com/Tebarem/cef-lite
+[submodule "external/ember"]
+	path = external/ember
+	url = https://github.com/Tebarem/ember
 [submodule "external/sdl-src/SDL"]
 	path = external/sdl-src/SDL
 	url = https://github.com/libsdl-org/SDL

@@ -104,6 +104,18 @@ std::filesystem::path documentsDir()
     return out;
 }
 
+std::filesystem::path localCacheDir()
+{
+    if (wchar_t dir[MAX_PATH]; GetEnvironmentVariableW(L"FALCON_CACHE_DIR", dir, MAX_PATH) - 1u < MAX_PATH - 1u)
+        return dir;
+    PWSTR local = nullptr;
+    std::filesystem::path out;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &local)) && local)
+        out = std::filesystem::path(local) / L"Falcon";
+    CoTaskMemFree(local);
+    return out;
+}
+
 bool moveToTrash(const std::vector<std::filesystem::path>& paths)
 {
     if (paths.empty())

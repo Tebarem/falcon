@@ -50,7 +50,7 @@ const Profiler = (() => {
 
   // Dynamic styles go on after the element exists (never as el()'s style prop): an inline
   // style attribute is blocked by the page's CSP, which leaves elements like the colour swatches
-  // empty, and that is one of the layouts that crash CEF 151's renderer.
+  // empty.
   const css = (node, props) => { Object.assign(node.style, props); return node; };
   const nameOf = id => (S.names[id] && S.names[id].name) || `#${id}`;
   const catOf = id => (S.names[id] && S.names[id].cat) || 0;
@@ -277,8 +277,8 @@ const Profiler = (() => {
   function buildCharts() {
     const mods = ['CPU', 'GPU', ...counterModules()].filter(m => S.modules[m]);
     R.charts.replaceChildren(...mods.map(m => {
-      // Title and legend are drawn into the canvas too: HTML over a canvas that redraws every
-      // 100 ms crashes CEF 151's renderer (exit 0xC0000409), so each chart is canvas only.
+      // Title and legend are drawn into the canvas too: each chart is one canvas, redrawn every
+      // 100 ms.
       const canvas = el('canvas');
       const box = el('div', { class: 'pchart', 'data-module': m }, canvas);
       box.legendHits = [];

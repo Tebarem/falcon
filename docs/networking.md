@@ -85,7 +85,7 @@ frame times from 4 to 40 ms. Tests use it.
 - **Checking a re-run tick:** each tick simulated again is compared with the first time's. The first difference is logged with the object, its name, and which component's `[Sync]` members or transform differed.
 - **Not restored:** state a component keeps outside `[Sync]` members is its own.
 - **`--sim-rollback K`:** every frame, the game is rolled back K ticks and simulated forward again. It exits with code 1 if any tick comes out differently.
-- **Arena** (`managed/Arena`, `bin/scripts/arena/{jit,aot}/Arena.dll`) is the networked sample game:
+- **Arena** (`managed/Arena`, `sample_scripts/arena/{jit,aot}/Arena.dll` in the build folder) is the networked sample game:
   - six players with CharacterMovers (player 0 on the keyboard and mouse, the others bots choosing with `Sim.Random`);
   - `[Sync]` health, score, aim and cooldowns;
   - projectiles spawned and destroyed in ticks, hitting players.

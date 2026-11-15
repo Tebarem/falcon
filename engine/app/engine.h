@@ -176,7 +176,7 @@ struct EngineConfig {
 // --no-audio, --audio-null, --audio-capture, --audio-tone, --audio-play, --audio-spatializer, --audio-no-air, --audio-reflections,
 // --sim-record, --sim-replay, --sim-input-demo, --sim-rollback, --host, --connect, --net-sim,
 // --net-clients, --net-verify, --net-child, --server, --max-players, --password. With no
-// arguments at all: the launcher. Everything after "--" is left to Chromium. Returns false on unknown arguments.
+// arguments at all: the launcher. Everything after "--" is ignored. Returns false on unknown arguments.
 bool parseEngineArgs(int argc, char** argv, EngineConfig& config);
 
 int runEngine(const EngineConfig& config);

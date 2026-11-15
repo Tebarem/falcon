@@ -70,11 +70,8 @@ jobs:
             external/dlss
             external/msquic
             external/steamaudio
-            external/cef-lite/vendor/cef
-            !external/cef-lite/vendor/cef/RelWithDebInfo
-            !external/cef-lite/vendor/cef/MinSizeRel
             ~/slang-${{ env.SLANG_VERSION }}-windows-x86_64
-          key: sdks-windows-3-slang${{ env.SLANG_VERSION }}-${{ hashFiles('scripts/fetch-*.ps1', 'external/cef-lite/scripts/fetch-cef.ps1') }}
+          key: sdks-windows-4-slang${{ env.SLANG_VERSION }}-${{ hashFiles('scripts/fetch-*.ps1') }}
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -99,8 +96,6 @@ jobs:
           ./scripts/fetch-dlss.ps1
           ./scripts/fetch-msquic.ps1
           ./scripts/fetch-steamaudio.ps1
-          ./external/cef-lite/scripts/fetch-cef.ps1
-          Remove-Item external/cef-lite/vendor/*.tar.bz2
 
       - name: Steamworks SDK
         if: env.HAS_STEAMWORKS == 'true'
@@ -181,8 +176,9 @@ jobs:
       - name: Packages
         run: |
           sudo apt-get update -q
-          # Ninja; what SDL builds its video, audio and input back ends against.
-          sudo apt-get install -y -q ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev             libxfixes-dev libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols             libdecor-0-dev libegl-dev libgl-dev libvulkan-dev libdrm-dev libgbm-dev libasound2-dev             libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev libibus-1.0-dev
+          # Ninja; clang-19 for the UI (Ember is C23 with #embed); what SDL builds its video, audio and
+          # input back ends against.
+          sudo apt-get install -y -q ninja-build clang-19 libx11-dev libxext-dev libxrandr-dev libxcursor-dev             libxfixes-dev libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols             libdecor-0-dev libegl-dev libgl-dev libvulkan-dev libdrm-dev libgbm-dev libasound2-dev             libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev libibus-1.0-dev
 
       - name: Cache Slang
         uses: actions/cache@v4
@@ -202,18 +198,13 @@ jobs:
         with:
           path: |
             external/steamaudio
-            external/cef-lite/vendor/cef
-            !external/cef-lite/vendor/cef/RelWithDebInfo
-            !external/cef-lite/vendor/cef/MinSizeRel
-          key: sdks-linux-2-${{ hashFiles('scripts/fetch.cmake') }}
+          key: sdks-linux-3-${{ hashFiles('scripts/fetch.cmake') }}
 
       - name: Fetch third-party SDKs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cmake -DDEP=steamaudio -P scripts/fetch.cmake
-          # The editor's browser (CEF, for cef-lite)
-          cmake -DDEP=cef -P scripts/fetch.cmake
 
       - name: Steamworks SDK
         if: env.HAS_STEAMWORKS == 'true'
@@ -271,7 +262,8 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Packages
-        run: command -v ninja >/dev/null || brew install ninja
+        # (Homebrew's llvm: the UI's C23 compiler, as Apple's clang has no #embed)
+        run: brew install ninja llvm
 
       - name: Cache Slang
         uses: actions/cache@v4
@@ -291,18 +283,13 @@ jobs:
         with:
           path: |
             external/steamaudio
-            external/cef-lite/vendor/cef
-            !external/cef-lite/vendor/cef/RelWithDebInfo
-            !external/cef-lite/vendor/cef/MinSizeRel
-          key: sdks-macos-2-${{ hashFiles('scripts/fetch.cmake') }}
+          key: sdks-macos-3-${{ hashFiles('scripts/fetch.cmake') }}
 
       - name: Fetch third-party SDKs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cmake -DDEP=steamaudio -P scripts/fetch.cmake
-          # The editor's browser (CEF, for cef-lite)
-          cmake -DDEP=cef -P scripts/fetch.cmake
 
       - name: Steamworks SDK
         if: env.HAS_STEAMWORKS == 'true'

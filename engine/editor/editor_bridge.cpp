@@ -1,6 +1,7 @@
 #include "editor/editor_bridge.h"
 
 #include "anim/animation_system.h"
+#include "core/engine_files.h"
 #include "core/platform.h"
 #include "anim/graph_library.h"
 #include "assets/scene_pak.h"
@@ -63,7 +64,7 @@ namespace fx {
 namespace {
 
 constexpr float kDeg = 57.29577951308232f;
-constexpr size_t kMaxListedEntities = 8192;       // keeps editor.state well under cef-lite's 1 MB
+constexpr size_t kMaxListedEntities = 8192;       // keeps editor.state a message the page parses quickly
 
 // World rows (3x4) <-> position, XYZ euler degrees (R = Rz * Ry * Rx), per-axis scale.
 void decompose(const float m[3][4], float pos[3], float rot[3], float scale[3])
@@ -300,8 +301,10 @@ void EditorBridge::init(UiLayer& ui, const Init& init)
         hasProject_ = loadProject(init.projectDir, project_, error);
         if (!hasProject_)
             FX_WARN("editor: %s", error.c_str());
-        if (hasProject_)
+        if (hasProject_) {
             shaders_.setProject(project_.dir);
+            ui.allowFiles(project_.dir);  // (the project's pages: Inspector drawers, editor windows, the game's UI)
+        }
     }
     // Engine and script log lines also go to the page's console.
     SDL_GetLogOutputFunction(&previousLog_, &previousLogData_);
@@ -4808,7 +4811,7 @@ void EditorBridge::handle(const Json& m, const CameraState& camera)
             return notice("Open a project first", "error");
         std::string error;
         int made = 0;
-        const std::string content = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "content/prototype";
+        const std::string content = engine_files::contentDir("prototype");
         if (!level::installPrototype(content, project_.dir, error, &made))
             return notice(error.c_str(), "error");
         project_.prototypeInstalled = true;
@@ -6519,7 +6522,7 @@ void EditorBridge::handle(const Json& m, const CameraState& camera)
         w.endArray().value("reveal", m.getBool("reveal")).endObject();  // ("reveal": scrolled into view first)
         ui_->send(w.str());
     } else if (type == "test.mouse" || type == "test.wheel") {
-        // Real input: SDL events pushed onto the queue, through the UI layer and cef-lite to
+        // Real input: SDL events pushed onto the queue, through the UI layer and Ember to
         // the page. "at": a selector from the last probe, aimed at (fx, fy) of its rect.
         float x = 0.0f, y = 0.0f;
         if (!probePoint(m, x, y))
@@ -6691,6 +6694,10 @@ void EditorBridge::handle(const Json& m, const CameraState& camera)
             shaders_.update(true);
         if (scriptWaitBuild_)
             watchScripts(true);  // (a source just written: its build starts now)
+    } else if (type == "test.lockstep") {
+        // "on": false lets the page update on its own as without a script (the main thread never
+        // waits for it): for measuring the main thread under a script.
+        scriptLockstep_ = m.getBool("on", true);
     } else if (type == "test.newScene") {
         // A scene added to the project and cooked (empty), not opened: for games to load.
         std::string relative, error;
@@ -8970,6 +8977,10 @@ void EditorBridge::update(const CameraState& camera)
         scriptWaitPreviews_ = false;
         scriptWait_ = std::min(scriptWait_, 5u);
     }
+    // The page updates on its own thread; while a script runs, each frame's pump waits for the
+    // page's answer to the last frame (test.lockstep turns that off), as when each frame updated
+    // the page: scripts count frames.
+    ui_->setLockstep(scriptLockstep_ && scriptNext_ < script_.size());
     if (scriptWaitProbe_ > 0) {
         if (--scriptWaitProbe_ == 0)
             FX_WARN("editor test: the page did not answer test.probe");
@@ -9000,7 +9011,7 @@ void EditorBridge::report(const EditorFrameStats& s)
         .value("clusters", s.clusters).value("triangles", s.triangles).value("vsmPages", s.vsmPages)
         .value("vtResident", s.vtResident).value("vtCapacity", s.vtCapacity).value("bodies", s.bodies)
         .value("characters", s.characters).value("objects", s.objects).value("uiFrames", s.uiFrames)
-        .value("uiCopyMs", s.uiCopyMs)
+        .value("uiRenderMs", s.uiRenderMs)
         .value("playing", playing_).endObject();
     ui_->send(st.str());
 }

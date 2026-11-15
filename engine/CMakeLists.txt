@@ -51,7 +51,8 @@ falcon_add_shaders(falcon_shaders
     transparent.slang
     transparent_cull.slang
     transparent_pick.slang
-    vertex_deform.slang)
+    vertex_deform.slang
+    ui_composite.slang)
 
 # Shared ECS components: C++ header (build tree) + C# structs (managed source tree, committed so
 # the managed projects also build on their own).
@@ -70,10 +71,10 @@ add_custom_target(falcon_schema DEPENDS "${fx_schema_h}" "${fx_schema_cs}")
 # What the engine asks of the operating system (core/platform.h): a library of its own, which the
 # transports use too.
 if(WIN32)
-  add_library(falcon_platform STATIC core/platform_win32.cpp)
+  add_library(falcon_platform STATIC core/platform_win32.cpp core/bundle.cpp)
   target_link_libraries(falcon_platform PRIVATE psapi shell32 ole32)
 else()
-  add_library(falcon_platform STATIC core/platform_posix.cpp)
+  add_library(falcon_platform STATIC core/platform_posix.cpp core/bundle.cpp)
   target_link_libraries(falcon_platform PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
 endif()
 target_include_directories(falcon_platform PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -135,6 +136,7 @@ add_library(falcon_engine STATIC
   audio/steam_audio.cpp
   core/boot.cpp
   core/dmath.cpp
+  core/engine_files.cpp
   core/json.cpp
   core/jobs.cpp
   core/mesh_tangents.cpp
@@ -317,32 +319,31 @@ target_include_directories(falcon_engine SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/ext
 if(WIN32)
   target_compile_definitions(falcon_engine PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
-# HTML UI (cef-lite, GPL-3.0): the engine links the static library and depends on the CEF runtime
-# (Chromium's binaries in bin/cef/, cef-lite's shaders) being staged next to falcon.exe.
+# HTML UI (Ember, cmake/FalconUi.cmake): a static library drawing with the engine's SDL_GPU device;
+# the page bundles are copied next to falcon.exe.
 if(FALCON_UI)
-  target_link_libraries(falcon_engine PRIVATE cef_lite)
+  target_link_libraries(falcon_engine PRIVATE falcon_ember)
   target_compile_definitions(falcon_engine PRIVATE FALCON_UI=1)
-  add_dependencies(falcon_engine cef_lite_runtime falcon_ui_bundles)
-  # libcef.dll (~250 MB) loads when the UI is first created, not at process start, from bin/cef/
-  # (the delay-load hook in runtime/cef_runtime.cpp).
-  if(WIN32)
-    target_link_options(falcon_engine INTERFACE "/DELAYLOAD:libcef.dll")
-    target_link_libraries(falcon_engine INTERFACE delayimp)
+  if(NOT FALCON_EMBED_DATA)
+    add_dependencies(falcon_engine falcon_ui_bundles)
   endif()
 endif()
 # The engine's own content (content/: the prototype textures blockouts default to, and the
 # material library every project's Project panel shows as Falcon) next to falcon.exe as
 # bin/content/; the editor puts it into projects (level/prototype_materials.cpp, project/asset_library.cpp).
-file(GLOB_RECURSE fx_content_files CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/content/*")
-set(fx_content_stamp "${CMAKE_BINARY_DIR}/_deps/falcon-content.stamp")
-add_custom_command(OUTPUT "${fx_content_stamp}"
-  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/content" "${CMAKE_BINARY_DIR}/bin/content"
-  COMMAND ${CMAKE_COMMAND} -E touch "${fx_content_stamp}"
-  DEPENDS ${fx_content_files}
-  COMMENT "Copying engine content"
-  VERBATIM)
-add_custom_target(falcon_content DEPENDS "${fx_content_stamp}")
-add_dependencies(falcon_engine falcon_content)
+# With FALCON_EMBED_DATA, falcon.exe carries it instead (runtime/CMakeLists.txt).
+if(NOT FALCON_EMBED_DATA)
+  file(GLOB_RECURSE fx_content_files CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/content/*")
+  set(fx_content_stamp "${CMAKE_BINARY_DIR}/_deps/falcon-content.stamp")
+  add_custom_command(OUTPUT "${fx_content_stamp}"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/content" "${CMAKE_BINARY_DIR}/bin/content"
+    COMMAND ${CMAKE_COMMAND} -E touch "${fx_content_stamp}"
+    DEPENDS ${fx_content_files}
+    COMMENT "Copying engine content"
+    VERBATIM)
+  add_custom_target(falcon_content DEPENDS "${fx_content_stamp}")
+  add_dependencies(falcon_engine falcon_content)
+endif()
 # AMD FSR (cmake/FalconFsr.cmake): the FSR API headers; the DLLs load at runtime from bin/fsr/.
 if(FALCON_FSR)
   target_include_directories(falcon_engine SYSTEM PRIVATE "${FX_FSR_ROOT}/include/api/include"

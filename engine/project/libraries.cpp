@@ -1,3 +1,4 @@
+#include "core/engine_files.h"
 #include "project/libraries.h"
 
 #include "app/process.h"
@@ -351,14 +352,11 @@ bool remove(const std::string& projectDir, const std::string& name, std::string&
     return writeProject(projectDir, root, error);
 }
 
-// falcon-panel.js (the editor's page bundle: falcon-ui/editor/) beside a library's pages.
+// falcon-panel.js (from the editor's page bundle, engine_files.h) beside a library's pages.
 static bool copyPanelHelper(const fs::path& uiDir)
 {
-    std::error_code ec;
-    const char* base = SDL_GetBasePath();
-    const fs::path helper = fs::path(base ? base : "") / "falcon-ui" / "editor" / "falcon-panel.js";
-    fs::copy_file(helper, uiDir / "falcon-panel.js", fs::copy_options::overwrite_existing, ec);
-    return true;  // (no helper next to this engine: the page can still be written by hand)
+    engine_files::copyUiFile("editor/falcon-panel.js", uiDir / "falcon-panel.js");
+    return true;  // (no helper with this engine: the page can still be written by hand)
 }
 
 bool create(const std::string& projectDir, const std::string& name, std::string& error)

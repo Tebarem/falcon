@@ -27,7 +27,7 @@ struct Child {
 };
 
 // `program` with `args`, its output going where ours does. The child gets our stdin, stdout and
-// stderr and no other file descriptors (Chromium's IPC sockets stay ours). `errorFile`: its
+// stderr and no other file descriptors (our sockets stay ours). `errorFile`: its
 // error output goes there instead; with `allToFile`, its standard output too. A program without
 // a path is searched for (PATH). 0: it didn't start.
 pid_t spawnProgram(const std::string& program, const std::vector<std::string>& args, const std::string& errorFile = {},

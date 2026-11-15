@@ -46,7 +46,7 @@ git clone --recurse-submodules --shallow-submodules https://github.com/Tebarem/f
 cd falcon
 ```
 
-Windows (Visual Studio 2022, CMake 3.25+, Ninja, the .NET 10 SDK and the
+Windows (Visual Studio 2022, CMake 3.25+, Ninja, LLVM 19+ for the UI, the .NET 10 SDK and the
 [Slang](https://github.com/shader-slang/slang/releases) release):
 
 ```powershell
@@ -54,8 +54,8 @@ Windows (Visual Studio 2022, CMake 3.25+, Ninja, the .NET 10 SDK and the
 ./build/release/bin/falcon.exe
 ```
 
-Linux and macOS (CMake 3.25+, Ninja, a C++20 compiler and the .NET 10 SDK; `build.sh` fetches
-Slang and CEF):
+Linux and macOS (CMake 3.25+, Ninja, a C++20 compiler, gcc 15+ or clang 19+ for the UI and the
+.NET 10 SDK; `build.sh` fetches Slang):
 
 ```bash
 ./build.sh
@@ -98,7 +98,7 @@ SDKs (Steam Audio, Steamworks, FSR, DLSS, MsQuic), presets and tests are in
 - `tools/cook/` – glTF → `.fpak` cooker, `falcon cook` (format: `engine/assets/fpak_format.h`)
 - `tools/imgdiff/` – image comparison for the capture tests
 - `tools/wavdiff/` – WAV checks and comparison for the audio tests
-- `runtime/` – `falcon.exe`: dispatches to the engine, the cooker or CEF's helper
+- `runtime/` – `falcon.exe`: dispatches to the engine or the cooker
 - `external/` – pinned submodules
 - `content/` – the CC0 material library and prototype textures shipped in `bin/content/`
 - `cmake/`, `scripts/` – build modules, patches to submodules, SDK fetch and packaging scripts
@@ -108,11 +108,10 @@ SDKs (Steam Audio, Steamworks, FSR, DLSS, MsQuic), presets and tests are in
 
 Falcon's own code, shaders, UI and tools are under the MIT license (`LICENSE`). What it builds
 with keeps its own license:
-- cef-lite (the editor's and in-game HTML UI) is GPL-3.0, so a build with the UI is
-  GPL-3.0 as a whole. `-DFALCON_UI=OFF` builds the engine without it.
+- Ember (`external/ember`, the editor's and in-game HTML UI) is zlib.
 - The submodules in `external/` (SDL, flecs, Box3D, meshoptimizer, Manifold, Recast/Detour and
   the rest) carry their licenses in their folders.
 - `content/library` (Poly Haven) and `content/prototype` (Kenney) are CC0: their `License.txt`.
 - SDKs fetched at build time are not part of this repository and come under their vendors'
-  terms: CEF (BSD), Steam Audio, the Steamworks SDK (needs a partner login), AMD FidelityFX
+  terms: Steam Audio, the Steamworks SDK (needs a partner login), AMD FidelityFX
   (FSR) and NVIDIA DLSS (only linked into the separate `falcon_dlss` plugin).

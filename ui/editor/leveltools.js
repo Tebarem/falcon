@@ -22,7 +22,7 @@
 //     vertex colours, radius, strength
 // It uses editor.js's helpers through window.editorPage (editor.js's top level is a block: its names are
 // not global) and is window.levelTools to it (editor.js may handle messages before this file has run).
-// CEF 151 rule (editor.js): no <button> made at runtime (span role="button"); the CSP drops style
+// editor.js's conventions: no <button> made at runtime (span role="button"); the CSP drops style
 // attributes (positions set through CSSOM).
 window.levelTools = (() => { try {
   const P = window.editorPage;

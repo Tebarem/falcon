@@ -1,4 +1,5 @@
-# Builds SDL 3.4 with cef-lite's external-texture extension and our GPU timestamp queries
+# Builds SDL 3.4 with an external-texture extension (cmake/patches/sdl3-falcon-external-texture.patch,
+# from cef-lite, which the others were made on top of) and our GPU timestamp queries
 # (cmake/patches/sdl3-falcon-timestamps.patch; a local patch, not for upstream SDL), as a static
 # library linked into falcon.exe (sdl3-falcon-static.patch: the two extensions' API macros drop
 # dllimport / dllexport under SDL_FALCON_STATIC).
@@ -7,7 +8,9 @@
 # patched there, and re-copied whenever the SDL revision or a patch changes.
 
 set(FX_SDL_SOURCE "${CMAKE_SOURCE_DIR}/external/sdl-src/SDL")
-set(FX_SDL_PATCH "${CMAKE_SOURCE_DIR}/external/cef-lite/patches/sdl3-falcon-external-texture.patch")
+# (a worktree may link to another checkout's submodules: file(COPY) would copy the link itself)
+file(REAL_PATH "${FX_SDL_SOURCE}" FX_SDL_SOURCE)
+set(FX_SDL_PATCH "${CMAKE_SOURCE_DIR}/cmake/patches/sdl3-falcon-external-texture.patch")
 set(FX_SDL_ROOT "${CMAKE_BINARY_DIR}/_deps/sdl-falcon")
 set(FX_SDL_STAMP "${FX_SDL_ROOT}/.falcon-stamp")
 
@@ -52,9 +55,9 @@ if(NOT fx_sdl_stamp_current STREQUAL fx_sdl_stamp_expected)
     WORKING_DIRECTORY "${FX_SDL_ROOT}"
     RESULT_VARIABLE fx_apply_result)
   if(NOT fx_apply_result EQUAL 0)
-    message(FATAL_ERROR "Failed to apply the cef-lite SDL patch to ${fx_sdl_rev}")
+    message(FATAL_ERROR "Failed to apply the external-texture SDL patch to ${fx_sdl_rev}")
   endif()
-  # Ours go on top (their hunks were made against the cef-lite-patched tree).
+  # The rest go on top (their hunks were made against the external-texture-patched tree).
   foreach(fx_sdl_local_patch "${FX_SDL_TIMESTAMPS_PATCH}" "${FX_SDL_STATIC_PATCH}" "${FX_SDL_NATIVE_PATCH}")
     execute_process(
       COMMAND git apply -p1 --whitespace=nowarn "${fx_sdl_local_patch}"

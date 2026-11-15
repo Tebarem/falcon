@@ -5,11 +5,11 @@ produces each game twice from the same source:
 
 | mode | file | use |
 |---|---|---|
-| JIT | `bin/scripts/jit/Sandbox.dll` (IL) | development: CoreCLR hosted via hostfxr, hot reload |
-| NativeAOT | `bin/scripts/aot/Sandbox.dll` (native, ~1 MB) | shipping: no runtime, no JIT |
+| JIT | `sample_scripts/jit/Sandbox.dll` (IL) | development: CoreCLR hosted via hostfxr, hot reload |
+| NativeAOT | `sample_scripts/aot/Sandbox.dll` (native, ~1 MB) | shipping: no runtime, no JIT |
 
 ```powershell
-./build/release/bin/falcon.exe --scene samples/cooked/sponza.fpak --script build/release/bin/scripts/jit/Sandbox.dll
+./build/release/bin/falcon.exe --scene samples/cooked/sponza.fpak --script build/release/sample_scripts/jit/Sandbox.dll
 ```
 
 - **One C ABI** (`engine/script/script_api.h`): plain function pointers both ways, no marshaling
@@ -471,11 +471,10 @@ MyWorld/
   `Falcon.Game.targets` adds when publishing). The result is `Cache/Scripts/aot/Game.dll`; the
   editor's own build (Debug, `Cache/Scripts/bin`) is left alone.
 - It then fills `Build/<name>/` on a thread:
-  - the engine: `falcon.exe` as `<name>.exe` with its DLLs and folders (CEF, audio, FSR, DLSS, shaders,
+  - the engine: `falcon.exe` as `<name>.exe` with its DLLs and folders (audio, FSR, DLSS, shaders,
     UI bundles), without debug files or the engine's script builds;
   - `Game/`: the project (scenes, assets, libraries' assets, its UI, the cooked `Cache` with the
     published game), without `Scripts/`, libraries' `Code/` and `Editor/`, `Build/` or `Exports/`.
-  - For the Script Test project that comes to 437 MB, mostly CEF.
 - The NativeAOT link finds Visual Studio through `vcvarsall.bat`, which breaks on PATH entries cmd
   can't take unquoted (`s&box projects`: `&` ends the command). Its errors then end up in the
   linker's path. So the publish gets a PATH without such entries, plus Visual Studio's installer
@@ -1054,8 +1053,8 @@ public sealed class Watcher : EditorTool  // lives while the editor runs
 ### Custom UI: editor windows and the game's HTML UI
 
 Editor windows and the game's own UI are HTML pages, framed by the editor's page. They talk to
-C# through it by `postMessage`, so cef-lite needs nothing new: the editor's CSP allows
-`frame-src file:`.
+C# through it by `postMessage` (Ember runs each iframe as its own document): the editor's CSP
+allows `frame-src file:`.
 
 - **Editor windows:** an `[EditorWindow]` class shows one of its library's pages (`UI/`; the project's
   `UI/` for `Scripts/Editor/` code) in a floating window of the editor, listed in the Tools menu.
@@ -1083,7 +1082,8 @@ C# through it by `postMessage`, so cef-lite needs nothing new: the editor's CSP 
     messages reach `Ui.TryReceive`, and `Ui.Send` reaches it. Before, a game's UI did nothing in the
     editor.
   - The page uses `falcon-ui.js` (`FalconUi.send(json)`, `FalconUi.onMessage`), copied from the
-    engine's `falcon-ui/editor/`. The same page works in a game with `--ui <project>/UI/Game`, through
+    engine's `ui/editor/` (`bin/falcon-ui/editor/`, or the source tree with a release falcon.exe,
+    which carries its pages packed in). The same page works in a game with `--ui <project>/UI/Game`, through
     the engine's own bridge.
   - In the editor, the game's mouse input takes the view, so the page is for showing things there.
 - **Live reload of the project's pages:** the editor watches the project's `UI/` and its libraries'

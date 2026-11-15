@@ -30,7 +30,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-constexpr size_t kMaxItems = 5000;    // keeps editor.assets well under cef-lite's 1 MB message limit
+constexpr size_t kMaxItems = 5000;    // keeps editor.assets a message the page parses in a frame
 constexpr size_t kMaxLibraryItems = 1500;  // each library's (on top)
 constexpr uint64_t kRescanNs = 1'000'000'000ull;
 constexpr int kImageSize = 256;       // editor.assets.read: the longest side

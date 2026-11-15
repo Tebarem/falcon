@@ -1,17 +1,32 @@
-# falcon.exe: the editor (--editor), the game, the cooker (falcon cook ...) and CEF's helper
-# processes (Chromium relaunches it with --type=...).
+# falcon.exe: the editor (--editor), the game and the cooker (falcon cook ...).
 add_executable(falcon main.cpp)
 if(WIN32)
-  target_sources(falcon PRIVATE cef_runtime.cpp falcon.manifest)
+  target_sources(falcon PRIVATE falcon.manifest)
 else()
   # (freeze reports name the main thread's functions through dladdr: the symbols must be exported)
   set_target_properties(falcon PROPERTIES ENABLE_EXPORTS ON)
 endif()
 target_link_libraries(falcon PRIVATE falcon_engine falcon_cook_lib)
 falcon_compile_options(falcon STRICT)
-if(FALCON_UI)
-  target_link_libraries(falcon PRIVATE cef_lite)
-  target_compile_definitions(falcon PRIVATE FALCON_UI=1)
+
+# FALCON_EMBED_DATA: the UI's pages (ui/) and the engine's content (content/) packed onto the end of
+# falcon.exe after each link, or when they change (tools/pack, core/bundle.h); bin/falcon-ui/ and
+# bin/content/ left from a build without it are removed (the packed copies are what it reads).
+if(FALCON_EMBED_DATA)
+  file(GLOB_RECURSE fx_pack_inputs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/content/*" "${CMAKE_SOURCE_DIR}/ui/*")
+  set(fx_pack_args "content=${CMAKE_SOURCE_DIR}/content")
+  if(FALCON_UI)
+    list(APPEND fx_pack_args "ui=${CMAKE_SOURCE_DIR}/ui")
+  endif()
+  set(fx_pack_stamp "${CMAKE_BINARY_DIR}/_deps/falcon-pack.stamp")
+  add_custom_command(OUTPUT "${fx_pack_stamp}"
+    COMMAND falcon_pack "$<TARGET_FILE:falcon>" ${fx_pack_args}
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/bin/falcon-ui" "${CMAKE_BINARY_DIR}/bin/content"
+    COMMAND ${CMAKE_COMMAND} -E touch "${fx_pack_stamp}"
+    DEPENDS falcon falcon_pack ${fx_pack_inputs}
+    COMMENT "Packing the UI and the engine's content into falcon"
+    VERBATIM)
+  add_custom_target(falcon_packed ALL DEPENDS "${fx_pack_stamp}")
 endif()
 
 # The *_d3d12 captures run on this OS's own API: Direct3D 12 on Windows, Vulkan on Linux (the
@@ -148,7 +163,7 @@ if(EXISTS "${fx_sponza}")
   fx_capture(physics_cache ${fx_drop})
   fx_capture(physics_nocache ${fx_drop} --no-shadow-cache)
   fx_capture(physics_1thread ${fx_drop} --threads 1)
-  set(fx_scripts "${CMAKE_BINARY_DIR}/bin/scripts")
+  set(fx_scripts "${CMAKE_BINARY_DIR}/sample_scripts")  # (managed/CMakeLists.txt)
   # The simulation's determinism (sim/sim_recorder.h): the Sandbox with 256 falling bodies, 600
   # frames of a synthetic player's input and uneven frame times recorded, then replayed tick by
   # tick: with the default threads, one thread and the NativeAOT build (the editor's JIT pinned to
@@ -571,7 +586,7 @@ if(EXISTS "${fx_fox}")
   fx_fox_capture(anim_nocache ${fx_crowd} --no-shadow-cache)
   fx_fox_capture(anim_d3d12 ${fx_crowd} --driver ${fx_native_driver})
   fx_fox_capture(anim_vulkan ${fx_crowd} --driver vulkan)
-  set(fx_scripts "${CMAKE_BINARY_DIR}/bin/scripts")
+  set(fx_scripts "${CMAKE_BINARY_DIR}/sample_scripts")  # (managed/CMakeLists.txt)
   fx_fox_capture(anim_script_jit ${fx_crowd} --script "${fx_scripts}/jit/Sandbox.dll")
   fx_fox_capture(anim_script_aot ${fx_crowd} --script "${fx_scripts}/aot/Sandbox${FALCON_AOT_EXT}")
 
@@ -662,7 +677,7 @@ if(EXISTS "${fx_fox}")
 endif()
 
 # Editor (M9; needs a UI build). runtime/tests/editor_*.json replay page messages through the
-# editor bridge in a real editor session (Chromium included):
+# editor bridge in a real editor session (the page included):
 #   editor_edit       move, hide, delete, create, rename, parent (a cooked mesh and a shape under
 #                     an empty), undo/redo, play/stop, then save
 #   editor_roundtrip  loading the saved edits and saving again writes the same file
@@ -754,9 +769,23 @@ if(FALCON_UI AND EXISTS "${fx_sponza}")
   #   editor_fly_keys   right-drag flies on WASD's key events alone, and with a page field focused
   add_test(NAME editor_fly_keys COMMAND falcon --hidden --scene "${pak}" --editor --no-prefs --no-edits
     --editor-script "${scripts}/editor_fly_keys.json" --frames 1000000)
+  #   editor_packed  falcon.exe carrying its files (tools/pack): a copy on its own in a folder with the
+  #                  UI's pages and the engine's content packed in; the page loads from it and the
+  #                  Library lists Falcon's materials, unpacked into the test's cache folder
+  set(fx_packed_exe "${dir}/packed/falcon${CMAKE_EXECUTABLE_SUFFIX}")
+  add_test(NAME editor_packed_make COMMAND "${CMAKE_COMMAND}" -E copy "$<TARGET_FILE:falcon>" "${fx_packed_exe}")
+  add_test(NAME editor_packed_pack COMMAND falcon_pack "${fx_packed_exe}" "ui=${CMAKE_SOURCE_DIR}/ui"
+    "content=${CMAKE_SOURCE_DIR}/content")
+  add_test(NAME editor_packed_cache COMMAND "${CMAKE_COMMAND}" -E rm -rf "${dir}/packed-cache")
+  set_tests_properties(editor_packed_make editor_packed_pack editor_packed_cache PROPERTIES FIXTURES_SETUP editor_packed)
+  set_tests_properties(editor_packed_pack PROPERTIES DEPENDS editor_packed_make)
+  add_test(NAME editor_packed COMMAND "${fx_packed_exe}" --hidden --scene "${pak}" --editor --no-prefs --no-edits
+    --editor-script "${scripts}/editor_packed.json" --frames 1000000)
+  set_tests_properties(editor_packed PROPERTIES FIXTURES_REQUIRED editor_packed DEPENDS editor_cook
+    ENVIRONMENT "FALCON_CACHE_DIR=${dir}/packed-cache")
   #   editor_page_reload  live reload: a file of the editor's page bundle (a copy of it, so other tests'
   #                       pages stay) written and removed; the page loads again each time, with the state
-  add_test(NAME editor_page_bundle COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_BINARY_DIR}/bin/falcon-ui/editor"
+  add_test(NAME editor_page_bundle COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_SOURCE_DIR}/ui/editor"
     "${dir}/editor-page-copy")
   set_tests_properties(editor_page_bundle PROPERTIES FIXTURES_SETUP editor_page_bundle)
   add_test(NAME editor_page_reload COMMAND falcon --hidden --scene "${pak}" --editor --no-prefs --no-edits
@@ -1364,6 +1393,17 @@ if(FALCON_UI)
   # (the scene tests' standalone runs play the Script Test game before the next test rewrites it)
   set_tests_properties(editor_script_material PROPERTIES DEPENDS "editor_script_scene;script_scene_loaded")
   set_tests_properties(editor_game_build PROPERTIES DEPENDS "editor_level_sample;editor_asset_library;script_scene_loaded")
+  # The game's HUD bundle: inside its executable when falcon.exe carries the engine's files (and no
+  # content there), else in falcon-ui/ beside it.
+  set(fx_game_dir "${sdir}/projects/Script Test/Build/Script Test")
+  if(FALCON_EMBED_DATA)
+    add_test(NAME editor_game_build_ui COMMAND falcon_pack "${fx_game_dir}/Script Test${CMAKE_EXECUTABLE_SUFFIX}" --list)
+    set_tests_properties(editor_game_build_ui PROPERTIES PASS_REGULAR_EXPRESSION "ui/hud/index[.]html"
+      FAIL_REGULAR_EXPRESSION "content/")
+  else()
+    add_test(NAME editor_game_build_ui COMMAND "${CMAKE_COMMAND}" -E md5sum "${fx_game_dir}/falcon-ui/hud/index.html")
+  endif()
+  set_tests_properties(editor_game_build_ui PROPERTIES DEPENDS editor_game_build)
   # Live meshes: drawn while playing (the slab and the panel), gone after Stop.
   add_test(NAME editor_level_live_drawn COMMAND falcon_imgdiff "${sdir}/level_live_before.png" "${sdir}/level_live_playing.png"
     --tolerance 12 --min-pixels 5000 --max-pixels 100000000 --out "${sdir}/level_live_drawn_diff.png")

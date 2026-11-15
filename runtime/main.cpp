@@ -2,7 +2,6 @@
 //   falcon                      the launcher: recent projects, New / Open project
 //   falcon [options]            the game (--scene x.fpak ...; --editor for the editor)
 //   falcon cook <in> <out> ...  the cooker: glTF -> .fpak (or --empty <out>)
-//   falcon --type=...           one of Chromium's helper processes (CEF relaunches us)
 // falcon --help lists the options.
 
 #include "app/engine.h"
@@ -10,9 +9,6 @@
 #include "core/dmath.h"
 #include "cook_main.h"
 #include "vfx/vfx_selftest.h"
-#if FALCON_UI
-#include "cef_lite.h"
-#endif
 
 #include <SDL3/SDL_main.h>
 
@@ -21,14 +17,6 @@
 
 int main(int argc, char** argv)
 {
-#if FALCON_UI
-    // First, before SDL, Tracy or .NET start anything: a Chromium helper process. (Linux and
-    // macOS: CEF reads the command line from main's arguments.)
-    cef_lite_set_main_args(argc, argv);
-    for (int i = 1; i < argc; ++i)
-        if (std::strncmp(argv[i], "--type=", 7) == 0)
-            return cef_lite_run_subprocess();
-#endif
     if (argc > 1 && std::strcmp(argv[1], "cook") == 0)
         return cookMain(argc - 1, argv + 1);
     if (argc > 1 && std::strcmp(argv[1], "vfx-test") == 0)

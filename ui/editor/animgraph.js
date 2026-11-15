@@ -1840,7 +1840,7 @@ const Animator = (() => {
       if (input.type === 'checkbox') input.checked = !!v;
       else if (Number(input.value) !== Number(h.fmt(v, 3))) input.value = h.fmt(v, 3);
     }
-    if (!R.palette && !drag && S.shown) draw();  // (no redraws under the palette: CEF)
+    if (!R.palette && !drag && S.shown) draw();  // (no redraws under the palette)
     if (R.spacePaint && R.props && R.props.contains(document.querySelector('[data-anim="blend-space"]'))) R.spacePaint();
   }
 

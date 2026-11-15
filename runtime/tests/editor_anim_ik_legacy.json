@@ -6,7 +6,7 @@
 // Assets/LegsPlain.fgraph (its "ik" and entity parameters LookTarget and LeftHandTarget), the
 // Animator keeping its bindings and losing its own IK, the rig posed the same; saved and reopened
 // (editor_anim_ik_legacy_reload). The button is probed; the test then sends what it sends
-// (editor.animator.set moveIk): its click, delivered through Chromium, was lost now and then.
+// (editor.animator.set moveIk): its click, delivered through the page, was lost now and then.
 [
   {"type": "test.wait", "frames": 20, "ms": 800},
   {"type": "test.wait", "frames": 10, "ms": 300},

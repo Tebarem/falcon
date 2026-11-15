@@ -32,13 +32,16 @@ if(FALCON_DLSS)
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${FX_DLSS_STAGE_DIR}"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${FX_DLSS_STAGE_DIR}"
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${FX_DLSS_STAGE_DIR}"
-    LIBRARY_OUTPUT_DIRECTORY "${FX_DLSS_STAGE_DIR}")
+    LIBRARY_OUTPUT_DIRECTORY "${FX_DLSS_STAGE_DIR}"
+    # (its symbols stay in the build, out of bin/ which ships: an older build's copy there is removed)
+    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
   add_custom_target(falcon_dlss_runtime
     COMMAND ${CMAKE_COMMAND} -E make_directory "${FX_DLSS_STAGE_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${FX_DLSS_ROOT}/bin/nvngx_dlss.dll"
       "${FX_DLSS_ROOT}/LICENSE.txt"
       "${FX_DLSS_STAGE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E rm -f "${FX_DLSS_STAGE_DIR}/falcon_dlss.pdb"
     VERBATIM)
   add_dependencies(falcon_dlss falcon_dlss_runtime)
 endif()

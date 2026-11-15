@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- falcon.exe also runs Chromium's helper processes: what CEF's bootstrap.exe declared for them
-     (Common Controls 6, the supported Windows versions). -->
+<!-- Common Controls 6 and the supported Windows versions. -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <dependency>
     <dependentAssembly>

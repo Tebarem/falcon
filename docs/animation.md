@@ -323,7 +323,7 @@ window appears or takes focus:
   - shadows of an animated crowd match with and without page caching;
   - D3D12 and Vulkan agree;
   - the script-driven crowd matches under JIT and NativeAOT.
-- with the UI, scripted editor sessions (Chromium included):
+- with the UI, scripted editor sessions (the page included):
   - move, hide, delete, create, rename, parent (a cooked mesh, a shape, a light and a camera
     under an empty), undo/redo, play/stop and save;
   - empties and parenting: children follow their parent, undo / delete / duplicate cover
@@ -338,7 +338,7 @@ window appears or takes focus:
   - create, duplicate and delete primitives, a GPU pick in the middle of the viewport, tools,
     sun and exposure settings, play / pause / step, and a ping the page must answer
     (`test.expect` steps fail the run);
-  - real mouse input (SDL events through the UI layer and cef-lite): a double-click selects a
+  - real mouse input (SDL events through the UI layer and Ember): a double-click selects a
     whole field, the wheel scrolls the hierarchy, right-click opens a row's menu, a Lighting
     slider drag keeps tracking, and the + button's 3D Object submenu creates the shape clicked
     there. `test.probe` asks the page for element rects and

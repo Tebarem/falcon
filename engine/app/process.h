@@ -2,7 +2,7 @@
 
 // Running falcon.exe again: the cooker as a child (new empty scenes), or another session
 // (the launcher opening the editor on a project, the editor opening another scene). One
-// session per process: Chromium initialises once per process, and a session sets up everything.
+// session per process: a session sets up everything.
 
 #include <cstdint>
 #include <string>

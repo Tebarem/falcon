@@ -12,6 +12,15 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(FALCON_TRACY "Build with the Tracy profiler client (on-demand)" OFF)
+# falcon.exe carries the UI's pages and the engine's content (tools/pack, core/bundle.h) instead of
+# bin/falcon-ui/ and bin/content/: on by default for Windows release builds. Other builds keep the
+# folders (live reload of the pages, quick links).
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(fx_embed_default ON)
+else()
+  set(fx_embed_default OFF)
+endif()
+option(FALCON_EMBED_DATA "Pack the UI pages and engine content into falcon.exe" ${fx_embed_default})
 set(FALCON_SLANG_VERSION 2026.10.2)
 if(WIN32)
   set(fx_slang_default "$ENV{USERPROFILE}/slang-${FALCON_SLANG_VERSION}-windows-x86_64")
@@ -58,6 +67,7 @@ add_subdirectory(engine)
 add_subdirectory(tools/nettest)
 add_subdirectory(tools/leveltest)
 add_subdirectory(tools/bvhtest)
+add_subdirectory(tools/pack)
 # (the scripts first: the tests name their files)
 add_subdirectory(managed)
 add_subdirectory(runtime)

@@ -1,4 +1,4 @@
-// Editor test: real mouse input (SDL events through the UI layer and cef-lite to the page).
+// Editor test: real mouse input (SDL events through the UI layer and Ember to the page).
 // Double-click selects a whole field, the wheel scrolls the hierarchy, right-click opens a row's
 // context menu, dragging a Lighting slider keeps tracking the mouse, and the + button's create
 // menu opens its 3D Object submenu on hover and creates the shape clicked there, and a click on

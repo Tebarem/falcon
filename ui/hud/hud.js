@@ -29,7 +29,8 @@ document.addEventListener('keydown', event => {
   }
 });
 
-// window.falcon is provided (read-only) by cef-lite; a plain browser gets a stand-in.
+// window.falcon is the engine's channel (read-only, Ember's host channel); a plain browser gets a
+// stand-in.
 if (!window.falcon) window.falcon = {};
 window.falcon.onMessage = message => {
   const parsed = JSON.parse(message);

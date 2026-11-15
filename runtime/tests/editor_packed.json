@@ -1,0 +1,32 @@
+// Editor test: falcon.exe carrying its own files (tools/pack, core/engine_files.h). A copy of it on
+// its own in a folder, the UI's pages and the engine's content packed in: the editor's page loads
+// from it (falcon://ui/editor) and answers the editor's state, and the Project panel's Library lists
+// Falcon's materials from the content it unpacked (into the test's FALCON_CACHE_DIR; no project: no
+// My Library).
+[
+  {"type": "test.wait", "frames": 20, "ms": 800},
+  {"type": "test.probe", "rects": ["#viewport"]},
+  {"type": "test.wait", "frames": 5, "ms": 200},
+  {"type": "test.expect", "pageLoads": 1, "probe": {"giIntensity": 1}},
+  {"type": "test.probe", "rects": [".tab[data-tab=\"project\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": ".tab[data-tab=\"project\"]"},
+  {"type": "test.wait", "frames": 10, "ms": 600},
+  {"type": "test.probe", "rects": ["[data-section=\"favorites\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": "[data-section=\"favorites\"]"},
+  {"type": "test.wait", "frames": 3, "ms": 200},
+  {"type": "test.probe", "rects": ["[data-section=\"project\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.mouse", "at": "[data-section=\"project\"]"},
+  {"type": "test.wait", "frames": 3, "ms": 200},
+  {"type": "test.probe", "rects": ["[data-tree=\"@falcon\"]"]},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"assetsLibraries": "@falcon:ro"}},
+  {"type": "test.mouse", "at": "[data-tree=\"@falcon\"]"},
+  {"type": "test.wait", "frames": 5, "ms": 300},
+  {"type": "test.probe"},
+  {"type": "test.wait", "frames": 2, "ms": 200},
+  {"type": "test.expect", "probe": {"assetsFolder": "@falcon", "assetsItems": "Brick|Concrete|Ground|Metal|Plaster|Roofing|Tiles|Wood|License"}},
+  {"type": "test.exit"}
+]

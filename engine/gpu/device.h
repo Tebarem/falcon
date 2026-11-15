@@ -14,7 +14,7 @@ struct GpuConfig {
 #if defined(__APPLE__)
     // macOS: vsync. Metal's IMMEDIATE (displaySyncEnabled off) ran the launcher and editor
     // uncapped: hundreds of light frames a second, each with its CPU work (the frame loop,
-    // Chromium's begin-frame, the UI's pixel copy), so the CPU was busy and the GPU nearly idle.
+    // the UI's update), so the CPU was busy and the GPU nearly idle.
     SDL_GPUPresentMode presentMode = SDL_GPU_PRESENTMODE_VSYNC;
 #else
     // Uncapped by default (tearing allowed); falls back to MAILBOX, then VSYNC.

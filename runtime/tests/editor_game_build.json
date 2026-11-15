@@ -42,8 +42,7 @@
   "fileExists": [
    "Build/Script Test/Script Test.exe",
    "Build/Script Test/Game/project.falcon",
-   "Build/Script Test/Game/Cache/Scripts/aot/Game.dll",
-   "Build/Script Test/cef/libcef.dll", "Build/Script Test/Game/Libraries/Made/Assets",
+   "Build/Script Test/Game/Cache/Scripts/aot/Game.dll", "Build/Script Test/Game/Libraries/Made/Assets",
    "Build/Script Test SteamPipe/app_build_480.vdf", "Build/Script Test SteamPipe/depot_build_481.vdf"
   ],
   "fileMissing": [
@@ -52,7 +51,8 @@
    "Build/Script Test/scripts/jit/Falcon.Engine.dll",
    "Build/Script Test/Game/Cache/Scripts/bin/Game.dll",
    "Build/Script Test/Game/Libraries/Waves/Code", "Build/Script Test/Game/Libraries/Toolbox/Editor",
-   "Build/Script Test/steamcmd/steamcmd.exe", "Build/Script Test/content/library"
+   "Build/Script Test/steamcmd/steamcmd.exe", "Build/Script Test/content/library",
+   "Build/Script Test/FreezeReports"
   ]
  },
  {"type": "editor.settings.set", "key": "steamAppId", "value": 0},
